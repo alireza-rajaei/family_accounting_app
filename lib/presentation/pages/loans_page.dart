@@ -239,7 +239,7 @@ class _LoanSheetState extends State<_LoanSheet> {
           children: [
             Text(isEdit ? tr('loans.edit') : tr('loans.add'), style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-            _UserDropdown(value: userId, onChanged: (v) => setState(() => userId = v)),
+            _SearchableUserField(value: userId, onChanged: (v) => setState(() => userId = v)),
             const SizedBox(height: 12),
             Row(children: [
               Expanded(
@@ -304,21 +304,83 @@ class _LoanSheetState extends State<_LoanSheet> {
   }
 }
 
-class _UserDropdown extends StatelessWidget {
+// removed old unused dropdown
+
+class _SearchableUserField extends StatelessWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
-  const _UserDropdown({required this.value, required this.onChanged});
+  const _SearchableUserField({required this.value, required this.onChanged});
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<UsersCubit, UsersState>(builder: (context, state) {
-      return DropdownButtonFormField<int>(
-        value: value,
-        items: state.users.map((u) => DropdownMenuItem(value: u.id, child: Text('${u.firstName} ${u.lastName}'))).toList(),
-        onChanged: onChanged,
-        decoration: InputDecoration(labelText: tr('loans.user')),
+      String label = tr('loans.user');
+      final sel = state.users.where((u) => u.id == value).toList();
+      if (sel.isNotEmpty) label = '${sel.first.firstName} ${sel.first.lastName}';
+      return TextFormField(
+        readOnly: true,
+        decoration: InputDecoration(labelText: tr('loans.user'), hintText: label, suffixIcon: const Icon(Icons.search)),
+        onTap: () async {
+          final picked = await _showLoanUserPicker(context, state);
+          if (picked != null) onChanged(picked);
+        },
       );
     });
   }
+}
+
+Future<int?> _showLoanUserPicker(BuildContext context, UsersState state) async {
+  final controller = TextEditingController();
+  List<int> filtered = state.users.map((e) => e.id).toList();
+  return showModalBottomSheet<int>(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) {
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 16,
+          right: 16,
+          top: 16,
+        ),
+        child: StatefulBuilder(builder: (context, setStateSB) {
+          void apply(String q) {
+            setStateSB(() {
+              final pat = q.trim();
+              filtered = state.users
+                  .where((u) => '${u.firstName} ${u.lastName}'.contains(pat))
+                  .map((e) => e.id)
+                  .toList();
+            });
+          }
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(hintText: tr('transactions.search_user')),
+                onChanged: apply,
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 320,
+                child: ListView.builder(
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final id = filtered[index];
+                    final u = state.users.firstWhere((e) => e.id == id);
+                    return ListTile(
+                      title: Text('${u.firstName} ${u.lastName}'),
+                      onTap: () => Navigator.pop(context, id),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }),
+      );
+    },
+  );
 }
 
 
