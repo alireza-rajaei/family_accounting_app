@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../di/locator.dart';
 import '../../data/local/db/app_database.dart';
 import '../cubits/banks_cubit.dart';
+import '../../app/utils/bank_icons.dart';
 
 class BanksPage extends StatelessWidget {
   const BanksPage({super.key});
@@ -78,8 +79,9 @@ class _BanksViewState extends State<_BanksView> {
                       final item = state.banks[index];
                       final b = item.bank;
                       return ListTile(
-                        leading: CircleAvatar(
-                          child: Text(b.bankName.characters.first),
+                        leading: BankCircleAvatar(
+                          bankKey: b.bankKey,
+                          name: b.bankName,
                         ),
                         title: Text('${b.bankName} · ${b.accountName}'),
                         subtitle: Text('شماره حساب: ${b.accountNumber}'),
@@ -90,7 +92,9 @@ class _BanksViewState extends State<_BanksView> {
                             Text(
                               _formatCurrency(item.balance),
                               style: TextStyle(
-                                color: item.balance >= 0 ? Colors.green : Colors.red,
+                                color: item.balance >= 0
+                                    ? Colors.green
+                                    : Colors.red,
                               ),
                             ),
                           ],
@@ -154,7 +158,12 @@ class _BanksViewState extends State<_BanksView> {
         context: context,
         builder: (context) => AlertDialog(
           title: Text(tr('banks.delete')),
-          content: Text(tr('banks.confirm_delete', args: ['${bank.bankName} - ${bank.accountName}'])),
+          content: Text(
+            tr(
+              'banks.confirm_delete',
+              args: ['${bank.bankName} - ${bank.accountName}'],
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -240,7 +249,10 @@ class _BankSheetState extends State<_BankSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(isEdit ? tr('banks.edit') : tr('banks.add'), style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              isEdit ? tr('banks.edit') : tr('banks.add'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: bankKey,
@@ -270,7 +282,9 @@ class _BankSheetState extends State<_BankSheet> {
             const SizedBox(height: 12),
             TextFormField(
               controller: accountNumber,
-              decoration: InputDecoration(labelText: tr('banks.account_number')),
+              decoration: InputDecoration(
+                labelText: tr('banks.account_number'),
+              ),
               validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
             ),
             const SizedBox(height: 16),

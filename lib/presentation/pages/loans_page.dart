@@ -7,6 +7,7 @@ import '../../di/locator.dart';
 import '../cubits/loans_cubit.dart';
 import '../cubits/users_cubit.dart';
 import '../cubits/banks_cubit.dart';
+import '../../app/utils/bank_icons.dart';
 
 class LoansPage extends StatelessWidget {
   const LoansPage({super.key});
@@ -31,8 +32,10 @@ class _LoansView extends StatelessWidget {
       body: SafeArea(
         child: BlocBuilder<LoansCubit, LoansState>(
           builder: (context, state) {
-            if (state.loading) return const Center(child: CircularProgressIndicator());
-            if (state.items.isEmpty) return Center(child: Text(tr('transactions.not_found')));
+            if (state.loading)
+              return const Center(child: CircularProgressIndicator());
+            if (state.items.isEmpty)
+              return Center(child: Text(tr('transactions.not_found')));
             return ListView.separated(
               itemCount: state.items.length,
               separatorBuilder: (_, __) => const Divider(height: 0),
@@ -41,7 +44,10 @@ class _LoansView extends StatelessWidget {
                 return ListTile(
                   title: Text('ID ${it.loan.id} · ${it.loan.principalAmount}'),
                   subtitle: Text('${tr('loans.remaining')}: ${it.remaining}'),
-                  trailing: Icon(it.settled ? Icons.check_circle : Icons.pending, color: it.settled ? Colors.green : Colors.orange),
+                  trailing: Icon(
+                    it.settled ? Icons.check_circle : Icons.pending,
+                    color: it.settled ? Colors.green : Colors.orange,
+                  ),
                   onTap: () => _openLoanDetails(context, it.loan),
                   onLongPress: () => _openLoanSheet(context, loan: it.loan),
                 );
@@ -77,13 +83,17 @@ class _LoanDetailsSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(tr('loans.payments'), style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            tr('loans.payments'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 12),
           StreamBuilder<List<(LoanPayment, Transaction, Bank)>>(
             stream: cubit.watchPayments(loan.id),
             builder: (context, snapshot) {
               final items = snapshot.data ?? [];
-              if (items.isEmpty) return Center(child: Text(tr('transactions.not_found')));
+              if (items.isEmpty)
+                return Center(child: Text(tr('transactions.not_found')));
               return SizedBox(
                 height: 300,
                 child: ListView.separated(
@@ -92,6 +102,10 @@ class _LoanDetailsSheet extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final (lp, trn, bank) = items[index];
                     return ListTile(
+                      leading: BankCircleAvatar(
+                        bankKey: bank.bankKey,
+                        name: bank.bankName,
+                      ),
                       title: Text('${bank.bankName} · ${bank.accountName}'),
                       subtitle: Text(trn.note ?? ''),
                       trailing: Text(lp.amount.toString()),
@@ -126,22 +140,30 @@ class _AddPaymentRowState extends State<_AddPaymentRow> {
     noteCtrl.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(children: [
-          Expanded(child: _BankDropdown(value: bankId, onChanged: (v) => setState(() => bankId = v))),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: amountCtrl,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: tr('loans.amount')),
+        Row(
+          children: [
+            Expanded(
+              child: _BankDropdown(
+                value: bankId,
+                onChanged: (v) => setState(() => bankId = v),
+              ),
             ),
-          ),
-        ]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: amountCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: tr('loans.amount')),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: noteCtrl,
@@ -155,11 +177,13 @@ class _AddPaymentRowState extends State<_AddPaymentRow> {
               final amount = int.tryParse(amountCtrl.text);
               if (bankId != null && amount != null) {
                 await context.read<LoansCubit>().addPayment(
-                      loanId: widget.loanId,
-                      bankId: bankId!,
-                      amount: amount,
-                      note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
-                    );
+                  loanId: widget.loanId,
+                  bankId: bankId!,
+                  amount: amount,
+                  note: noteCtrl.text.trim().isEmpty
+                      ? null
+                      : noteCtrl.text.trim(),
+                );
                 if (context.mounted) Navigator.pop(context);
               }
             },
@@ -177,14 +201,23 @@ class _BankDropdown extends StatelessWidget {
   const _BankDropdown({required this.value, required this.onChanged});
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BanksCubit, BanksState>(builder: (context, state) {
-      return DropdownButtonFormField<int>(
-        value: value,
-        items: state.banks.map((e) => DropdownMenuItem(value: e.bank.id, child: Text('${e.bank.bankName} · ${e.bank.accountName}'))).toList(),
-        onChanged: onChanged,
-        decoration: InputDecoration(labelText: tr('banks.bank')),
-      );
-    });
+    return BlocBuilder<BanksCubit, BanksState>(
+      builder: (context, state) {
+        return DropdownButtonFormField<int>(
+          value: value,
+          items: state.banks
+              .map(
+                (e) => DropdownMenuItem(
+                  value: e.bank.id,
+                  child: Text('${e.bank.bankName} · ${e.bank.accountName}'),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+          decoration: InputDecoration(labelText: tr('banks.bank')),
+        );
+      },
+    );
   }
 }
 
@@ -219,6 +252,7 @@ class _LoanSheetState extends State<_LoanSheet> {
       noteCtrl.text = widget.loan!.note ?? '';
     }
   }
+
   @override
   void dispose() {
     principalCtrl.dispose();
@@ -226,10 +260,12 @@ class _LoanSheetState extends State<_LoanSheet> {
     noteCtrl.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.loan != null;
-    final padding = MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
+    final padding =
+        MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
     return Padding(
       padding: padding,
       child: Form(
@@ -237,29 +273,43 @@ class _LoanSheetState extends State<_LoanSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(isEdit ? tr('loans.edit') : tr('loans.add'), style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              isEdit ? tr('loans.edit') : tr('loans.add'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
-            _SearchableUserField(value: userId, onChanged: (v) => setState(() => userId = v)),
+            _SearchableUserField(
+              value: userId,
+              onChanged: (v) => setState(() => userId = v),
+            ),
             const SizedBox(height: 12),
-            Row(children: [
-              Expanded(
-                child: TextFormField(
-                  controller: principalCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: tr('loans.principal')),
-                  validator: (v) => (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: principalCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: tr('loans.principal'),
+                    ),
+                    validator: (v) =>
+                        (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: installmentsCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: tr('loans.installments')),
-                  validator: (v) => (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: installmentsCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: tr('loans.installments'),
+                    ),
+                    validator: (v) =>
+                        (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: noteCtrl,
@@ -280,14 +330,18 @@ class _LoanSheetState extends State<_LoanSheet> {
                         userId: userId!,
                         principalAmount: principal,
                         installments: inst,
-                        note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
+                        note: noteCtrl.text.trim().isEmpty
+                            ? null
+                            : noteCtrl.text.trim(),
                       );
                     } else {
                       await c.addLoan(
                         userId: userId!,
                         principalAmount: principal,
                         installments: inst,
-                        note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
+                        note: noteCtrl.text.trim().isEmpty
+                            ? null
+                            : noteCtrl.text.trim(),
                       );
                     }
                     if (context.mounted) Navigator.pop(context);
@@ -312,19 +366,26 @@ class _SearchableUserField extends StatelessWidget {
   const _SearchableUserField({required this.value, required this.onChanged});
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<UsersCubit, UsersState>(builder: (context, state) {
-      String label = tr('loans.user');
-      final sel = state.users.where((u) => u.id == value).toList();
-      if (sel.isNotEmpty) label = '${sel.first.firstName} ${sel.first.lastName}';
-      return TextFormField(
-        readOnly: true,
-        decoration: InputDecoration(labelText: tr('loans.user'), hintText: label, suffixIcon: const Icon(Icons.search)),
-        onTap: () async {
-          final picked = await _showLoanUserPicker(context, state);
-          if (picked != null) onChanged(picked);
-        },
-      );
-    });
+    return BlocBuilder<UsersCubit, UsersState>(
+      builder: (context, state) {
+        String label = tr('loans.user');
+        final sel = state.users.where((u) => u.id == value).toList();
+        if (sel.isNotEmpty)
+          label = '${sel.first.firstName} ${sel.first.lastName}';
+        return TextFormField(
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: tr('loans.user'),
+            hintText: label,
+            suffixIcon: const Icon(Icons.search),
+          ),
+          onTap: () async {
+            final picked = await _showLoanUserPicker(context, state);
+            if (picked != null) onChanged(picked);
+          },
+        );
+      },
+    );
   }
 }
 
@@ -342,45 +403,48 @@ Future<int?> _showLoanUserPicker(BuildContext context, UsersState state) async {
           right: 16,
           top: 16,
         ),
-        child: StatefulBuilder(builder: (context, setStateSB) {
-          void apply(String q) {
-            setStateSB(() {
-              final pat = q.trim();
-              filtered = state.users
-                  .where((u) => '${u.firstName} ${u.lastName}'.contains(pat))
-                  .map((e) => e.id)
-                  .toList();
-            });
-          }
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                decoration: InputDecoration(hintText: tr('transactions.search_user')),
-                onChanged: apply,
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 320,
-                child: ListView.builder(
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final id = filtered[index];
-                    final u = state.users.firstWhere((e) => e.id == id);
-                    return ListTile(
-                      title: Text('${u.firstName} ${u.lastName}'),
-                      onTap: () => Navigator.pop(context, id),
-                    );
-                  },
+        child: StatefulBuilder(
+          builder: (context, setStateSB) {
+            void apply(String q) {
+              setStateSB(() {
+                final pat = q.trim();
+                filtered = state.users
+                    .where((u) => '${u.firstName} ${u.lastName}'.contains(pat))
+                    .map((e) => e.id)
+                    .toList();
+              });
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    hintText: tr('transactions.search_user'),
+                  ),
+                  onChanged: apply,
                 ),
-              ),
-            ],
-          );
-        }),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 320,
+                  child: ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final id = filtered[index];
+                      final u = state.users.firstWhere((e) => e.id == id);
+                      return ListTile(
+                        title: Text('${u.firstName} ${u.lastName}'),
+                        onTap: () => Navigator.pop(context, id),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       );
     },
   );
 }
-
-

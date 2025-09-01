@@ -7,6 +7,7 @@ import '../cubits/transactions_cubit.dart';
 import '../cubits/banks_cubit.dart';
 import '../cubits/users_cubit.dart';
 import '../../data/repositories/transactions_repository.dart';
+import '../../app/utils/bank_icons.dart';
 import '../../app/utils/jalali_utils.dart';
 
 class TransactionsPage extends StatelessWidget {
@@ -50,9 +51,9 @@ class _TransactionsView extends StatelessWidget {
                       final trn = it.transaction;
                       final isDeposit = trn.type == 'deposit';
                       return ListTile(
-                        leading: Icon(
-                          isDeposit ? Icons.south_west : Icons.north_east,
-                          color: isDeposit ? Colors.green : Colors.red,
+                        leading: BankCircleAvatar(
+                          bankKey: it.bank.bankKey,
+                          name: it.bank.bankName,
                         ),
                         title: Text(
                           it.user != null
@@ -451,24 +452,32 @@ class _SearchableBankField extends StatelessWidget {
   const _SearchableBankField({required this.value, required this.onChanged});
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BanksCubit, BanksState>(builder: (context, state) {
-      String label = tr('banks.bank');
-      final selected = state.banks.firstWhere(
-        (e) => e.bank.id == value,
-        orElse: () => state.banks.isEmpty ? (throw '') : state.banks.first,
-      );
-      if (value != null && state.banks.isNotEmpty && selected.bank.id == value) {
-        label = '${selected.bank.bankName} · ${selected.bank.accountName}';
-      }
-      return TextFormField(
-        readOnly: true,
-        decoration: InputDecoration(labelText: tr('banks.bank'), hintText: label, suffixIcon: const Icon(Icons.search)),
-        onTap: () async {
-          final picked = await _showBankPicker(context, state);
-          if (picked != null) onChanged(picked);
-        },
-      );
-    });
+    return BlocBuilder<BanksCubit, BanksState>(
+      builder: (context, state) {
+        String label = tr('banks.bank');
+        final selected = state.banks.firstWhere(
+          (e) => e.bank.id == value,
+          orElse: () => state.banks.isEmpty ? (throw '') : state.banks.first,
+        );
+        if (value != null &&
+            state.banks.isNotEmpty &&
+            selected.bank.id == value) {
+          label = '${selected.bank.bankName} · ${selected.bank.accountName}';
+        }
+        return TextFormField(
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: tr('banks.bank'),
+            hintText: label,
+            suffixIcon: const Icon(Icons.search),
+          ),
+          onTap: () async {
+            final picked = await _showBankPicker(context, state);
+            if (picked != null) onChanged(picked);
+          },
+        );
+      },
+    );
   }
 }
 
@@ -478,19 +487,26 @@ class _SearchableUserField extends StatelessWidget {
   const _SearchableUserField({required this.value, required this.onChanged});
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<UsersCubit, UsersState>(builder: (context, state) {
-      String label = tr('loans.user');
-      final sel = state.users.where((u) => u.id == value).toList();
-      if (sel.isNotEmpty) label = '${sel.first.firstName} ${sel.first.lastName}';
-      return TextFormField(
-        readOnly: true,
-        decoration: InputDecoration(labelText: tr('loans.user'), hintText: label, suffixIcon: const Icon(Icons.search)),
-        onTap: () async {
-          final picked = await _showUserPicker(context, state);
-          if (picked != null) onChanged(picked);
-        },
-      );
-    });
+    return BlocBuilder<UsersCubit, UsersState>(
+      builder: (context, state) {
+        String label = tr('loans.user');
+        final sel = state.users.where((u) => u.id == value).toList();
+        if (sel.isNotEmpty)
+          label = '${sel.first.firstName} ${sel.first.lastName}';
+        return TextFormField(
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: tr('loans.user'),
+            hintText: label,
+            suffixIcon: const Icon(Icons.search),
+          ),
+          onTap: () async {
+            final picked = await _showUserPicker(context, state);
+            if (picked != null) onChanged(picked);
+          },
+        );
+      },
+    );
   }
 }
 
@@ -508,42 +524,52 @@ Future<int?> _showBankPicker(BuildContext context, BanksState state) async {
           right: 16,
           top: 16,
         ),
-        child: StatefulBuilder(builder: (context, setStateSB) {
-          void apply(String q) {
-            setStateSB(() {
-              final pat = q.trim();
-              filtered = state.banks
-                  .where((b) => '${b.bank.bankName} ${b.bank.accountName}'.contains(pat))
-                  .map((e) => e.bank.id)
-                  .toList();
-            });
-          }
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                decoration: InputDecoration(hintText: tr('transactions.search_bank')),
-                onChanged: apply,
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 320,
-                child: ListView.builder(
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final id = filtered[index];
-                    final b = state.banks.firstWhere((e) => e.bank.id == id);
-                    return ListTile(
-                      title: Text('${b.bank.bankName} · ${b.bank.accountName}'),
-                      onTap: () => Navigator.pop(context, id),
-                    );
-                  },
+        child: StatefulBuilder(
+          builder: (context, setStateSB) {
+            void apply(String q) {
+              setStateSB(() {
+                final pat = q.trim();
+                filtered = state.banks
+                    .where(
+                      (b) => '${b.bank.bankName} ${b.bank.accountName}'
+                          .contains(pat),
+                    )
+                    .map((e) => e.bank.id)
+                    .toList();
+              });
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    hintText: tr('transactions.search_bank'),
+                  ),
+                  onChanged: apply,
                 ),
-              ),
-            ],
-          );
-        }),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 320,
+                  child: ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final id = filtered[index];
+                      final b = state.banks.firstWhere((e) => e.bank.id == id);
+                      return ListTile(
+                        title: Text(
+                          '${b.bank.bankName} · ${b.bank.accountName}',
+                        ),
+                        onTap: () => Navigator.pop(context, id),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       );
     },
   );
@@ -563,42 +589,47 @@ Future<int?> _showUserPicker(BuildContext context, UsersState state) async {
           right: 16,
           top: 16,
         ),
-        child: StatefulBuilder(builder: (context, setStateSB) {
-          void apply(String q) {
-            setStateSB(() {
-              final pat = q.trim();
-              filtered = state.users
-                  .where((u) => '${u.firstName} ${u.lastName}'.contains(pat))
-                  .map((e) => e.id)
-                  .toList();
-            });
-          }
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: controller,
-                decoration: InputDecoration(hintText: tr('transactions.search_user')),
-                onChanged: apply,
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 320,
-                child: ListView.builder(
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final id = filtered[index];
-                    final u = state.users.firstWhere((e) => e.id == id);
-                    return ListTile(
-                      title: Text('${u.firstName} ${u.lastName}'),
-                      onTap: () => Navigator.pop(context, id),
-                    );
-                  },
+        child: StatefulBuilder(
+          builder: (context, setStateSB) {
+            void apply(String q) {
+              setStateSB(() {
+                final pat = q.trim();
+                filtered = state.users
+                    .where((u) => '${u.firstName} ${u.lastName}'.contains(pat))
+                    .map((e) => e.id)
+                    .toList();
+              });
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    hintText: tr('transactions.search_user'),
+                  ),
+                  onChanged: apply,
                 ),
-              ),
-            ],
-          );
-        }),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 320,
+                  child: ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final id = filtered[index];
+                      final u = state.users.firstWhere((e) => e.id == id);
+                      return ListTile(
+                        title: Text('${u.firstName} ${u.lastName}'),
+                        onTap: () => Navigator.pop(context, id),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       );
     },
   );
