@@ -7,7 +7,10 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData light({double scale = 1.0}) {
-    final colorScheme = ColorScheme.fromSeed(seedColor: AppColors.primary, brightness: Brightness.light);
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.light,
+    );
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
@@ -27,7 +30,10 @@ class AppTheme {
   }
 
   static ThemeData dark({double scale = 1.0}) {
-    final colorScheme = ColorScheme.fromSeed(seedColor: AppColors.primary, brightness: Brightness.dark);
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.dark,
+    );
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
@@ -44,5 +50,3 @@ class AppTheme {
     );
   }
 }
-
-

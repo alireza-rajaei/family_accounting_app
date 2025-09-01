@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 
 import '../di/locator.dart';
 import '../presentation/cubits/auth_cubit.dart';
@@ -34,7 +34,10 @@ class FamilyAccountingApp extends StatelessWidget {
             supportedLocales: context.supportedLocales,
             localizationsDelegates: context.localizationDelegates,
             builder: (context, child) {
-              return Directionality(textDirection: TextDirection.rtl, child: child ?? const SizedBox());
+              return Directionality(
+                textDirection: TextDirection.rtl,
+                child: child ?? const SizedBox(),
+              );
             },
           );
         },
@@ -42,5 +45,3 @@ class FamilyAccountingApp extends StatelessWidget {
     );
   }
 }
-
-

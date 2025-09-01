@@ -55,6 +55,40 @@
     "create": "ایجاد بانک",
     "delete": "حذف",
     "confirm_delete": "آیا از حذف {name} مطمئن هستید؟"
+  },
+  "transactions": {
+    "title": "تراکنش‌ها",
+    "search_user": "جستجوی کاربر",
+    "search_bank": "جستجوی بانک",
+    "filters": "فیلترها",
+    "type": "نوع",
+    "deposit": "واریز",
+    "withdraw": "برداشت",
+    "deposit_kind": "نوع واریز",
+    "withdraw_kind": "نوع برداشت",
+    "amount": "مبلغ",
+    "note": "توضیحات",
+    "date": "تاریخ",
+    "create": "ایجاد تراکنش",
+    "save": "ذخیره تغییرات",
+    "delete": "حذف تراکنش",
+    "not_found": "تراکنشی یافت نشد"
+  },
+  "loans": {
+    "title": "وام‌ها",
+    "user": "کاربر",
+    "principal": "مبلغ وام",
+    "installments": "تعداد اقساط",
+    "note": "یادداشت",
+    "remaining": "باقیمانده",
+    "add": "افزودن وام",
+    "edit": "ویرایش وام",
+    "save": "ذخیره تغییرات",
+    "create": "ایجاد وام",
+    "payments": "پرداخت‌ها",
+    "add_payment": "ثبت قسط",
+    "amount": "مبلغ",
+    "bank": "بانک"
   }
 }
 
