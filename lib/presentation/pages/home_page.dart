@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 import '../../di/locator.dart';
 import '../cubits/banks_cubit.dart';
@@ -32,7 +33,7 @@ class _HomeView extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Chart card placeholder: simple horizontal bars per bank deposit/withdraw
+          // Chart card with fl_chart: per-bank deposit/withdraw
           StreamBuilder<List<(String bankName, int deposit, int withdraw)>>(
             stream: repo.watchBankFlowSums(),
             builder: (context, snapshot) {
@@ -48,36 +49,74 @@ class _HomeView extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 12),
-                      for (final row in data)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(row.$1),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    flex: (row.$2.abs() + 1),
-                                    child: Container(
-                                      height: 8,
+                      SizedBox(
+                        height: 220,
+                        child: BarChart(
+                          BarChartData(
+                            barGroups: [
+                              for (int i = 0; i < data.length; i++)
+                                BarChartGroupData(
+                                  x: i,
+                                  barsSpace: 6,
+                                  showingTooltipIndicators: const [0, 1],
+                                  barRods: [
+                                    BarChartRodData(
+                                      toY: data[i].$2.toDouble(),
                                       color: const Color(0xFF10B981),
+                                      borderRadius: BorderRadius.circular(2),
+                                      width: 7,
                                     ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    flex: (row.$3.abs() + 1),
-                                    child: Container(
-                                      height: 8,
+                                    BarChartRodData(
+                                      toY: data[i].$3.toDouble(),
                                       color: const Color(0xFFEF4444),
+                                      borderRadius: BorderRadius.circular(2),
+                                      width: 7,
                                     ),
-                                  ),
-                                ],
-                              ),
+                                  ],
+                                ),
                             ],
+                            titlesData: FlTitlesData(
+                              leftTitles: const AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 36,
+                                ),
+                              ),
+                              rightTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              topTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false),
+                              ),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    final idx = value.toInt();
+                                    if (idx < 0 || idx >= data.length)
+                                      return const SizedBox();
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: Text(
+                                        data[idx].$1,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                            gridData: const FlGridData(show: true),
+                            barTouchData: BarTouchData(enabled: true),
                           ),
+                          swapAnimationDuration: const Duration(
+                            milliseconds: 600,
+                          ),
+                          swapAnimationCurve: Curves.easeOutCubic,
                         ),
+                      ),
                     ],
                   ),
                 ),
