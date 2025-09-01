@@ -63,11 +63,26 @@ class _ShellScaffoldState extends State<ShellScaffold> {
         selectedIndex: _currentIndexByLocation(location),
         onDestinationSelected: _onItemTapped,
         destinations: [
-          NavigationDestination(icon: const Icon(Icons.home_outlined), label: tr('tabs.home')),
-          NavigationDestination(icon: const Icon(Icons.swap_vert), label: tr('tabs.transactions')),
-          NavigationDestination(icon: const Icon(Icons.request_quote_outlined), label: tr('tabs.loans')),
-          NavigationDestination(icon: const Icon(Icons.people_alt_outlined), label: tr('tabs.users')),
-          NavigationDestination(icon: const Icon(Icons.account_balance_outlined), label: tr('tabs.banks')),
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            label: tr('tabs.home'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.swap_vert),
+            label: tr('tabs.transactions'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.request_quote_outlined),
+            label: tr('tabs.loans'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.people_alt_outlined),
+            label: tr('tabs.users'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.account_balance_outlined),
+            label: tr('tabs.banks'),
+          ),
         ],
       ),
     );
@@ -91,7 +106,9 @@ class _AppDrawer extends StatelessWidget {
                     ? 'آخرین ورود: ${settings.lastLoginAt}'
                     : 'آخرین ورود: -',
               ),
-              currentAccountPicture: const CircleAvatar(child: Icon(Icons.person)),
+              currentAccountPicture: const CircleAvatar(
+                child: Icon(Icons.person),
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.text_increase),
@@ -101,7 +118,8 @@ class _AppDrawer extends StatelessWidget {
                 final cubit = context.read<SettingsCubit>();
                 final value = await showDialog<double>(
                   context: context,
-                  builder: (context) => _FontScaleDialog(current: settings.fontScale),
+                  builder: (context) =>
+                      _FontScaleDialog(current: settings.fontScale),
                 );
                 if (value != null) cubit.setFontScale(value);
               },
@@ -110,15 +128,24 @@ class _AppDrawer extends StatelessWidget {
               leading: const Icon(Icons.person_outline),
               title: Text(tr('drawer.change_username')),
               onTap: () async {
-                final controller = TextEditingController(text: settings.username);
+                final controller = TextEditingController(
+                  text: settings.username,
+                );
                 final result = await showDialog<String>(
                   context: context,
                   builder: (context) => AlertDialog(
                     title: Text(tr('login.username')),
                     content: TextField(controller: controller),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: const Text('انصراف')),
-                      FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('ذخیره')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('انصراف'),
+                      ),
+                      FilledButton(
+                        onPressed: () =>
+                            Navigator.pop(context, controller.text.trim()),
+                        child: const Text('ذخیره'),
+                      ),
                     ],
                   ),
                 );
@@ -132,9 +159,9 @@ class _AppDrawer extends StatelessWidget {
               secondary: const Icon(Icons.dark_mode_outlined),
               title: Text(tr('drawer.theme')),
               value: settings.themeMode == ThemeMode.dark,
-              onChanged: (v) => context
-                  .read<SettingsCubit>()
-                  .setThemeMode(v ? ThemeMode.dark : ThemeMode.light),
+              onChanged: (v) => context.read<SettingsCubit>().setThemeMode(
+                v ? ThemeMode.dark : ThemeMode.light,
+              ),
             ),
             const Divider(),
             ListTile(
@@ -188,8 +215,14 @@ class _FontScaleDialogState extends State<_FontScaleDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('انصراف')),
-        FilledButton(onPressed: () => Navigator.pop(context, value), child: const Text('تأیید')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('انصراف'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, value),
+          child: const Text('تأیید'),
+        ),
       ],
     );
   }
@@ -198,24 +231,34 @@ class _FontScaleDialogState extends State<_FontScaleDialog> {
 Future<void> _doBackup(BuildContext context) async {
   final backupRepo = locator<BackupRepository>();
   final json = await backupRepo.exportJson();
-  final res = await FilePicker.platform.saveFile(dialogTitle: 'ذخیره فایل پشتیبان', fileName: 'backup.json');
+  final res = await FilePicker.platform.saveFile(
+    dialogTitle: 'ذخیره فایل پشتیبان',
+    fileName: 'backup.json',
+  );
   if (res != null) {
     try {
       // If running on platforms with IO access
       await io.File(res).writeAsString(json);
       // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('فایل پشتیبان ذخیره شد')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('فایل پشتیبان ذخیره شد')));
     } catch (_) {
       // Fallback: copy to clipboard
       await Clipboard.setData(ClipboardData(text: json));
       // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('متن پشتیبان در کلیپ‌بورد کپی شد')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('متن پشتیبان در کلیپ‌بورد کپی شد')),
+      );
     }
   }
 }
 
 Future<void> _doRestore(BuildContext context) async {
-  final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+  final result = await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    allowedExtensions: ['json'],
+  );
   if (result == null || result.files.isEmpty) return;
   final bytes = result.files.single.bytes;
   final path = result.files.single.path;
@@ -231,11 +274,13 @@ Future<void> _doRestore(BuildContext context) async {
     final map = jsonDecode(content) as Map<String, dynamic>;
     await locator<BackupRepository>().importJson(map);
     // ignore: use_build_context_synchronously
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('بازیابی با موفقیت انجام شد')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('بازیابی با موفقیت انجام شد')));
   } catch (e) {
     // ignore: use_build_context_synchronously
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطا در بازیابی: $e')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('خطا در بازیابی: $e')));
   }
 }
-
-
