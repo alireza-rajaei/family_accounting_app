@@ -11,7 +11,9 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Admins, Users, Banks, Transactions, Loans, LoanPayments])
+@DriftDatabase(
+  tables: [Admins, Users, Banks, Transactions, Loans, LoanPayments],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -30,5 +32,3 @@ LazyDatabase _openConnection() {
     }
   });
 }
-
-
