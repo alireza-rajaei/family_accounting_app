@@ -6,6 +6,7 @@ import '../data/repositories/users_repository.dart';
 import '../data/repositories/banks_repository.dart';
 import '../data/repositories/transactions_repository.dart';
 import '../data/repositories/loans_repository.dart';
+import '../data/repositories/backup_repository.dart';
 
 final GetIt locator = GetIt.instance;
 
@@ -25,5 +26,8 @@ Future<void> setupLocator() async {
   );
   locator.registerLazySingleton<LoansRepository>(
     () => LoansRepository(locator<AppDatabase>()),
+  );
+  locator.registerLazySingleton<BackupRepository>(
+    () => BackupRepository(locator<AppDatabase>()),
   );
 }

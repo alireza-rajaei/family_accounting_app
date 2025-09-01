@@ -33,7 +33,7 @@ class _HomeView extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // Chart card placeholder: simple horizontal bars per bank deposit/withdraw
-          StreamBuilder<List<(String bankName, int deposit, int withdraw)>>( 
+          StreamBuilder<List<(String bankName, int deposit, int withdraw)>>(
             stream: repo.watchBankFlowSums(),
             builder: (context, snapshot) {
               final data = snapshot.data ?? [];
@@ -43,7 +43,10 @@ class _HomeView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(tr('home.chart_card'), style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        tr('home.chart_card'),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 12),
                       for (final row in data)
                         Padding(
@@ -53,23 +56,25 @@ class _HomeView extends StatelessWidget {
                             children: [
                               Text(row.$1),
                               const SizedBox(height: 4),
-                              Row(children: [
-                                Expanded(
-                                  flex: (row.$2.abs() + 1),
-                                  child: Container(
-                                    height: 8,
-                                    color: const Color(0xFF10B981),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    flex: (row.$2.abs() + 1),
+                                    child: Container(
+                                      height: 8,
+                                      color: const Color(0xFF10B981),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  flex: (row.$3.abs() + 1),
-                                  child: Container(
-                                    height: 8,
-                                    color: const Color(0xFFEF4444),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    flex: (row.$3.abs() + 1),
+                                    child: Container(
+                                      height: 8,
+                                      color: const Color(0xFFEF4444),
+                                    ),
                                   ),
-                                ),
-                              ]),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -89,15 +94,29 @@ class _HomeView extends StatelessWidget {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(tr('home.balances_card'), style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        tr('home.balances_card'),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 12),
                       for (final b in state.banks)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Row(
                             children: [
-                              Expanded(child: Text('${b.bank.bankName} · ${b.bank.accountName}')),
-                              Text(_formatCurrency(b.balance), style: TextStyle(color: b.balance >= 0 ? Colors.green : Colors.red)),
+                              Expanded(
+                                child: Text(
+                                  '${b.bank.bankName} · ${b.bank.accountName}',
+                                ),
+                              ),
+                              Text(
+                                _formatCurrency(b.balance),
+                                style: TextStyle(
+                                  color: b.balance >= 0
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -116,12 +135,18 @@ class _HomeView extends StatelessWidget {
                 children: [
                   Expanded(
                     child: BlocBuilder<UsersCubit, UsersState>(
-                      builder: (context, state) => _StatTile(label: 'کاربران', value: state.users.length.toString()),
+                      builder: (context, state) => _StatTile(
+                        label: 'کاربران',
+                        value: state.users.length.toString(),
+                      ),
                     ),
                   ),
                   Expanded(
                     child: BlocBuilder<TransactionsCubit, TransactionsState>(
-                      builder: (context, state) => _StatTile(label: 'تعداد تراکنش', value: state.items.length.toString()),
+                      builder: (context, state) => _StatTile(
+                        label: 'تعداد تراکنش',
+                        value: state.items.length.toString(),
+                      ),
                     ),
                   ),
                 ],
@@ -162,5 +187,3 @@ class _StatTile extends StatelessWidget {
     );
   }
 }
-
-

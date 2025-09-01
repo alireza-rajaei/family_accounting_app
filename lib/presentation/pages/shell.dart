@@ -1,9 +1,15 @@
+import 'dart:convert';
+import 'dart:io' as io;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../cubits/settings_cubit.dart';
+import '../../di/locator.dart';
+import '../../data/repositories/backup_repository.dart';
 
 class ShellScaffold extends StatefulWidget {
   final Widget child;
@@ -44,6 +50,8 @@ class _ShellScaffoldState extends State<ShellScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    // final settings = context.watch<SettingsCubit>().state;
+
     final location = GoRouterState.of(context).uri.toString();
     // final settings = context.watch<SettingsCubit>().state;
 
@@ -133,14 +141,14 @@ class _AppDrawer extends StatelessWidget {
               leading: const Icon(Icons.backup_outlined),
               title: Text(tr('drawer.backup')),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('به زودی...')));
+                _doBackup(context);
               },
             ),
             ListTile(
               leading: const Icon(Icons.restore_outlined),
               title: Text(tr('drawer.restore')),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('به زودی...')));
+                _doRestore(context);
               },
             ),
           ],
@@ -184,6 +192,49 @@ class _FontScaleDialogState extends State<_FontScaleDialog> {
         FilledButton(onPressed: () => Navigator.pop(context, value), child: const Text('تأیید')),
       ],
     );
+  }
+}
+
+Future<void> _doBackup(BuildContext context) async {
+  final backupRepo = locator<BackupRepository>();
+  final json = await backupRepo.exportJson();
+  final res = await FilePicker.platform.saveFile(dialogTitle: 'ذخیره فایل پشتیبان', fileName: 'backup.json');
+  if (res != null) {
+    try {
+      // If running on platforms with IO access
+      await io.File(res).writeAsString(json);
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('فایل پشتیبان ذخیره شد')));
+    } catch (_) {
+      // Fallback: copy to clipboard
+      await Clipboard.setData(ClipboardData(text: json));
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('متن پشتیبان در کلیپ‌بورد کپی شد')));
+    }
+  }
+}
+
+Future<void> _doRestore(BuildContext context) async {
+  final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+  if (result == null || result.files.isEmpty) return;
+  final bytes = result.files.single.bytes;
+  final path = result.files.single.path;
+  String content;
+  if (bytes != null) {
+    content = String.fromCharCodes(bytes);
+  } else if (path != null) {
+    content = await io.File(path).readAsString();
+  } else {
+    return;
+  }
+  try {
+    final map = jsonDecode(content) as Map<String, dynamic>;
+    await locator<BackupRepository>().importJson(map);
+    // ignore: use_build_context_synchronously
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('بازیابی با موفقیت انجام شد')));
+  } catch (e) {
+    // ignore: use_build_context_synchronously
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطا در بازیابی: $e')));
   }
 }
 
