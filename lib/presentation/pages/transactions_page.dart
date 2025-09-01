@@ -49,12 +49,21 @@ class _TransactionsView extends StatelessWidget {
                       final trn = it.transaction;
                       final isDeposit = trn.type == 'deposit';
                       return ListTile(
-                        leading: Icon(isDeposit ? Icons.south_west : Icons.north_east, color: isDeposit ? Colors.green : Colors.red),
-                        title: Text(it.user != null ? '${it.user!.firstName} ${it.user!.lastName}' : it.bank.bankName),
+                        leading: Icon(
+                          isDeposit ? Icons.south_west : Icons.north_east,
+                          color: isDeposit ? Colors.green : Colors.red,
+                        ),
+                        title: Text(
+                          it.user != null
+                              ? '${it.user!.firstName} ${it.user!.lastName}'
+                              : it.bank.bankName,
+                        ),
                         subtitle: Text(it.bank.accountName),
                         trailing: Text(
                           _formatCurrency(trn.amount),
-                          style: TextStyle(color: isDeposit ? Colors.green : Colors.red),
+                          style: TextStyle(
+                            color: isDeposit ? Colors.green : Colors.red,
+                          ),
                         ),
                         onTap: () => _openTransactionSheet(context, data: it),
                       );
@@ -100,17 +109,25 @@ class _FiltersBar extends StatelessWidget {
             value: cubit.state.filter.type,
             hint: Text(tr('transactions.type')),
             items: [
-              DropdownMenuItem(value: 'deposit', child: Text(tr('transactions.deposit'))),
-              DropdownMenuItem(value: 'withdraw', child: Text(tr('transactions.withdraw'))),
+              DropdownMenuItem(
+                value: 'deposit',
+                child: Text(tr('transactions.deposit')),
+              ),
+              DropdownMenuItem(
+                value: 'withdraw',
+                child: Text(tr('transactions.withdraw')),
+              ),
             ],
             onChanged: (v) {
-              cubit.updateFilter(TransactionsFilter(
-                from: cubit.state.filter.from,
-                to: cubit.state.filter.to,
-                type: v,
-                userId: cubit.state.filter.userId,
-                bankId: cubit.state.filter.bankId,
-              ));
+              cubit.updateFilter(
+                TransactionsFilter(
+                  from: cubit.state.filter.from,
+                  to: cubit.state.filter.to,
+                  type: v,
+                  userId: cubit.state.filter.userId,
+                  bankId: cubit.state.filter.bankId,
+                ),
+              );
             },
           ),
           _BankPicker(),
@@ -124,54 +141,79 @@ class _FiltersBar extends StatelessWidget {
 class _BankPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BanksCubit, BanksState>(builder: (context, state) {
-      final items = state.banks.map((e) => DropdownMenuItem(value: e.bank.id, child: Text('${e.bank.bankName} · ${e.bank.accountName}'))).toList();
-      final sel = context.read<TransactionsCubit>().state.filter.bankId;
-      return DropdownButton<int>(
-        value: sel,
-        hint: Text(tr('transactions.search_bank')),
-        items: items,
-        onChanged: (v) {
-          final c = context.read<TransactionsCubit>();
-          c.updateFilter(TransactionsFilter(
-            from: c.state.filter.from,
-            to: c.state.filter.to,
-            type: c.state.filter.type,
-            userId: c.state.filter.userId,
-            bankId: v,
-          ));
-        },
-      );
-    });
+    return BlocBuilder<BanksCubit, BanksState>(
+      builder: (context, state) {
+        final items = state.banks
+            .map(
+              (e) => DropdownMenuItem(
+                value: e.bank.id,
+                child: Text('${e.bank.bankName} · ${e.bank.accountName}'),
+              ),
+            )
+            .toList();
+        final sel = context.read<TransactionsCubit>().state.filter.bankId;
+        return DropdownButton<int>(
+          value: sel,
+          hint: Text(tr('transactions.search_bank')),
+          items: items,
+          onChanged: (v) {
+            final c = context.read<TransactionsCubit>();
+            c.updateFilter(
+              TransactionsFilter(
+                from: c.state.filter.from,
+                to: c.state.filter.to,
+                type: c.state.filter.type,
+                userId: c.state.filter.userId,
+                bankId: v,
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
 class _UserPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<UsersCubit, UsersState>(builder: (context, state) {
-      final items = state.users.map((u) => DropdownMenuItem(value: u.id, child: Text('${u.firstName} ${u.lastName}'))).toList();
-      final sel = context.read<TransactionsCubit>().state.filter.userId;
-      return DropdownButton<int>(
-        value: sel,
-        hint: Text(tr('transactions.search_user')),
-        items: items,
-        onChanged: (v) {
-          final c = context.read<TransactionsCubit>();
-          c.updateFilter(TransactionsFilter(
-            from: c.state.filter.from,
-            to: c.state.filter.to,
-            type: c.state.filter.type,
-            userId: v,
-            bankId: c.state.filter.bankId,
-          ));
-        },
-      );
-    });
+    return BlocBuilder<UsersCubit, UsersState>(
+      builder: (context, state) {
+        final items = state.users
+            .map(
+              (u) => DropdownMenuItem(
+                value: u.id,
+                child: Text('${u.firstName} ${u.lastName}'),
+              ),
+            )
+            .toList();
+        final sel = context.read<TransactionsCubit>().state.filter.userId;
+        return DropdownButton<int>(
+          value: sel,
+          hint: Text(tr('transactions.search_user')),
+          items: items,
+          onChanged: (v) {
+            final c = context.read<TransactionsCubit>();
+            c.updateFilter(
+              TransactionsFilter(
+                from: c.state.filter.from,
+                to: c.state.filter.to,
+                type: c.state.filter.type,
+                userId: v,
+                bankId: c.state.filter.bankId,
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
-Future<void> _openTransactionSheet(BuildContext context, {TransactionWithJoins? data}) async {
+Future<void> _openTransactionSheet(
+  BuildContext context, {
+  TransactionWithJoins? data,
+}) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -221,7 +263,8 @@ class _TransactionSheetState extends State<_TransactionSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.data != null;
-    final padding = MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
+    final padding =
+        MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
     return Padding(
       padding: padding,
       child: Form(
@@ -229,48 +272,80 @@ class _TransactionSheetState extends State<_TransactionSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(isEdit ? tr('transactions.save') : tr('transactions.create'), style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              isEdit ? tr('transactions.save') : tr('transactions.create'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: _BankDropdown(value: bankId, onChanged: (v) => setState(() => bankId = v))),
-              const SizedBox(width: 12),
-              Expanded(child: _UserDropdown(value: userId, onChanged: (v) => setState(() => userId = v))),
-            ]),
+            Row(
+              children: [
+                Expanded(
+                  child: _BankDropdown(
+                    value: bankId,
+                    onChanged: (v) => setState(() => bankId = v),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _UserDropdown(
+                    value: userId,
+                    onChanged: (v) => setState(() => userId = v),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
-            Row(children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: type,
-                  items: [
-                    DropdownMenuItem(value: 'deposit', child: Text(tr('transactions.deposit'))),
-                    DropdownMenuItem(value: 'withdraw', child: Text(tr('transactions.withdraw'))),
-                  ],
-                  onChanged: (v) => setState(() => type = v ?? 'deposit'),
-                  decoration: InputDecoration(labelText: tr('transactions.type')),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: type,
+                    items: [
+                      DropdownMenuItem(
+                        value: 'deposit',
+                        child: Text(tr('transactions.deposit')),
+                      ),
+                      DropdownMenuItem(
+                        value: 'withdraw',
+                        child: Text(tr('transactions.withdraw')),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() => type = v ?? 'deposit'),
+                    decoration: InputDecoration(
+                      labelText: tr('transactions.type'),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: amountCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: tr('transactions.amount')),
-                  validator: (v) => (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: amountCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: tr('transactions.amount'),
+                    ),
+                    validator: (v) =>
+                        (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
             const SizedBox(height: 12),
             if (type == 'deposit')
               TextFormField(
                 initialValue: depositKind,
                 onChanged: (v) => depositKind = v,
-                decoration: InputDecoration(labelText: tr('transactions.deposit_kind')),
+                decoration: InputDecoration(
+                  labelText: tr('transactions.deposit_kind'),
+                ),
               ),
             if (type == 'withdraw')
               TextFormField(
                 initialValue: withdrawKind,
                 onChanged: (v) => withdrawKind = v,
-                decoration: InputDecoration(labelText: tr('transactions.withdraw_kind')),
+                decoration: InputDecoration(
+                  labelText: tr('transactions.withdraw_kind'),
+                ),
               ),
             const SizedBox(height: 12),
             TextFormField(
@@ -294,7 +369,9 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                         type: type,
                         depositKind: depositKind,
                         withdrawKind: withdrawKind,
-                        note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
+                        note: noteCtrl.text.trim().isEmpty
+                            ? null
+                            : noteCtrl.text.trim(),
                       );
                     } else {
                       await c.add(
@@ -304,13 +381,17 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                         type: type,
                         depositKind: depositKind,
                         withdrawKind: withdrawKind,
-                        note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
+                        note: noteCtrl.text.trim().isEmpty
+                            ? null
+                            : noteCtrl.text.trim(),
                       );
                     }
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
-                child: Text(isEdit ? tr('transactions.save') : tr('transactions.create')),
+                child: Text(
+                  isEdit ? tr('transactions.save') : tr('transactions.create'),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -327,14 +408,23 @@ class _BankDropdown extends StatelessWidget {
   const _BankDropdown({required this.value, required this.onChanged});
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BanksCubit, BanksState>(builder: (context, state) {
-      return DropdownButtonFormField<int>(
-        value: value,
-        items: state.banks.map((e) => DropdownMenuItem(value: e.bank.id, child: Text('${e.bank.bankName} · ${e.bank.accountName}'))).toList(),
-        onChanged: onChanged,
-        decoration: InputDecoration(labelText: tr('banks.bank')),
-      );
-    });
+    return BlocBuilder<BanksCubit, BanksState>(
+      builder: (context, state) {
+        return DropdownButtonFormField<int>(
+          value: value,
+          items: state.banks
+              .map(
+                (e) => DropdownMenuItem(
+                  value: e.bank.id,
+                  child: Text('${e.bank.bankName} · ${e.bank.accountName}'),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+          decoration: InputDecoration(labelText: tr('banks.bank')),
+        );
+      },
+    );
   }
 }
 
@@ -344,15 +434,22 @@ class _UserDropdown extends StatelessWidget {
   const _UserDropdown({required this.value, required this.onChanged});
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<UsersCubit, UsersState>(builder: (context, state) {
-      return DropdownButtonFormField<int>(
-        value: value,
-        items: state.users.map((u) => DropdownMenuItem(value: u.id, child: Text('${u.firstName} ${u.lastName}'))).toList(),
-        onChanged: onChanged,
-        decoration: InputDecoration(labelText: tr('loans.user')),
-      );
-    });
+    return BlocBuilder<UsersCubit, UsersState>(
+      builder: (context, state) {
+        return DropdownButtonFormField<int>(
+          value: value,
+          items: state.users
+              .map(
+                (u) => DropdownMenuItem(
+                  value: u.id,
+                  child: Text('${u.firstName} ${u.lastName}'),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+          decoration: InputDecoration(labelText: tr('loans.user')),
+        );
+      },
+    );
   }
 }
-
-

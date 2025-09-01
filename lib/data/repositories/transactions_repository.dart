@@ -156,6 +156,27 @@ ORDER BY t.created_at DESC, t.id DESC
   Future<void> deleteTransaction(int id) async {
     await (db.delete(db.transactions)..where((t) => t.id.equals(id))).go();
   }
+
+  Stream<List<(String bankName, int deposit, int withdraw)>> watchBankFlowSums() {
+    const sql = '''
+SELECT b.bank_name,
+       COALESCE(SUM(CASE WHEN t.type = 'deposit' THEN t.amount END), 0) AS deposit,
+       COALESCE(SUM(CASE WHEN t.type = 'withdraw' THEN t.amount END), 0) AS withdraw
+FROM banks b
+LEFT JOIN transactions t ON t.bank_id = b.id
+GROUP BY b.bank_name
+ORDER BY b.bank_name
+''';
+    return db.customSelect(sql, readsFrom: {db.transactions, db.banks}).watch().map((rows) {
+      return rows
+          .map((r) => (
+                r.read<String>('bank_name'),
+                r.read<int>('deposit'),
+                r.read<int>('withdraw'),
+              ))
+          .toList();
+    });
+  }
 }
 
 
