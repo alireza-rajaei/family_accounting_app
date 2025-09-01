@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../di/locator.dart';
 import '../../data/local/db/app_database.dart';
 import '../cubits/users_cubit.dart';
+import '../../app/utils/format.dart';
 
 class UsersPage extends StatelessWidget {
   const UsersPage({super.key});
@@ -78,11 +79,18 @@ class _UsersViewState extends State<_UsersView> {
                       final u = state.users[index];
                       return ListTile(
                         title: Text('${u.firstName} ${u.lastName}'),
-                        subtitle: Text(
-                          [
-                            u.fatherName,
-                            u.mobileNumber,
-                          ].where((e) => (e ?? '').isNotEmpty).join(' · '),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              [
+                                u.fatherName,
+                                u.mobileNumber,
+                              ].where((e) => (e ?? '').isNotEmpty).join(' · '),
+                            ),
+                            const SizedBox(height: 2),
+                            _UserBalanceText(userId: u.id),
+                          ],
                         ),
                         trailing: PopupMenuButton<String>(
                           onSelected: (v) async {
@@ -157,6 +165,24 @@ class _UsersViewState extends State<_UsersView> {
         value: usersCubit,
         child: _UserSheet(user: user),
       ),
+    );
+  }
+}
+
+class _UserBalanceText extends StatelessWidget {
+  final int userId;
+  const _UserBalanceText({required this.userId});
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<int>(
+      future: context.read<UsersCubit>().getUserBalance(userId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Text('موجودی: ...');
+        }
+        final balance = snapshot.data ?? 0;
+        return Text('موجودی: ${formatThousands(balance)}');
+      },
     );
   }
 }

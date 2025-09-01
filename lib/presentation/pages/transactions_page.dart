@@ -9,6 +9,7 @@ import '../cubits/users_cubit.dart';
 import '../../data/repositories/transactions_repository.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/jalali_utils.dart';
+import '../../app/utils/thousands_input_formatter.dart';
 
 class TransactionsPage extends StatelessWidget {
   const TransactionsPage({super.key});
@@ -50,6 +51,11 @@ class _TransactionsView extends StatelessWidget {
                       final it = state.items[index];
                       final trn = it.transaction;
                       final isDeposit = trn.type == 'deposit';
+                      final kind = _kindLabel(
+                        trn.type,
+                        trn.depositKind,
+                        trn.withdrawKind,
+                      );
                       return ListTile(
                         leading: BankCircleAvatar(
                           bankKey: it.bank.bankKey,
@@ -60,8 +66,14 @@ class _TransactionsView extends StatelessWidget {
                               ? '${it.user!.firstName} ${it.user!.lastName}'
                               : it.bank.bankName,
                         ),
-                        subtitle: Text(
-                          '${it.bank.accountName} · ${JalaliUtils.formatJalali(trn.createdAt)}',
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${it.bank.accountName} · ${JalaliUtils.formatJalali(trn.createdAt)}',
+                            ),
+                            if (kind.isNotEmpty) Text(kind),
+                          ],
                         ),
                         trailing: Text(
                           _formatCurrency(trn.amount),
@@ -286,6 +298,7 @@ class _TransactionSheetState extends State<_TransactionSheet> {
   String type = 'deposit';
   String? depositKind;
   String? withdrawKind;
+  int? toBankId;
   final amountCtrl = TextEditingController();
   final noteCtrl = TextEditingController();
 
@@ -316,6 +329,16 @@ class _TransactionSheetState extends State<_TransactionSheet> {
     final isEdit = widget.data != null;
     final padding =
         MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
+    final depositOptions = <(String, String)>[
+      ('loan_installment', 'پرداخت قسط وام'),
+      ('deposit_to_user', 'واریز به حساب کاربری'),
+      ('deposit_to_bank_transfer', 'واریز به بانک (انتقال بین بانک‌ها)'),
+    ];
+    final withdrawOptions = <(String, String)>[
+      ('loan_principal', 'پرداخت وام به فرد'),
+      ('withdraw_from_user', 'برداشت از حساب کاربری'),
+      ('withdraw_from_bank_transfer', 'برداشت از بانک (انتقال بین بانک‌ها)'),
+    ];
     return Padding(
       padding: padding,
       child: SingleChildScrollView(
@@ -373,31 +396,66 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                     child: TextFormField(
                       controller: amountCtrl,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [ThousandsSeparatorInputFormatter()],
                       decoration: InputDecoration(
                         labelText: tr('transactions.amount'),
                       ),
                       validator: (v) =>
-                          (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+                          (_parseInt(v) == null) ? 'الزامی' : null,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               if (type == 'deposit')
-                TextFormField(
-                  initialValue: depositKind,
-                  onChanged: (v) => depositKind = v,
+                DropdownButtonFormField<String>(
+                  value: depositKind,
+                  items: depositOptions
+                      .map(
+                        (opt) => DropdownMenuItem(
+                          value: opt.$1,
+                          child: Text(opt.$2),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) => setState(() => depositKind = v),
                   decoration: InputDecoration(
                     labelText: tr('transactions.deposit_kind'),
                   ),
                 ),
               if (type == 'withdraw')
-                TextFormField(
-                  initialValue: withdrawKind,
-                  onChanged: (v) => withdrawKind = v,
+                DropdownButtonFormField<String>(
+                  value: withdrawKind,
+                  items: withdrawOptions
+                      .map(
+                        (opt) => DropdownMenuItem(
+                          value: opt.$1,
+                          child: Text(opt.$2),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) => setState(() => withdrawKind = v),
                   decoration: InputDecoration(
                     labelText: tr('transactions.withdraw_kind'),
                   ),
+                ),
+              if (type == 'deposit' &&
+                  depositKind == 'deposit_to_bank_transfer')
+                const SizedBox(height: 12),
+              if (type == 'deposit' &&
+                  depositKind == 'deposit_to_bank_transfer')
+                _DestinationBankDropdown(
+                  value: toBankId,
+                  onChanged: (v) => setState(() => toBankId = v),
+                ),
+              if (type == 'withdraw' &&
+                  withdrawKind == 'withdraw_from_bank_transfer')
+                const SizedBox(height: 12),
+              if (type == 'withdraw' &&
+                  withdrawKind == 'withdraw_from_bank_transfer')
+                _DestinationBankDropdown(
+                  value: toBankId,
+                  onChanged: (v) => setState(() => toBankId = v),
                 ),
               const SizedBox(height: 12),
               TextFormField(
@@ -411,7 +469,95 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                   onPressed: () async {
                     if (_formKey.currentState!.validate() && bankId != null) {
                       final c = context.read<TransactionsCubit>();
-                      final amount = int.parse(amountCtrl.text);
+                      final amount = _parseInt(amountCtrl.text)!;
+                      final isDepositTransfer =
+                          type == 'deposit' &&
+                          depositKind == 'deposit_to_bank_transfer';
+                      final isWithdrawTransfer =
+                          type == 'withdraw' &&
+                          withdrawKind == 'withdraw_from_bank_transfer';
+
+                      if ((isDepositTransfer || isWithdrawTransfer) &&
+                          toBankId != null) {
+                        final from = bankId!;
+                        final to = toBankId!;
+                        if (from == to) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'بانک مبدا و مقصد نباید یکسان باشند',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        // Balance check for transfer source
+                        final banksState = context.read<BanksCubit>().state;
+                        final srcMatch = banksState.banks.where(
+                          (b) => b.bank.id == from,
+                        );
+                        final srcBalance = srcMatch.isNotEmpty
+                            ? srcMatch.first.balance
+                            : 0;
+                        if (amount > srcBalance) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'مبلغ برداشت از موجودی بانک بیشتر است',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        await c.transferBetweenBanks(
+                          fromBankId: from,
+                          toBankId: to,
+                          amount: amount,
+                          note: noteCtrl.text.trim().isEmpty
+                              ? null
+                              : noteCtrl.text.trim(),
+                        );
+                        if (context.mounted) Navigator.pop(context);
+                        return;
+                      }
+                      // Balance check for normal withdraw
+                      if (type == 'withdraw') {
+                        final banksState = context.read<BanksCubit>().state;
+                        final srcMatch = banksState.banks.where(
+                          (b) => b.bank.id == bankId,
+                        );
+                        final srcBalance = srcMatch.isNotEmpty
+                            ? srcMatch.first.balance
+                            : 0;
+                        if (amount > srcBalance) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'مبلغ برداشت از موجودی بانک بیشتر است',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+
+                        // If withdraw from user account, check user balance too
+                        if (withdrawKind == 'withdraw_from_user' &&
+                            userId != null) {
+                          final userBalance = await context
+                              .read<UsersCubit>()
+                              .getUserBalance(userId!);
+                          if (amount > userBalance) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'مبلغ برداشت از موجودی کاربر بیشتر است',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                        }
+                      }
                       if (isEdit) {
                         await c.update(
                           id: widget.data!.transaction.id,
@@ -457,64 +603,155 @@ class _TransactionSheetState extends State<_TransactionSheet> {
   }
 }
 
-class _SearchableBankField extends StatelessWidget {
+int? _parseInt(String? v) {
+  if (v == null) return null;
+  final digits = v.replaceAll(',', '');
+  return int.tryParse(digits);
+}
+
+class _SearchableBankField extends StatefulWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
   const _SearchableBankField({required this.value, required this.onChanged});
   @override
+  State<_SearchableBankField> createState() => _SearchableBankFieldState();
+}
+
+class _SearchableBankFieldState extends State<_SearchableBankField> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _syncLabel();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SearchableBankField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _syncLabel();
+    }
+  }
+
+  void _syncLabel() {
+    final state = context.read<BanksCubit>().state;
+    String label = '';
+    if (widget.value != null) {
+      final match = state.banks.where((b) => b.bank.id == widget.value);
+      if (match.isNotEmpty) {
+        label =
+            '${match.first.bank.bankName} · ${match.first.bank.accountName}';
+      }
+    }
+    _controller.text = label;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BanksCubit, BanksState>(
-      builder: (context, state) {
-        String label = tr('banks.bank');
-        final selected = state.banks.firstWhere(
-          (e) => e.bank.id == value,
-          orElse: () => state.banks.isEmpty ? (throw '') : state.banks.first,
-        );
-        if (value != null &&
-            state.banks.isNotEmpty &&
-            selected.bank.id == value) {
-          label = '${selected.bank.bankName} · ${selected.bank.accountName}';
+    return TextFormField(
+      controller: _controller,
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: tr('banks.bank'),
+        suffixIcon: const Icon(Icons.search),
+      ),
+      onTap: () async {
+        final state = context.read<BanksCubit>().state;
+        final picked = await _showBankPicker(context, state);
+        if (picked != null) {
+          widget.onChanged(picked);
+          _syncLabel();
         }
-        return TextFormField(
-          readOnly: true,
-          decoration: InputDecoration(
-            labelText: tr('banks.bank'),
-            hintText: label,
-            suffixIcon: const Icon(Icons.search),
-          ),
-          onTap: () async {
-            final picked = await _showBankPicker(context, state);
-            if (picked != null) onChanged(picked);
-          },
-        );
       },
     );
   }
 }
 
-class _SearchableUserField extends StatelessWidget {
+class _SearchableUserField extends StatefulWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
   const _SearchableUserField({required this.value, required this.onChanged});
   @override
+  State<_SearchableUserField> createState() => _SearchableUserFieldState();
+}
+
+class _SearchableUserFieldState extends State<_SearchableUserField> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _syncLabel();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SearchableUserField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _syncLabel();
+    }
+  }
+
+  void _syncLabel() {
+    final state = context.read<UsersCubit>().state;
+    String label = '';
+    if (widget.value != null) {
+      final sel = state.users.where((u) => u.id == widget.value).toList();
+      if (sel.isNotEmpty)
+        label = '${sel.first.firstName} ${sel.first.lastName}';
+    }
+    _controller.text = label;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<UsersCubit, UsersState>(
+    return TextFormField(
+      controller: _controller,
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: tr('loans.user'),
+        suffixIcon: const Icon(Icons.search),
+      ),
+      onTap: () async {
+        final state = context.read<UsersCubit>().state;
+        final picked = await _showUserPicker(context, state);
+        if (picked != null) {
+          widget.onChanged(picked);
+          _syncLabel();
+        }
+      },
+    );
+  }
+}
+
+class _DestinationBankDropdown extends StatelessWidget {
+  final int? value;
+  final ValueChanged<int?> onChanged;
+  const _DestinationBankDropdown({
+    required this.value,
+    required this.onChanged,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<BanksCubit, BanksState>(
       builder: (context, state) {
-        String label = tr('loans.user');
-        final sel = state.users.where((u) => u.id == value).toList();
-        if (sel.isNotEmpty)
-          label = '${sel.first.firstName} ${sel.first.lastName}';
-        return TextFormField(
-          readOnly: true,
-          decoration: InputDecoration(
-            labelText: tr('loans.user'),
-            hintText: label,
-            suffixIcon: const Icon(Icons.search),
-          ),
-          onTap: () async {
-            final picked = await _showUserPicker(context, state);
-            if (picked != null) onChanged(picked);
-          },
+        final sourceBankId =
+            (context.findAncestorStateOfType<_TransactionSheetState>())?.bankId;
+        final items = state.banks
+            .where((b) => b.bank.id != sourceBankId)
+            .map(
+              (e) => DropdownMenuItem(
+                value: e.bank.id,
+                child: Text('${e.bank.bankName} · ${e.bank.accountName}'),
+              ),
+            )
+            .toList();
+        return DropdownButtonFormField<int>(
+          value: value,
+          items: items,
+          onChanged: onChanged,
+          decoration: const InputDecoration(labelText: 'بانک مقصد'),
         );
       },
     );
@@ -644,4 +881,34 @@ Future<int?> _showUserPicker(BuildContext context, UsersState state) async {
       );
     },
   );
+}
+
+String _kindLabel(String type, String? depositKind, String? withdrawKind) {
+  String? label;
+  if (type == 'deposit') {
+    switch (depositKind) {
+      case 'loan_installment':
+        label = 'پرداخت قسط وام';
+        break;
+      case 'deposit_to_user':
+        label = 'واریز به حساب کاربری';
+        break;
+      case 'deposit_to_bank_transfer':
+        label = 'واریز به بانک (انتقال بین بانک‌ها)';
+        break;
+    }
+  } else if (type == 'withdraw') {
+    switch (withdrawKind) {
+      case 'loan_principal':
+        label = 'پرداخت وام به فرد';
+        break;
+      case 'withdraw_from_user':
+        label = 'برداشت از حساب کاربری';
+        break;
+      case 'withdraw_from_bank_transfer':
+        label = 'برداشت از بانک (انتقال بین بانک‌ها)';
+        break;
+    }
+  }
+  return label == null ? '' : 'نوع: $label';
 }

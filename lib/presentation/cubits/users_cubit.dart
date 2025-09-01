@@ -10,10 +10,18 @@ class UsersState extends Equatable {
   final List<User> users;
   final String query;
   final bool loading;
-  const UsersState({this.users = const [], this.query = '', this.loading = false});
+  const UsersState({
+    this.users = const [],
+    this.query = '',
+    this.loading = false,
+  });
 
   UsersState copyWith({List<User>? users, String? query, bool? loading}) {
-    return UsersState(users: users ?? this.users, query: query ?? this.query, loading: loading ?? this.loading);
+    return UsersState(
+      users: users ?? this.users,
+      query: query ?? this.query,
+      loading: loading ?? this.loading,
+    );
   }
 
   @override
@@ -33,17 +41,41 @@ class UsersCubit extends Cubit<UsersState> {
     });
   }
 
-  Future<void> addUser({required String firstName, required String lastName, String? fatherName, String? mobile}) async {
-    await repository.addUser(firstName: firstName, lastName: lastName, fatherName: fatherName, mobileNumber: mobile);
+  Future<void> addUser({
+    required String firstName,
+    required String lastName,
+    String? fatherName,
+    String? mobile,
+  }) async {
+    await repository.addUser(
+      firstName: firstName,
+      lastName: lastName,
+      fatherName: fatherName,
+      mobileNumber: mobile,
+    );
   }
 
-  Future<void> updateUser({required int id, required String firstName, required String lastName, String? fatherName, String? mobile}) async {
-    await repository.updateUser(id: id, firstName: firstName, lastName: lastName, fatherName: fatherName, mobileNumber: mobile);
+  Future<void> updateUser({
+    required int id,
+    required String firstName,
+    required String lastName,
+    String? fatherName,
+    String? mobile,
+  }) async {
+    await repository.updateUser(
+      id: id,
+      firstName: firstName,
+      lastName: lastName,
+      fatherName: fatherName,
+      mobileNumber: mobile,
+    );
   }
 
   Future<void> deleteUser(int id) async {
     await repository.deleteUser(id);
   }
+
+  Future<int> getUserBalance(int userId) => repository.getUserBalance(userId);
 
   @override
   Future<void> close() {
@@ -51,5 +83,3 @@ class UsersCubit extends Cubit<UsersState> {
     return super.close();
   }
 }
-
-

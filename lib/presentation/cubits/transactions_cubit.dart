@@ -9,10 +9,22 @@ class TransactionsState extends Equatable {
   final List<TransactionWithJoins> items;
   final TransactionsFilter filter;
   final bool loading;
-  const TransactionsState({this.items = const [], this.filter = const TransactionsFilter(), this.loading = false});
+  const TransactionsState({
+    this.items = const [],
+    this.filter = const TransactionsFilter(),
+    this.loading = false,
+  });
 
-  TransactionsState copyWith({List<TransactionWithJoins>? items, TransactionsFilter? filter, bool? loading}) {
-    return TransactionsState(items: items ?? this.items, filter: filter ?? this.filter, loading: loading ?? this.loading);
+  TransactionsState copyWith({
+    List<TransactionWithJoins>? items,
+    TransactionsFilter? filter,
+    bool? loading,
+  }) {
+    return TransactionsState(
+      items: items ?? this.items,
+      filter: filter ?? this.filter,
+      loading: loading ?? this.loading,
+    );
   }
 
   @override
@@ -83,11 +95,23 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     await repository.deleteTransaction(id);
   }
 
+  Future<void> transferBetweenBanks({
+    required int fromBankId,
+    required int toBankId,
+    required int amount,
+    String? note,
+  }) async {
+    await repository.transferBetweenBanks(
+      fromBankId: fromBankId,
+      toBankId: toBankId,
+      amount: amount,
+      note: note,
+    );
+  }
+
   @override
   Future<void> close() {
     _sub?.cancel();
     return super.close();
   }
 }
-
-

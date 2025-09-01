@@ -6,7 +6,11 @@ class TransactionWithJoins {
   final Transaction transaction;
   final User? user;
   final Bank bank;
-  TransactionWithJoins({required this.transaction, required this.bank, this.user});
+  TransactionWithJoins({
+    required this.transaction,
+    required this.bank,
+    this.user,
+  });
 }
 
 class TransactionsFilter {
@@ -17,7 +21,15 @@ class TransactionsFilter {
   final String? withdrawKind; // when type == 'withdraw'
   final int? userId;
   final int? bankId;
-  const TransactionsFilter({this.from, this.to, this.type, this.depositKind, this.withdrawKind, this.userId, this.bankId});
+  const TransactionsFilter({
+    this.from,
+    this.to,
+    this.type,
+    this.depositKind,
+    this.withdrawKind,
+    this.userId,
+    this.bankId,
+  });
 }
 
 class TransactionsRepository {
@@ -57,8 +69,11 @@ class TransactionsRepository {
       vars.add(d.Variable.withInt(f.bankId!));
     }
 
-    final whereSql = whereClauses.isEmpty ? '' : 'WHERE ${whereClauses.join(' AND ')}';
-    final sql = '''
+    final whereSql = whereClauses.isEmpty
+        ? ''
+        : 'WHERE ${whereClauses.join(' AND ')}';
+    final sql =
+        '''
 SELECT t.*, b.id AS b_id, b.bank_key, b.bank_name, b.account_name, b.account_number, b.created_at AS b_created, b.updated_at AS b_updated,
        u.id AS u_id, u.first_name, u.last_name, u.father_name, u.mobile_number, u.created_at AS u_created, u.updated_at AS u_updated
 FROM transactions t
@@ -69,44 +84,54 @@ ORDER BY t.created_at DESC, t.id DESC
 ''';
 
     return db
-        .customSelect(sql, variables: vars, readsFrom: {db.transactions, db.banks, db.users})
+        .customSelect(
+          sql,
+          variables: vars,
+          readsFrom: {db.transactions, db.banks, db.users},
+        )
         .watch()
-        .map((rows) => rows.map((r) {
-              final tr = Transaction(
-                id: r.read<int>('id'),
-                bankId: r.read<int>('bank_id'),
-                userId: r.readNullable<int>('user_id'),
-                amount: r.read<int>('amount'),
-                type: r.read<String>('type'),
-                depositKind: r.readNullable<String>('deposit_kind'),
-                withdrawKind: r.readNullable<String>('withdraw_kind'),
-                note: r.readNullable<String>('note'),
-                createdAt: r.read<DateTime>('created_at'),
-                updatedAt: r.readNullable<DateTime>('updated_at'),
-              );
-              final bank = Bank(
-                id: r.read<int>('b_id'),
-                bankKey: r.read<String>('bank_key'),
-                bankName: r.read<String>('bank_name'),
-                accountName: r.read<String>('account_name'),
-                accountNumber: r.read<String>('account_number'),
-                createdAt: r.read<DateTime>('b_created'),
-                updatedAt: r.readNullable<DateTime>('b_updated'),
-              );
-              final uid = r.readNullable<int>('u_id');
-              final user = uid == null
-                  ? null
-                  : User(
-                      id: uid,
-                      firstName: r.read<String>('first_name'),
-                      lastName: r.read<String>('last_name'),
-                      fatherName: r.readNullable<String>('father_name'),
-                      mobileNumber: r.readNullable<String>('mobile_number'),
-                      createdAt: r.read<DateTime>('u_created'),
-                      updatedAt: r.readNullable<DateTime>('u_updated'),
-                    );
-              return TransactionWithJoins(transaction: tr, bank: bank, user: user);
-            }).toList());
+        .map(
+          (rows) => rows.map((r) {
+            final tr = Transaction(
+              id: r.read<int>('id'),
+              bankId: r.read<int>('bank_id'),
+              userId: r.readNullable<int>('user_id'),
+              amount: r.read<int>('amount'),
+              type: r.read<String>('type'),
+              depositKind: r.readNullable<String>('deposit_kind'),
+              withdrawKind: r.readNullable<String>('withdraw_kind'),
+              note: r.readNullable<String>('note'),
+              createdAt: r.read<DateTime>('created_at'),
+              updatedAt: r.readNullable<DateTime>('updated_at'),
+            );
+            final bank = Bank(
+              id: r.read<int>('b_id'),
+              bankKey: r.read<String>('bank_key'),
+              bankName: r.read<String>('bank_name'),
+              accountName: r.read<String>('account_name'),
+              accountNumber: r.read<String>('account_number'),
+              createdAt: r.read<DateTime>('b_created'),
+              updatedAt: r.readNullable<DateTime>('b_updated'),
+            );
+            final uid = r.readNullable<int>('u_id');
+            final user = uid == null
+                ? null
+                : User(
+                    id: uid,
+                    firstName: r.read<String>('first_name'),
+                    lastName: r.read<String>('last_name'),
+                    fatherName: r.readNullable<String>('father_name'),
+                    mobileNumber: r.readNullable<String>('mobile_number'),
+                    createdAt: r.read<DateTime>('u_created'),
+                    updatedAt: r.readNullable<DateTime>('u_updated'),
+                  );
+            return TransactionWithJoins(
+              transaction: tr,
+              bank: bank,
+              user: user,
+            );
+          }).toList(),
+        );
   }
 
   Future<int> addTransaction({
@@ -119,16 +144,20 @@ ORDER BY t.created_at DESC, t.id DESC
     String? note,
     DateTime? createdAt,
   }) async {
-    return db.into(db.transactions).insert(TransactionsCompanion.insert(
-          bankId: bankId,
-          userId: d.Value(userId),
-          amount: amount,
-          type: type,
-          depositKind: d.Value(depositKind),
-          withdrawKind: d.Value(withdrawKind),
-          note: d.Value(note),
-          createdAt: d.Value(createdAt ?? DateTime.now()),
-        ));
+    return db
+        .into(db.transactions)
+        .insert(
+          TransactionsCompanion.insert(
+            bankId: bankId,
+            userId: d.Value(userId),
+            amount: amount,
+            type: type,
+            depositKind: d.Value(depositKind),
+            withdrawKind: d.Value(withdrawKind),
+            note: d.Value(note),
+            createdAt: d.Value(createdAt ?? DateTime.now()),
+          ),
+        );
   }
 
   Future<void> updateTransaction({
@@ -141,23 +170,61 @@ ORDER BY t.created_at DESC, t.id DESC
     String? withdrawKind,
     String? note,
   }) async {
-    await (db.update(db.transactions)..where((t) => t.id.equals(id))).write(TransactionsCompanion(
-      bankId: d.Value(bankId),
-      userId: d.Value(userId),
-      amount: d.Value(amount),
-      type: d.Value(type),
-      depositKind: d.Value(depositKind),
-      withdrawKind: d.Value(withdrawKind),
-      note: d.Value(note),
-      updatedAt: d.Value(DateTime.now()),
-    ));
+    await (db.update(db.transactions)..where((t) => t.id.equals(id))).write(
+      TransactionsCompanion(
+        bankId: d.Value(bankId),
+        userId: d.Value(userId),
+        amount: d.Value(amount),
+        type: d.Value(type),
+        depositKind: d.Value(depositKind),
+        withdrawKind: d.Value(withdrawKind),
+        note: d.Value(note),
+        updatedAt: d.Value(DateTime.now()),
+      ),
+    );
   }
 
   Future<void> deleteTransaction(int id) async {
     await (db.delete(db.transactions)..where((t) => t.id.equals(id))).go();
   }
 
-  Stream<List<(String bankName, int deposit, int withdraw)>> watchBankFlowSums() {
+  Future<void> transferBetweenBanks({
+    required int fromBankId,
+    required int toBankId,
+    required int amount,
+    String? note,
+  }) async {
+    await db.transaction(() async {
+      final now = DateTime.now();
+      await db
+          .into(db.transactions)
+          .insert(
+            TransactionsCompanion.insert(
+              bankId: fromBankId,
+              amount: amount,
+              type: 'withdraw',
+              withdrawKind: const d.Value('withdraw_from_bank_transfer'),
+              note: d.Value(note),
+              createdAt: d.Value(now),
+            ),
+          );
+      await db
+          .into(db.transactions)
+          .insert(
+            TransactionsCompanion.insert(
+              bankId: toBankId,
+              amount: amount,
+              type: 'deposit',
+              depositKind: const d.Value('deposit_to_bank_transfer'),
+              note: d.Value(note),
+              createdAt: d.Value(now),
+            ),
+          );
+    });
+  }
+
+  Stream<List<(String bankName, int deposit, int withdraw)>>
+  watchBankFlowSums() {
     const sql = '''
 SELECT b.bank_name,
        COALESCE(SUM(CASE WHEN t.type = 'deposit' THEN t.amount END), 0) AS deposit,
@@ -167,16 +234,19 @@ LEFT JOIN transactions t ON t.bank_id = b.id
 GROUP BY b.bank_name
 ORDER BY b.bank_name
 ''';
-    return db.customSelect(sql, readsFrom: {db.transactions, db.banks}).watch().map((rows) {
-      return rows
-          .map((r) => (
-                r.read<String>('bank_name'),
-                r.read<int>('deposit'),
-                r.read<int>('withdraw'),
-              ))
-          .toList();
-    });
+    return db
+        .customSelect(sql, readsFrom: {db.transactions, db.banks})
+        .watch()
+        .map((rows) {
+          return rows
+              .map(
+                (r) => (
+                  r.read<String>('bank_name'),
+                  r.read<int>('deposit'),
+                  r.read<int>('withdraw'),
+                ),
+              )
+              .toList();
+        });
   }
 }
-
-

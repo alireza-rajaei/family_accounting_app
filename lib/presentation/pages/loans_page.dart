@@ -129,7 +129,7 @@ class _LoanDetailsSheet extends StatelessWidget {
             },
           ),
           const SizedBox(height: 12),
-          _AddPaymentRow(loanId: loan.id),
+          _AddPaymentRow(loan: loan),
         ],
       ),
     );
@@ -137,8 +137,8 @@ class _LoanDetailsSheet extends StatelessWidget {
 }
 
 class _AddPaymentRow extends StatefulWidget {
-  final int loanId;
-  const _AddPaymentRow({required this.loanId});
+  final Loan loan;
+  const _AddPaymentRow({required this.loan});
   @override
   State<_AddPaymentRow> createState() => _AddPaymentRowState();
 }
@@ -172,6 +172,7 @@ class _AddPaymentRowState extends State<_AddPaymentRow> {
               child: TextField(
                 controller: amountCtrl,
                 keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsSeparatorInputFormatter()],
                 decoration: InputDecoration(labelText: tr('loans.amount')),
               ),
             ),
@@ -187,10 +188,29 @@ class _AddPaymentRowState extends State<_AddPaymentRow> {
           width: double.infinity,
           child: FilledButton(
             onPressed: () async {
-              final amount = int.tryParse(amountCtrl.text);
+              final amount = _parseInt(amountCtrl.text);
               if (bankId != null && amount != null) {
+                // Remaining guard: prevent paying more than remaining
+                final loansState = context.read<LoansCubit>().state;
+                final matches = loansState.items
+                    .where((e) => e.loan.id == widget.loan.id)
+                    .toList();
+                final remaining = matches.isNotEmpty
+                    ? matches.first.remaining
+                    : widget.loan.principalAmount;
+                if (amount > remaining) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('مبلغ پرداختی از باقیمانده بیشتر است'),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
                 await context.read<LoansCubit>().addPayment(
-                  loanId: widget.loanId,
+                  loanId: widget.loan.id,
                   bankId: bankId!,
                   amount: amount,
                   note: noteCtrl.text.trim().isEmpty
@@ -205,6 +225,12 @@ class _AddPaymentRowState extends State<_AddPaymentRow> {
         ),
       ],
     );
+  }
+
+  int? _parseInt(String? v) {
+    if (v == null) return null;
+    final digits = v.replaceAll(',', '');
+    return int.tryParse(digits);
   }
 }
 
