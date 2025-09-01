@@ -78,7 +78,12 @@ class _UsersViewState extends State<_UsersView> {
                       final u = state.users[index];
                       return ListTile(
                         title: Text('${u.firstName} ${u.lastName}'),
-                        subtitle: Text([u.fatherName, u.mobileNumber].where((e) => (e ?? '').isNotEmpty).join(' · ')),
+                        subtitle: Text(
+                          [
+                            u.fatherName,
+                            u.mobileNumber,
+                          ].where((e) => (e ?? '').isNotEmpty).join(' · '),
+                        ),
                         trailing: PopupMenuButton<String>(
                           onSelected: (v) async {
                             if (v == 'edit') {
@@ -88,21 +93,42 @@ class _UsersViewState extends State<_UsersView> {
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: Text(tr('users.delete')),
-                                  content: Text(tr('users.confirm_delete', args: ['${u.firstName} ${u.lastName}'])),
+                                  content: Text(
+                                    tr(
+                                      'users.confirm_delete',
+                                      args: ['${u.firstName} ${u.lastName}'],
+                                    ),
+                                  ),
                                   actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('انصراف')),
-                                    FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('users.delete'))),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text('انصراف'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: Text(tr('users.delete')),
+                                    ),
                                   ],
                                 ),
                               );
                               if (ok == true && context.mounted) {
-                                await context.read<UsersCubit>().deleteUser(u.id);
+                                await context.read<UsersCubit>().deleteUser(
+                                  u.id,
+                                );
                               }
                             }
                           },
                           itemBuilder: (context) => [
-                            PopupMenuItem(value: 'edit', child: Text(tr('users.edit'))),
-                            PopupMenuItem(value: 'delete', child: Text(tr('users.delete'))),
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text(tr('users.edit')),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(tr('users.delete')),
+                            ),
                           ],
                         ),
                         onTap: () => _openUserSheet(context, user: u),
@@ -123,10 +149,14 @@ class _UsersViewState extends State<_UsersView> {
   }
 
   Future<void> _openUserSheet(BuildContext context, {User? user}) async {
+    final usersCubit = context.read<UsersCubit>();
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _UserSheet(user: user),
+      builder: (context) => BlocProvider.value(
+        value: usersCubit,
+        child: _UserSheet(user: user),
+      ),
     );
   }
 }
@@ -166,7 +196,8 @@ class _UserSheetState extends State<_UserSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.user != null;
-    final padding = MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
+    final padding =
+        MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
     return Padding(
       padding: padding,
       child: Form(
@@ -174,25 +205,36 @@ class _UserSheetState extends State<_UserSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(isEdit ? tr('users.edit') : tr('users.add'), style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              isEdit ? tr('users.edit') : tr('users.add'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
-            Row(children: [
-              Expanded(
-                child: TextFormField(
-                  controller: firstName,
-                  decoration: InputDecoration(labelText: tr('users.first_name')),
-                  validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: firstName,
+                    decoration: InputDecoration(
+                      labelText: tr('users.first_name'),
+                    ),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'الزامی' : null,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: lastName,
-                  decoration: InputDecoration(labelText: tr('users.last_name')),
-                  validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: lastName,
+                    decoration: InputDecoration(
+                      labelText: tr('users.last_name'),
+                    ),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'الزامی' : null,
+                  ),
                 ),
-              ),
-            ]),
+              ],
+            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: fatherName,
@@ -216,15 +258,23 @@ class _UserSheetState extends State<_UserSheet> {
                         id: widget.user!.id,
                         firstName: firstName.text.trim(),
                         lastName: lastName.text.trim(),
-                        fatherName: fatherName.text.trim().isEmpty ? null : fatherName.text.trim(),
-                        mobile: mobile.text.trim().isEmpty ? null : mobile.text.trim(),
+                        fatherName: fatherName.text.trim().isEmpty
+                            ? null
+                            : fatherName.text.trim(),
+                        mobile: mobile.text.trim().isEmpty
+                            ? null
+                            : mobile.text.trim(),
                       );
                     } else {
                       await cubit.addUser(
                         firstName: firstName.text.trim(),
                         lastName: lastName.text.trim(),
-                        fatherName: fatherName.text.trim().isEmpty ? null : fatherName.text.trim(),
-                        mobile: mobile.text.trim().isEmpty ? null : mobile.text.trim(),
+                        fatherName: fatherName.text.trim().isEmpty
+                            ? null
+                            : fatherName.text.trim(),
+                        mobile: mobile.text.trim().isEmpty
+                            ? null
+                            : mobile.text.trim(),
                       );
                     }
                     if (context.mounted) Navigator.pop(context);
@@ -240,5 +290,3 @@ class _UserSheetState extends State<_UserSheet> {
     );
   }
 }
-
-

@@ -8,6 +8,8 @@ import '../cubits/loans_cubit.dart';
 import '../cubits/users_cubit.dart';
 import '../cubits/banks_cubit.dart';
 import '../../app/utils/bank_icons.dart';
+import '../../app/utils/format.dart';
+import '../../app/utils/thousands_input_formatter.dart';
 
 class LoansPage extends StatelessWidget {
   const LoansPage({super.key});
@@ -42,8 +44,12 @@ class _LoansView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final it = state.items[index];
                 return ListTile(
-                  title: Text('ID ${it.loan.id} · ${it.loan.principalAmount}'),
-                  subtitle: Text('${tr('loans.remaining')}: ${it.remaining}'),
+                  title: Text(
+                    'ID ${it.loan.id} · ${formatThousands(it.loan.principalAmount)}',
+                  ),
+                  subtitle: Text(
+                    '${tr('loans.remaining')}: ${formatThousands(it.remaining)}',
+                  ),
                   trailing: Icon(
                     it.settled ? Icons.check_circle : Icons.pending,
                     color: it.settled ? Colors.green : Colors.orange,
@@ -68,7 +74,14 @@ Future<void> _openLoanDetails(BuildContext context, Loan loan) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    builder: (context) => _LoanDetailsSheet(loan: loan),
+    builder: (sheetContext) => MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.read<LoansCubit>()),
+        BlocProvider.value(value: context.read<UsersCubit>()),
+        BlocProvider.value(value: context.read<BanksCubit>()),
+      ],
+      child: _LoanDetailsSheet(loan: loan),
+    ),
   );
 }
 
@@ -108,7 +121,7 @@ class _LoanDetailsSheet extends StatelessWidget {
                       ),
                       title: Text('${bank.bankName} · ${bank.accountName}'),
                       subtitle: Text(trn.note ?? ''),
-                      trailing: Text(lp.amount.toString()),
+                      trailing: Text(formatThousands(lp.amount)),
                     );
                   },
                 ),
@@ -225,7 +238,14 @@ Future<void> _openLoanSheet(BuildContext context, {Loan? loan}) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    builder: (context) => _LoanSheet(loan: loan),
+    builder: (sheetContext) => MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.read<LoansCubit>()),
+        BlocProvider.value(value: context.read<UsersCubit>()),
+        BlocProvider.value(value: context.read<BanksCubit>()),
+      ],
+      child: _LoanSheet(loan: loan),
+    ),
   );
 }
 
@@ -239,6 +259,7 @@ class _LoanSheet extends StatefulWidget {
 class _LoanSheetState extends State<_LoanSheet> {
   final _formKey = GlobalKey<FormState>();
   int? userId;
+  int? bankId;
   final principalCtrl = TextEditingController();
   final installmentsCtrl = TextEditingController();
   final noteCtrl = TextEditingController();
@@ -268,93 +289,129 @@ class _LoanSheetState extends State<_LoanSheet> {
         MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
     return Padding(
       padding: padding,
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              isEdit ? tr('loans.edit') : tr('loans.add'),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            _SearchableUserField(
-              value: userId,
-              onChanged: (v) => setState(() => userId = v),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: principalCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: tr('loans.principal'),
-                    ),
-                    validator: (v) =>
-                        (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: installmentsCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: tr('loans.installments'),
-                    ),
-                    validator: (v) =>
-                        (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: noteCtrl,
-              decoration: InputDecoration(labelText: tr('loans.note')),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate() && userId != null) {
-                    final c = context.read<LoansCubit>();
-                    final principal = int.parse(principalCtrl.text);
-                    final inst = int.parse(installmentsCtrl.text);
-                    if (isEdit) {
-                      await c.updateLoan(
-                        id: widget.loan!.id,
-                        userId: userId!,
-                        principalAmount: principal,
-                        installments: inst,
-                        note: noteCtrl.text.trim().isEmpty
-                            ? null
-                            : noteCtrl.text.trim(),
-                      );
-                    } else {
-                      await c.addLoan(
-                        userId: userId!,
-                        principalAmount: principal,
-                        installments: inst,
-                        note: noteCtrl.text.trim().isEmpty
-                            ? null
-                            : noteCtrl.text.trim(),
-                      );
-                    }
-                    if (context.mounted) Navigator.pop(context);
-                  }
-                },
-                child: Text(isEdit ? tr('loans.save') : tr('loans.create')),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                isEdit ? tr('loans.edit') : tr('loans.add'),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-            ),
-            const SizedBox(height: 12),
-          ],
+              const SizedBox(height: 12),
+              _SearchableUserField(
+                value: userId,
+                onChanged: (v) => setState(() => userId = v),
+              ),
+              const SizedBox(height: 12),
+              _BankDropdown(
+                value: bankId,
+                onChanged: (v) => setState(() => bankId = v),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: principalCtrl,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [ThousandsSeparatorInputFormatter()],
+                      decoration: InputDecoration(
+                        labelText: tr('loans.principal'),
+                      ),
+                      validator: (v) =>
+                          (_parseInt(v) == null) ? 'الزامی' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: installmentsCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: tr('loans.installments'),
+                      ),
+                      validator: (v) =>
+                          (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: noteCtrl,
+                decoration: InputDecoration(labelText: tr('loans.note')),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    if (_formKey.currentState!.validate() && userId != null) {
+                      final c = context.read<LoansCubit>();
+                      final principal = _parseInt(principalCtrl.text)!;
+                      final inst = int.parse(installmentsCtrl.text);
+                      if (isEdit) {
+                        await c.updateLoan(
+                          id: widget.loan!.id,
+                          userId: userId!,
+                          principalAmount: principal,
+                          installments: inst,
+                          note: noteCtrl.text.trim().isEmpty
+                              ? null
+                              : noteCtrl.text.trim(),
+                        );
+                      } else {
+                        if (bankId == null) return;
+                        // Check bank balance before creating the loan & withdraw transaction
+                        final banksState = context.read<BanksCubit>().state;
+                        final match = banksState.banks.where(
+                          (b) => b.bank.id == bankId,
+                        );
+                        final currentBalance = match.isNotEmpty
+                            ? match.first.balance
+                            : 0;
+                        if (principal > currentBalance) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'مبلغ درخواست از موجودی بانک بیشتر است',
+                                ),
+                              ),
+                            );
+                          }
+                          return;
+                        }
+                        await c.addLoan(
+                          userId: userId!,
+                          bankId: bankId!,
+                          principalAmount: principal,
+                          installments: inst,
+                          note: noteCtrl.text.trim().isEmpty
+                              ? null
+                              : noteCtrl.text.trim(),
+                        );
+                      }
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  child: Text(isEdit ? tr('loans.save') : tr('loans.create')),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  int? _parseInt(String? v) {
+    if (v == null) return null;
+    final digits = v.replaceAll(',', '');
+    return int.tryParse(digits);
   }
 }
 

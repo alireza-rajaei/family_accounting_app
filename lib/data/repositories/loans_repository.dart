@@ -25,8 +25,10 @@ ORDER BY l.created_at DESC, l.id DESC
     return db
         .customSelect(sql, readsFrom: {db.loans, db.loanPayments})
         .watch()
-        .map((rows) => rows
-            .map((r) => LoanWithStats(
+        .map(
+          (rows) => rows
+              .map(
+                (r) => LoanWithStats(
                   loan: Loan(
                     id: r.read<int>('id'),
                     userId: r.read<int>('user_id'),
@@ -37,27 +39,80 @@ ORDER BY l.created_at DESC, l.id DESC
                     updatedAt: r.readNullable<DateTime>('updated_at'),
                   ),
                   paidAmount: r.read<int>('paid'),
-                ))
-            .toList());
+                ),
+              )
+              .toList(),
+        );
   }
 
-  Future<int> addLoan({required int userId, required int principalAmount, required int installments, String? note}) async {
-    return db.into(db.loans).insert(LoansCompanion.insert(
-          userId: userId,
-          principalAmount: principalAmount,
-          installments: installments,
-          note: d.Value(note),
-        ));
+  Future<int> addLoan({
+    required int userId,
+    required int principalAmount,
+    required int installments,
+    String? note,
+  }) async {
+    return db
+        .into(db.loans)
+        .insert(
+          LoansCompanion.insert(
+            userId: userId,
+            principalAmount: principalAmount,
+            installments: installments,
+            note: d.Value(note),
+          ),
+        );
   }
 
-  Future<void> updateLoan({required int id, required int userId, required int principalAmount, required int installments, String? note}) async {
-    await (db.update(db.loans)..where((l) => l.id.equals(id))).write(LoansCompanion(
-      userId: d.Value(userId),
-      principalAmount: d.Value(principalAmount),
-      installments: d.Value(installments),
-      note: d.Value(note),
-      updatedAt: d.Value(DateTime.now()),
-    ));
+  Future<int> addLoanWithTransaction({
+    required int userId,
+    required int bankId,
+    required int principalAmount,
+    required int installments,
+    String? note,
+  }) async {
+    return await db.transaction(() async {
+      final loanId = await db
+          .into(db.loans)
+          .insert(
+            LoansCompanion.insert(
+              userId: userId,
+              principalAmount: principalAmount,
+              installments: installments,
+              note: d.Value(note),
+            ),
+          );
+      await db
+          .into(db.transactions)
+          .insert(
+            TransactionsCompanion.insert(
+              bankId: bankId,
+              userId: d.Value(userId),
+              amount: principalAmount,
+              type: 'withdraw',
+              withdrawKind: const d.Value('loan_principal'),
+              note: d.Value(note),
+            ),
+          );
+      return loanId;
+    });
+  }
+
+  Future<void> updateLoan({
+    required int id,
+    required int userId,
+    required int principalAmount,
+    required int installments,
+    String? note,
+  }) async {
+    await (db.update(db.loans)..where((l) => l.id.equals(id))).write(
+      LoansCompanion(
+        userId: d.Value(userId),
+        principalAmount: d.Value(principalAmount),
+        installments: d.Value(installments),
+        note: d.Value(note),
+        updatedAt: d.Value(DateTime.now()),
+      ),
+    );
   }
 
   Future<void> deleteLoan(int id) async {
@@ -74,56 +129,73 @@ WHERE lp.loan_id = ?
 ORDER BY lp.paid_at DESC, lp.id DESC
 ''';
     return db
-        .customSelect(sql, variables: [d.Variable.withInt(loanId)], readsFrom: {db.loanPayments, db.transactions, db.banks})
+        .customSelect(
+          sql,
+          variables: [d.Variable.withInt(loanId)],
+          readsFrom: {db.loanPayments, db.transactions, db.banks},
+        )
         .watch()
-        .map((rows) => rows.map((r) {
-              final lp = LoanPayment(
-                id: r.read<int>('id'),
-                loanId: r.read<int>('loan_id'),
-                transactionId: r.read<int>('transaction_id'),
-                amount: r.read<int>('amount'),
-                paidAt: r.read<DateTime>('paid_at'),
-              );
-              final tr = Transaction(
-                id: r.read<int>('t.id'),
-                bankId: r.read<int>('bank_id'),
-                userId: r.readNullable<int>('user_id'),
-                amount: r.read<int>('t.amount'),
-                type: r.read<String>('type'),
-                depositKind: r.readNullable<String>('deposit_kind'),
-                withdrawKind: r.readNullable<String>('withdraw_kind'),
-                note: r.readNullable<String>('note'),
-                createdAt: r.read<DateTime>('t.created_at'),
-                updatedAt: r.readNullable<DateTime>('t.updated_at'),
-              );
-              final bank = Bank(
-                id: r.read<int>('b_id'),
-                bankKey: r.read<String>('bank_key'),
-                bankName: r.read<String>('bank_name'),
-                accountName: r.read<String>('account_name'),
-                accountNumber: r.read<String>('account_number'),
-                createdAt: r.read<DateTime>('b_created'),
-                updatedAt: r.readNullable<DateTime>('b_updated'),
-              );
-              return (lp, tr, bank);
-            }).toList());
+        .map(
+          (rows) => rows.map((r) {
+            final lp = LoanPayment(
+              id: r.read<int>('id'),
+              loanId: r.read<int>('loan_id'),
+              transactionId: r.read<int>('transaction_id'),
+              amount: r.read<int>('amount'),
+              paidAt: r.read<DateTime>('paid_at'),
+            );
+            final tr = Transaction(
+              id: r.read<int>('t.id'),
+              bankId: r.read<int>('bank_id'),
+              userId: r.readNullable<int>('user_id'),
+              amount: r.read<int>('t.amount'),
+              type: r.read<String>('type'),
+              depositKind: r.readNullable<String>('deposit_kind'),
+              withdrawKind: r.readNullable<String>('withdraw_kind'),
+              note: r.readNullable<String>('note'),
+              createdAt: r.read<DateTime>('t.created_at'),
+              updatedAt: r.readNullable<DateTime>('t.updated_at'),
+            );
+            final bank = Bank(
+              id: r.read<int>('b_id'),
+              bankKey: r.read<String>('bank_key'),
+              bankName: r.read<String>('bank_name'),
+              accountName: r.read<String>('account_name'),
+              accountNumber: r.read<String>('account_number'),
+              createdAt: r.read<DateTime>('b_created'),
+              updatedAt: r.readNullable<DateTime>('b_updated'),
+            );
+            return (lp, tr, bank);
+          }).toList(),
+        );
   }
 
-  Future<void> addPayment({required int loanId, required int bankId, required int amount, String? note}) async {
+  Future<void> addPayment({
+    required int loanId,
+    required int bankId,
+    required int amount,
+    String? note,
+  }) async {
     // Create a deposit transaction for loan installment
-    final trId = await db.into(db.transactions).insert(TransactionsCompanion.insert(
-          bankId: bankId,
-          amount: amount,
-          type: 'deposit',
-          depositKind: const d.Value('loan_installment'),
-          note: d.Value(note),
-        ));
-    await db.into(db.loanPayments).insert(LoanPaymentsCompanion.insert(
-          loanId: loanId,
-          transactionId: trId,
-          amount: amount,
-        ));
+    final trId = await db
+        .into(db.transactions)
+        .insert(
+          TransactionsCompanion.insert(
+            bankId: bankId,
+            amount: amount,
+            type: 'deposit',
+            depositKind: const d.Value('loan_installment'),
+            note: d.Value(note),
+          ),
+        );
+    await db
+        .into(db.loanPayments)
+        .insert(
+          LoanPaymentsCompanion.insert(
+            loanId: loanId,
+            transactionId: trId,
+            amount: amount,
+          ),
+        );
   }
 }
-
-

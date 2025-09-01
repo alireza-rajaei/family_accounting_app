@@ -1,4 +1,6 @@
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart'
+    show NativeDatabase; // for AppDatabase.test()
 
 import 'tables.dart';
 import 'connection/connection.dart';

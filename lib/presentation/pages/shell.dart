@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io' as io;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -231,26 +232,19 @@ class _FontScaleDialogState extends State<_FontScaleDialog> {
 Future<void> _doBackup(BuildContext context) async {
   final backupRepo = locator<BackupRepository>();
   final json = await backupRepo.exportJson();
+  final bytes = Uint8List.fromList(utf8.encode(json));
   final res = await FilePicker.platform.saveFile(
     dialogTitle: 'ذخیره فایل پشتیبان',
     fileName: 'backup.json',
+    type: FileType.custom,
+    allowedExtensions: ['json'],
+    bytes: bytes,
   );
   if (res != null) {
-    try {
-      // If running on platforms with IO access
-      await io.File(res).writeAsString(json);
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('فایل پشتیبان ذخیره شد')));
-    } catch (_) {
-      // Fallback: copy to clipboard
-      await Clipboard.setData(ClipboardData(text: json));
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('متن پشتیبان در کلیپ‌بورد کپی شد')),
-      );
-    }
+    // ignore: use_build_context_synchronously
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('فایل پشتیبان ذخیره شد')));
   }
 }
 

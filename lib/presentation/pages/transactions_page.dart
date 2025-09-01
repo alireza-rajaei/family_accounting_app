@@ -261,7 +261,14 @@ Future<void> _openTransactionSheet(
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    builder: (context) => _TransactionSheet(data: data),
+    builder: (sheetContext) => MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.read<TransactionsCubit>()),
+        BlocProvider.value(value: context.read<BanksCubit>()),
+        BlocProvider.value(value: context.read<UsersCubit>()),
+      ],
+      child: _TransactionSheet(data: data),
+    ),
   );
 }
 
@@ -311,135 +318,139 @@ class _TransactionSheetState extends State<_TransactionSheet> {
         MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
     return Padding(
       padding: padding,
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              isEdit ? tr('transactions.save') : tr('transactions.create'),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _SearchableBankField(
-                    value: bankId,
-                    onChanged: (v) => setState(() => bankId = v),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _SearchableUserField(
-                    value: userId,
-                    onChanged: (v) => setState(() => userId = v),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: type,
-                    items: [
-                      DropdownMenuItem(
-                        value: 'deposit',
-                        child: Text(tr('transactions.deposit')),
-                      ),
-                      DropdownMenuItem(
-                        value: 'withdraw',
-                        child: Text(tr('transactions.withdraw')),
-                      ),
-                    ],
-                    onChanged: (v) => setState(() => type = v ?? 'deposit'),
-                    decoration: InputDecoration(
-                      labelText: tr('transactions.type'),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                isEdit ? tr('transactions.save') : tr('transactions.create'),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SearchableBankField(
+                      value: bankId,
+                      onChanged: (v) => setState(() => bankId = v),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: amountCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: tr('transactions.amount'),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _SearchableUserField(
+                      value: userId,
+                      onChanged: (v) => setState(() => userId = v),
                     ),
-                    validator: (v) =>
-                        (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: type,
+                      items: [
+                        DropdownMenuItem(
+                          value: 'deposit',
+                          child: Text(tr('transactions.deposit')),
+                        ),
+                        DropdownMenuItem(
+                          value: 'withdraw',
+                          child: Text(tr('transactions.withdraw')),
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => type = v ?? 'deposit'),
+                      decoration: InputDecoration(
+                        labelText: tr('transactions.type'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: amountCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: tr('transactions.amount'),
+                      ),
+                      validator: (v) =>
+                          (int.tryParse(v ?? '') == null) ? 'الزامی' : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (type == 'deposit')
+                TextFormField(
+                  initialValue: depositKind,
+                  onChanged: (v) => depositKind = v,
+                  decoration: InputDecoration(
+                    labelText: tr('transactions.deposit_kind'),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (type == 'deposit')
-              TextFormField(
-                initialValue: depositKind,
-                onChanged: (v) => depositKind = v,
-                decoration: InputDecoration(
-                  labelText: tr('transactions.deposit_kind'),
+              if (type == 'withdraw')
+                TextFormField(
+                  initialValue: withdrawKind,
+                  onChanged: (v) => withdrawKind = v,
+                  decoration: InputDecoration(
+                    labelText: tr('transactions.withdraw_kind'),
+                  ),
                 ),
-              ),
-            if (type == 'withdraw')
+              const SizedBox(height: 12),
               TextFormField(
-                initialValue: withdrawKind,
-                onChanged: (v) => withdrawKind = v,
-                decoration: InputDecoration(
-                  labelText: tr('transactions.withdraw_kind'),
-                ),
+                controller: noteCtrl,
+                decoration: InputDecoration(labelText: tr('transactions.note')),
               ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: noteCtrl,
-              decoration: InputDecoration(labelText: tr('transactions.note')),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate() && bankId != null) {
-                    final c = context.read<TransactionsCubit>();
-                    final amount = int.parse(amountCtrl.text);
-                    if (isEdit) {
-                      await c.update(
-                        id: widget.data!.transaction.id,
-                        bankId: bankId!,
-                        userId: userId,
-                        amount: amount,
-                        type: type,
-                        depositKind: depositKind,
-                        withdrawKind: withdrawKind,
-                        note: noteCtrl.text.trim().isEmpty
-                            ? null
-                            : noteCtrl.text.trim(),
-                      );
-                    } else {
-                      await c.add(
-                        bankId: bankId!,
-                        userId: userId,
-                        amount: amount,
-                        type: type,
-                        depositKind: depositKind,
-                        withdrawKind: withdrawKind,
-                        note: noteCtrl.text.trim().isEmpty
-                            ? null
-                            : noteCtrl.text.trim(),
-                      );
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    if (_formKey.currentState!.validate() && bankId != null) {
+                      final c = context.read<TransactionsCubit>();
+                      final amount = int.parse(amountCtrl.text);
+                      if (isEdit) {
+                        await c.update(
+                          id: widget.data!.transaction.id,
+                          bankId: bankId!,
+                          userId: userId,
+                          amount: amount,
+                          type: type,
+                          depositKind: depositKind,
+                          withdrawKind: withdrawKind,
+                          note: noteCtrl.text.trim().isEmpty
+                              ? null
+                              : noteCtrl.text.trim(),
+                        );
+                      } else {
+                        await c.add(
+                          bankId: bankId!,
+                          userId: userId,
+                          amount: amount,
+                          type: type,
+                          depositKind: depositKind,
+                          withdrawKind: withdrawKind,
+                          note: noteCtrl.text.trim().isEmpty
+                              ? null
+                              : noteCtrl.text.trim(),
+                        );
+                      }
+                      if (context.mounted) Navigator.pop(context);
                     }
-                    if (context.mounted) Navigator.pop(context);
-                  }
-                },
-                child: Text(
-                  isEdit ? tr('transactions.save') : tr('transactions.create'),
+                  },
+                  child: Text(
+                    isEdit
+                        ? tr('transactions.save')
+                        : tr('transactions.create'),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-          ],
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );

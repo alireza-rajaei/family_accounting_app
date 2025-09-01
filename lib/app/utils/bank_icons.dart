@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class BankIcons {
   BankIcons._();
@@ -55,7 +56,7 @@ class _SvgOrPng extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (path.toLowerCase().endsWith('.svg')) {
-      return Image.asset(path.replaceAll('.svg', '.svg'), fit: BoxFit.contain);
+      return SvgPicture.asset(path, fit: BoxFit.contain);
     }
     return Image.asset(path, fit: BoxFit.contain);
   }

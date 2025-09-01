@@ -11,7 +11,8 @@ class LoansState extends Equatable {
   final bool loading;
   const LoansState({this.items = const [], this.loading = false});
 
-  LoansState copyWith({List<LoanWithStats>? items, bool? loading}) => LoansState(items: items ?? this.items, loading: loading ?? this.loading);
+  LoansState copyWith({List<LoanWithStats>? items, bool? loading}) =>
+      LoansState(items: items ?? this.items, loading: loading ?? this.loading);
   @override
   List<Object?> get props => [items, loading];
 }
@@ -29,21 +30,56 @@ class LoansCubit extends Cubit<LoansState> {
     });
   }
 
-  Future<void> addLoan({required int userId, required int principalAmount, required int installments, String? note}) async {
-    await repository.addLoan(userId: userId, principalAmount: principalAmount, installments: installments, note: note);
+  Future<void> addLoan({
+    required int userId,
+    required int bankId,
+    required int principalAmount,
+    required int installments,
+    String? note,
+  }) async {
+    await repository.addLoanWithTransaction(
+      userId: userId,
+      bankId: bankId,
+      principalAmount: principalAmount,
+      installments: installments,
+      note: note,
+    );
   }
 
-  Future<void> updateLoan({required int id, required int userId, required int principalAmount, required int installments, String? note}) async {
-    await repository.updateLoan(id: id, userId: userId, principalAmount: principalAmount, installments: installments, note: note);
+  Future<void> updateLoan({
+    required int id,
+    required int userId,
+    required int principalAmount,
+    required int installments,
+    String? note,
+  }) async {
+    await repository.updateLoan(
+      id: id,
+      userId: userId,
+      principalAmount: principalAmount,
+      installments: installments,
+      note: note,
+    );
   }
 
   Future<void> deleteLoan(int id) async {
     await repository.deleteLoan(id);
   }
 
-  Stream<List<(LoanPayment, Transaction, Bank)>> watchPayments(int loanId) => repository.watchPayments(loanId);
+  Stream<List<(LoanPayment, Transaction, Bank)>> watchPayments(int loanId) =>
+      repository.watchPayments(loanId);
 
-  Future<void> addPayment({required int loanId, required int bankId, required int amount, String? note}) => repository.addPayment(loanId: loanId, bankId: bankId, amount: amount, note: note);
+  Future<void> addPayment({
+    required int loanId,
+    required int bankId,
+    required int amount,
+    String? note,
+  }) => repository.addPayment(
+    loanId: loanId,
+    bankId: bankId,
+    amount: amount,
+    note: note,
+  );
 
   @override
   Future<void> close() {
@@ -51,5 +87,3 @@ class LoansCubit extends Cubit<LoansState> {
     return super.close();
   }
 }
-
-

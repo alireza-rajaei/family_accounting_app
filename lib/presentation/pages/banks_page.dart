@@ -183,10 +183,14 @@ class _BanksViewState extends State<_BanksView> {
   }
 
   Future<void> _openBankSheet(BuildContext context, {Bank? bank}) async {
+    final banksCubit = context.read<BanksCubit>();
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _BankSheet(bank: bank),
+      builder: (context) => BlocProvider.value(
+        value: banksCubit,
+        child: _BankSheet(bank: bank),
+      ),
     );
   }
 }
