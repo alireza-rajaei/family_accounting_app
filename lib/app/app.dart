@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../di/locator.dart';
 import '../presentation/cubits/auth_cubit.dart';
@@ -30,18 +31,14 @@ class FamilyAccountingApp extends StatelessWidget {
             theme: ThemeData(
               useMaterial3: true,
               brightness: Brightness.light,
-              textTheme: ThemeData.light()
-                  .textTheme
+              textTheme: GoogleFonts.vazirmatnTextTheme(ThemeData.light().textTheme)
                   .apply(fontSizeFactor: state.fontScale),
-              fontFamily: 'Vazirmatn',
             ),
             darkTheme: ThemeData(
               useMaterial3: true,
               brightness: Brightness.dark,
-              textTheme: ThemeData.dark()
-                  .textTheme
+              textTheme: GoogleFonts.vazirmatnTextTheme(ThemeData.dark().textTheme)
                   .apply(fontSizeFactor: state.fontScale),
-              fontFamily: 'Vazirmatn',
             ),
             locale: const Locale('fa'),
             supportedLocales: const [Locale('fa')],

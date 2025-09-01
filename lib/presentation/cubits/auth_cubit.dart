@@ -51,5 +51,3 @@ class AuthCubit extends Cubit<AuthState> {
     return ok;
   }
 }
-
-
