@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../cubits/auth_cubit.dart';
 import '../cubits/settings_cubit.dart';
@@ -27,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ورود')),
+      appBar: AppBar(title: Text(tr('login.title'))),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
@@ -40,15 +41,15 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   TextFormField(
                     controller: _usernameController,
-                    decoration: const InputDecoration(labelText: 'نام کاربری'),
+                    decoration: InputDecoration(labelText: tr('login.username')),
                     validator: (v) => (v == null || v.isEmpty) ? 'نام کاربری الزامی است' : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(labelText: 'رمز عبور'),
+                    decoration: InputDecoration(labelText: tr('login.password')),
                     obscureText: true,
-                    validator: (v) => (v == null || v.isEmpty) ? 'رمز عبور الزامی است' : null,
+                    validator: (v) => (v == null || v.isEmpty) ? tr('login.password') : null,
                   ),
                   const SizedBox(height: 16),
                   BlocBuilder<AuthCubit, AuthState>(
@@ -78,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
                               }
                             }
                           },
-                          child: Text(auth is AuthNeedsSetup ? 'ایجاد ادمین و ورود' : 'ورود'),
+                          child: Text(auth is AuthNeedsSetup ? tr('login.setup_and_login') : tr('login.submit')),
                         ),
                       );
                     },

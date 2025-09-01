@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../di/locator.dart';
 import '../../data/local/db/app_database.dart';
@@ -43,7 +44,7 @@ class _BanksViewState extends State<_BanksView> {
                 controller: _search,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
-                  hintText: 'جستجوی بانک/نام حساب/شماره حساب',
+                  hintText: tr('banks.search_hint'),
                   suffixIcon: _search.text.isEmpty
                       ? null
                       : IconButton(
@@ -64,10 +65,12 @@ class _BanksViewState extends State<_BanksView> {
             Expanded(
               child: BlocBuilder<BanksCubit, BanksState>(
                 builder: (context, state) {
-                  if (state.loading)
+                  if (state.loading) {
                     return const Center(child: CircularProgressIndicator());
-                  if (state.banks.isEmpty)
-                    return const Center(child: Text('بانکی یافت نشد'));
+                  }
+                  if (state.banks.isEmpty) {
+                    return Center(child: Text(tr('banks.not_found')));
+                  }
                   return ListView.separated(
                     itemCount: state.banks.length,
                     separatorBuilder: (_, __) => const Divider(height: 0),
@@ -87,9 +90,7 @@ class _BanksViewState extends State<_BanksView> {
                             Text(
                               _formatCurrency(item.balance),
                               style: TextStyle(
-                                color: item.balance >= 0
-                                    ? Colors.green
-                                    : Colors.red,
+                                color: item.balance >= 0 ? Colors.green : Colors.red,
                               ),
                             ),
                           ],
@@ -133,12 +134,12 @@ class _BanksViewState extends State<_BanksView> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit),
-              title: const Text('ویرایش'),
+              title: Text(tr('banks.edit')),
               onTap: () => Navigator.pop(context, 'edit'),
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline),
-              title: const Text('حذف'),
+              title: Text(tr('banks.delete')),
               onTap: () => Navigator.pop(context, 'delete'),
             ),
           ],
@@ -152,10 +153,8 @@ class _BanksViewState extends State<_BanksView> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('حذف بانک'),
-          content: Text(
-            'آیا از حذف ${bank.bankName} - ${bank.accountName} مطمئن هستید؟',
-          ),
+          title: Text(tr('banks.delete')),
+          content: Text(tr('banks.confirm_delete', args: ['${bank.bankName} - ${bank.accountName}'])),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -163,7 +162,7 @@ class _BanksViewState extends State<_BanksView> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('حذف'),
+              child: Text(tr('banks.delete')),
             ),
           ],
         ),
@@ -241,10 +240,7 @@ class _BankSheetState extends State<_BankSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              isEdit ? 'ویرایش بانک' : 'افزودن بانک',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text(isEdit ? tr('banks.edit') : tr('banks.add'), style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: bankKey,
@@ -257,24 +253,24 @@ class _BankSheetState extends State<_BankSheet> {
                   )
                   .toList(),
               onChanged: (v) => setState(() => bankKey = v ?? 'melli'),
-              decoration: const InputDecoration(labelText: 'بانک'),
+              decoration: InputDecoration(labelText: tr('banks.bank')),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: bankName,
-              decoration: const InputDecoration(labelText: 'نام بانک (نمایشی)'),
+              decoration: InputDecoration(labelText: tr('banks.display_name')),
               validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: accountName,
-              decoration: const InputDecoration(labelText: 'نام حساب'),
+              decoration: InputDecoration(labelText: tr('banks.account_name')),
               validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: accountNumber,
-              decoration: const InputDecoration(labelText: 'شماره حساب'),
+              decoration: InputDecoration(labelText: tr('banks.account_number')),
               validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
             ),
             const SizedBox(height: 16),
@@ -303,7 +299,7 @@ class _BankSheetState extends State<_BankSheet> {
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
-                child: Text(isEdit ? 'ذخیره تغییرات' : 'ایجاد بانک'),
+                child: Text(isEdit ? tr('banks.save') : tr('banks.create')),
               ),
             ),
             const SizedBox(height: 12),

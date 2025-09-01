@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../di/locator.dart';
 import '../../data/local/db/app_database.dart';
@@ -43,7 +44,7 @@ class _UsersViewState extends State<_UsersView> {
                 controller: _search,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
-                  hintText: 'جستجوی نام/نام خانوادگی',
+                  hintText: tr('users.search_hint'),
                   suffixIcon: _search.text.isEmpty
                       ? null
                       : IconButton(
@@ -68,7 +69,7 @@ class _UsersViewState extends State<_UsersView> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (state.users.isEmpty) {
-                    return const Center(child: Text('کاربری یافت نشد'));
+                    return Center(child: Text(tr('users.not_found')));
                   }
                   return ListView.separated(
                     itemCount: state.users.length,
@@ -86,11 +87,11 @@ class _UsersViewState extends State<_UsersView> {
                               final ok = await showDialog<bool>(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: const Text('حذف کاربر'),
-                                  content: Text('آیا از حذف ${u.firstName} ${u.lastName} مطمئن هستید؟'),
+                                  title: Text(tr('users.delete')),
+                                  content: Text(tr('users.confirm_delete', args: ['${u.firstName} ${u.lastName}'])),
                                   actions: [
                                     TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('انصراف')),
-                                    FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('حذف')),
+                                    FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('users.delete'))),
                                   ],
                                 ),
                               );
@@ -99,9 +100,9 @@ class _UsersViewState extends State<_UsersView> {
                               }
                             }
                           },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(value: 'edit', child: Text('ویرایش')),
-                            PopupMenuItem(value: 'delete', child: Text('حذف')),
+                          itemBuilder: (context) => [
+                            PopupMenuItem(value: 'edit', child: Text(tr('users.edit'))),
+                            PopupMenuItem(value: 'delete', child: Text(tr('users.delete'))),
                           ],
                         ),
                         onTap: () => _openUserSheet(context, user: u),
@@ -173,13 +174,13 @@ class _UserSheetState extends State<_UserSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(isEdit ? 'ویرایش کاربر' : 'افزودن کاربر', style: Theme.of(context).textTheme.titleMedium),
+            Text(isEdit ? tr('users.edit') : tr('users.add'), style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             Row(children: [
               Expanded(
                 child: TextFormField(
                   controller: firstName,
-                  decoration: const InputDecoration(labelText: 'نام'),
+                  decoration: InputDecoration(labelText: tr('users.first_name')),
                   validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
                 ),
               ),
@@ -187,7 +188,7 @@ class _UserSheetState extends State<_UserSheet> {
               Expanded(
                 child: TextFormField(
                   controller: lastName,
-                  decoration: const InputDecoration(labelText: 'نام خانوادگی'),
+                  decoration: InputDecoration(labelText: tr('users.last_name')),
                   validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
                 ),
               ),
@@ -195,13 +196,13 @@ class _UserSheetState extends State<_UserSheet> {
             const SizedBox(height: 12),
             TextFormField(
               controller: fatherName,
-              decoration: const InputDecoration(labelText: 'نام پدر'),
+              decoration: InputDecoration(labelText: tr('users.father_name')),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: mobile,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'شماره موبایل'),
+              decoration: InputDecoration(labelText: tr('users.mobile')),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -229,7 +230,7 @@ class _UserSheetState extends State<_UserSheet> {
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
-                child: Text(isEdit ? 'ذخیره تغییرات' : 'ایجاد کاربر'),
+                child: Text(isEdit ? tr('users.save') : tr('users.create')),
               ),
             ),
             const SizedBox(height: 12),

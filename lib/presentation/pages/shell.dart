@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../cubits/settings_cubit.dart';
 
@@ -47,18 +48,18 @@ class _ShellScaffoldState extends State<ShellScaffold> {
     // final settings = context.watch<SettingsCubit>().state;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('حسابداری خانوادگی')),
+      appBar: AppBar(title: Text(tr('app_title'))),
       drawer: const _AppDrawer(),
       body: widget.child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndexByLocation(location),
         onDestinationSelected: _onItemTapped,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'خانه'),
-          NavigationDestination(icon: Icon(Icons.swap_vert), label: 'تراکنش‌ها'),
-          NavigationDestination(icon: Icon(Icons.request_quote_outlined), label: 'وام‌ها'),
-          NavigationDestination(icon: Icon(Icons.people_alt_outlined), label: 'کاربران'),
-          NavigationDestination(icon: Icon(Icons.account_balance_outlined), label: 'بانک‌ها'),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.home_outlined), label: tr('tabs.home')),
+          NavigationDestination(icon: const Icon(Icons.swap_vert), label: tr('tabs.transactions')),
+          NavigationDestination(icon: const Icon(Icons.request_quote_outlined), label: tr('tabs.loans')),
+          NavigationDestination(icon: const Icon(Icons.people_alt_outlined), label: tr('tabs.users')),
+          NavigationDestination(icon: const Icon(Icons.account_balance_outlined), label: tr('tabs.banks')),
         ],
       ),
     );
@@ -86,7 +87,7 @@ class _AppDrawer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.text_increase),
-              title: const Text('تنظیمات سایز فونت'),
+              title: Text(tr('drawer.font_size')),
               subtitle: Text('x${settings.fontScale.toStringAsFixed(2)}'),
               onTap: () async {
                 final cubit = context.read<SettingsCubit>();
@@ -99,13 +100,13 @@ class _AppDrawer extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.person_outline),
-              title: const Text('تغییر نام کاربری'),
+              title: Text(tr('drawer.change_username')),
               onTap: () async {
                 final controller = TextEditingController(text: settings.username);
                 final result = await showDialog<String>(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('نام کاربری'),
+                    title: Text(tr('login.username')),
                     content: TextField(controller: controller),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(context), child: const Text('انصراف')),
@@ -121,7 +122,7 @@ class _AppDrawer extends StatelessWidget {
             ),
             SwitchListTile(
               secondary: const Icon(Icons.dark_mode_outlined),
-              title: const Text('تغییر تم (تاریک/روشن)'),
+              title: Text(tr('drawer.theme')),
               value: settings.themeMode == ThemeMode.dark,
               onChanged: (v) => context
                   .read<SettingsCubit>()
@@ -130,14 +131,14 @@ class _AppDrawer extends StatelessWidget {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.backup_outlined),
-              title: const Text('پشتیبان‌گیری'),
+              title: Text(tr('drawer.backup')),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('به زودی...')));
               },
             ),
             ListTile(
               leading: const Icon(Icons.restore_outlined),
-              title: const Text('بازیابی پشتیبان'),
+              title: Text(tr('drawer.restore')),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('به زودی...')));
               },

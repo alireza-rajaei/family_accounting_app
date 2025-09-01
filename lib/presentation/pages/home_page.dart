@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -7,25 +8,25 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: const [
+        children: [
           Card(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('نمودار واریزی‌ها و برداشت‌ها (به‌زودی)'),
+              padding: const EdgeInsets.all(16.0),
+              child: Text(tr('home.chart_card')),
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Card(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('موجودی حساب‌ها به تفکیک بانک (به‌زودی)'),
+              padding: const EdgeInsets.all(16.0),
+              child: Text(tr('home.balances_card')),
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Card(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('تعداد کاربران و وام‌های تسویه‌نشده (به‌زودی)'),
+              padding: const EdgeInsets.all(16.0),
+              child: Text(tr('home.stats_card')),
             ),
           ),
         ],
