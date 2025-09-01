@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../di/locator.dart';
+import '../../data/local/db/app_database.dart';
 import '../cubits/banks_cubit.dart';
 
 class BanksPage extends StatelessWidget {
@@ -63,8 +64,10 @@ class _BanksViewState extends State<_BanksView> {
             Expanded(
               child: BlocBuilder<BanksCubit, BanksState>(
                 builder: (context, state) {
-                  if (state.loading) return const Center(child: CircularProgressIndicator());
-                  if (state.banks.isEmpty) return const Center(child: Text('بانکی یافت نشد'));
+                  if (state.loading)
+                    return const Center(child: CircularProgressIndicator());
+                  if (state.banks.isEmpty)
+                    return const Center(child: Text('بانکی یافت نشد'));
                   return ListView.separated(
                     itemCount: state.banks.length,
                     separatorBuilder: (_, __) => const Divider(height: 0),
@@ -72,7 +75,9 @@ class _BanksViewState extends State<_BanksView> {
                       final item = state.banks[index];
                       final b = item.bank;
                       return ListTile(
-                        leading: CircleAvatar(child: Text(b.bankName.characters.first)),
+                        leading: CircleAvatar(
+                          child: Text(b.bankName.characters.first),
+                        ),
                         title: Text('${b.bankName} · ${b.accountName}'),
                         subtitle: Text('شماره حساب: ${b.accountNumber}'),
                         trailing: Column(
@@ -81,7 +86,11 @@ class _BanksViewState extends State<_BanksView> {
                           children: [
                             Text(
                               _formatCurrency(item.balance),
-                              style: TextStyle(color: item.balance >= 0 ? Colors.green : Colors.red),
+                              style: TextStyle(
+                                color: item.balance >= 0
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
                             ),
                           ],
                         ),
@@ -122,8 +131,16 @@ class _BanksViewState extends State<_BanksView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(leading: const Icon(Icons.edit), title: const Text('ویرایش'), onTap: () => Navigator.pop(context, 'edit')),
-            ListTile(leading: const Icon(Icons.delete_outline), title: const Text('حذف'), onTap: () => Navigator.pop(context, 'delete')),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('ویرایش'),
+              onTap: () => Navigator.pop(context, 'edit'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('حذف'),
+              onTap: () => Navigator.pop(context, 'delete'),
+            ),
           ],
         ),
       ),
@@ -136,10 +153,18 @@ class _BanksViewState extends State<_BanksView> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('حذف بانک'),
-          content: Text('آیا از حذف ${bank.bankName} - ${bank.accountName} مطمئن هستید؟'),
+          content: Text(
+            'آیا از حذف ${bank.bankName} - ${bank.accountName} مطمئن هستید؟',
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('انصراف')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('حذف')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('انصراف'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('حذف'),
+            ),
           ],
         ),
       );
@@ -190,7 +215,9 @@ class _BankSheetState extends State<_BankSheet> {
     super.initState();
     bankName = TextEditingController(text: widget.bank?.bankName ?? '');
     accountName = TextEditingController(text: widget.bank?.accountName ?? '');
-    accountNumber = TextEditingController(text: widget.bank?.accountNumber ?? '');
+    accountNumber = TextEditingController(
+      text: widget.bank?.accountNumber ?? '',
+    );
     bankKey = widget.bank?.bankKey ?? 'melli';
   }
 
@@ -205,7 +232,8 @@ class _BankSheetState extends State<_BankSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.bank != null;
-    final padding = MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
+    final padding =
+        MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
     return Padding(
       padding: padding,
       child: Form(
@@ -213,12 +241,20 @@ class _BankSheetState extends State<_BankSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(isEdit ? 'ویرایش بانک' : 'افزودن بانک', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              isEdit ? 'ویرایش بانک' : 'افزودن بانک',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: bankKey,
               items: iranianBanks
-                  .map((e) => DropdownMenuItem(value: e['key']!, child: Text(e['name']!)))
+                  .map(
+                    (e) => DropdownMenuItem(
+                      value: e['key']!,
+                      child: Text(e['name']!),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => bankKey = v ?? 'melli'),
               decoration: const InputDecoration(labelText: 'بانک'),
@@ -277,5 +313,3 @@ class _BankSheetState extends State<_BankSheet> {
     );
   }
 }
-
-

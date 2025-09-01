@@ -13,44 +13,42 @@ class BanksRepository {
   BanksRepository(this.db);
 
   Stream<List<BankWithBalance>> watchBanksWithBalance({String query = ''}) {
-    final t = db.transactions;
-    final b = db.banks;
-
-    final signedAmount = d.CaseWhen<int>(
-      [
-        d.CaseWhenEntry(t.type.equals('deposit'), then: t.amount),
-      ],
-      else_: t.amount * d.Constant(-1),
-    );
-
-    final sumExpr = d.sum(signedAmount);
-
-    final base = db.select(b).join([
-      d.leftOuterJoin(
-        db.selectOnly(t)
-          ..addColumns([t.bankId, sumExpr])
-          ..groupBy([t.bankId]),
-        t.bankId.equalsExp(b.id),
-      )
-    ]);
-
-    if (query.trim().isNotEmpty) {
-      final pattern = '%${query.trim()}%';
-      base.where(b.bankName.like(pattern) | b.accountName.like(pattern) | b.accountNumber.like(pattern));
-    }
-
-    base.orderBy([
-      d.OrderingTerm.asc(b.bankName),
-      d.OrderingTerm.asc(b.accountName),
-    ]);
-
-    return base.watch().map((rows) {
-      return rows.map((r) {
-        final bank = r.readTable(b);
-        final balance = r.read(sumExpr) ?? 0;
-        return BankWithBalance(bank: bank, balance: balance);
-      }).toList();
-    });
+    final like = '%${query.trim()}%';
+    const sql = '''
+SELECT b.id, b.bank_key, b.bank_name, b.account_name, b.account_number, b.created_at, b.updated_at,
+       COALESCE(SUM(CASE WHEN t.type = 'deposit' THEN t.amount ELSE -t.amount END), 0) AS balance
+FROM banks b
+LEFT JOIN transactions t ON t.bank_id = b.id
+WHERE (? = '' OR b.bank_name LIKE ? OR b.account_name LIKE ? OR b.account_number LIKE ?)
+GROUP BY b.id
+ORDER BY b.bank_name ASC, b.account_name ASC
+''';
+    return db
+        .customSelect(
+          sql,
+          variables: [
+            d.Variable.withString(query.trim()),
+            d.Variable.withString(like),
+            d.Variable.withString(like),
+            d.Variable.withString(like),
+          ],
+          readsFrom: {db.banks, db.transactions},
+        )
+        .watch()
+        .map((rows) => rows
+            .map((r) => BankWithBalance(
+                  bank: Bank(
+                    id: r.read<int>('id'),
+                    bankKey: r.read<String>('bank_key'),
+                    bankName: r.read<String>('bank_name'),
+                    accountName: r.read<String>('account_name'),
+                    accountNumber: r.read<String>('account_number'),
+                    createdAt: r.read<DateTime>('created_at'),
+                    updatedAt: r.readNullable<DateTime>('updated_at'),
+                  ),
+                  balance: r.read<int>('balance'),
+                ))
+            .toList());
   }
 
   Future<int> addBank({

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../di/locator.dart';
+import '../../data/local/db/app_database.dart';
 import '../cubits/users_cubit.dart';
 
 class UsersPage extends StatelessWidget {

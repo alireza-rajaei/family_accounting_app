@@ -44,7 +44,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
-    final settings = context.watch<SettingsCubit>().state;
+    // final settings = context.watch<SettingsCubit>().state;
 
     return Scaffold(
       appBar: AppBar(title: const Text('حسابداری خانوادگی')),
