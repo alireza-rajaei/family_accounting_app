@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 
+import '../di/locator.dart';
+import '../presentation/cubits/auth_cubit.dart';
 import '../presentation/cubits/settings_cubit.dart';
 import '../presentation/router/app_router.dart';
 
@@ -13,8 +15,11 @@ class FamilyAccountingApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final GoRouter router = createAppRouter();
 
-    return BlocProvider(
-      create: (_) => SettingsCubit()..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => SettingsCubit()..load()),
+        BlocProvider(create: (_) => AuthCubit(locator())..check()),
+      ],
       child: BlocBuilder<SettingsCubit, SettingsState>(
         builder: (context, state) {
           return MaterialApp.router(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../pages/banks_page.dart';
@@ -8,6 +9,7 @@ import '../pages/login_page.dart';
 import '../pages/shell.dart';
 import '../pages/transactions_page.dart';
 import '../pages/users_page.dart';
+import '../cubits/auth_cubit.dart';
 
 GoRouter createAppRouter() {
   return GoRouter(
@@ -50,11 +52,19 @@ GoRouter createAppRouter() {
       ),
     ],
     redirect: (context, state) {
-      // TODO: Replace with real auth check later
-      final isLoggingIn = state.matchedLocation == '/login';
-      final bool loggedIn = true;
-      if (!loggedIn && !isLoggingIn) return '/login';
-      if (loggedIn && isLoggingIn) return '/';
+      final auth = context.read<AuthCubit>().state;
+      final loc = state.matchedLocation;
+      final isLogin = loc == '/login';
+      if (auth is AuthChecking) return null;
+      if (auth is AuthNeedsSetup) {
+        return isLogin ? null : '/login';
+      }
+      if (auth is AuthLoggedOut) {
+        return isLogin ? null : '/login';
+      }
+      if (auth is AuthLoggedIn) {
+        return isLogin ? '/' : null;
+      }
       return null;
     },
     errorBuilder: (context, state) => Scaffold(
