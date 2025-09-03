@@ -17,7 +17,48 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // Normalize amounts by making withdrawals negative and deposits positive
+        await customStatement("""
+UPDATE transactions
+SET amount = CASE WHEN type = 'withdraw' THEN -ABS(amount) ELSE ABS(amount) END
+""");
+        // Map old type + kind columns into unified Persian type values
+        await customStatement("""
+UPDATE transactions
+SET type = CASE
+  WHEN deposit_kind = 'deposit_to_bank_transfer' OR withdraw_kind = 'withdraw_from_bank_transfer' THEN 'جابجایی بین بانکی'
+  WHEN withdraw_kind = 'loan_principal' THEN 'پرداخت وام به کاربر'
+  WHEN deposit_kind = 'loan_installment' THEN 'پرداخت قسط وام'
+  WHEN deposit_kind = 'deposit_to_user' THEN 'واریز'
+  WHEN withdraw_kind = 'withdraw_from_user' THEN 'برداشت'
+  ELSE type
+END
+""");
+        // Drop old columns by recreating the table without them
+        await m.alterTable(
+          TableMigration(
+            transactions,
+            newColumns: [
+              transactions.id,
+              transactions.bankId,
+              transactions.userId,
+              transactions.amount,
+              transactions.type,
+              transactions.note,
+              transactions.createdAt,
+              transactions.updatedAt,
+            ],
+          ),
+        );
+      }
+    },
+  );
 }
 
 // platform-specific implementation in connection/connection_*.dart

@@ -16,17 +16,13 @@ class TransactionWithJoins {
 class TransactionsFilter {
   final DateTime? from;
   final DateTime? to;
-  final String? type; // 'deposit' | 'withdraw' | null
-  final String? depositKind; // when type == 'deposit'
-  final String? withdrawKind; // when type == 'withdraw'
+  final String? type; // one of Persian labels or null
   final int? userId;
   final int? bankId;
   const TransactionsFilter({
     this.from,
     this.to,
     this.type,
-    this.depositKind,
-    this.withdrawKind,
     this.userId,
     this.bankId,
   });
@@ -51,14 +47,6 @@ class TransactionsRepository {
     if (f.type != null) {
       whereClauses.add('t.type = ?');
       vars.add(d.Variable.withString(f.type!));
-      if (f.type == 'deposit' && f.depositKind != null) {
-        whereClauses.add('t.deposit_kind = ?');
-        vars.add(d.Variable.withString(f.depositKind!));
-      }
-      if (f.type == 'withdraw' && f.withdrawKind != null) {
-        whereClauses.add('t.withdraw_kind = ?');
-        vars.add(d.Variable.withString(f.withdrawKind!));
-      }
     }
     if (f.userId != null) {
       whereClauses.add('t.user_id = ?');
@@ -98,8 +86,6 @@ ORDER BY t.created_at DESC, t.id DESC
               userId: r.readNullable<int>('user_id'),
               amount: r.read<int>('amount'),
               type: r.read<String>('type'),
-              depositKind: r.readNullable<String>('deposit_kind'),
-              withdrawKind: r.readNullable<String>('withdraw_kind'),
               note: r.readNullable<String>('note'),
               createdAt: r.read<DateTime>('created_at'),
               updatedAt: r.readNullable<DateTime>('updated_at'),
@@ -139,8 +125,6 @@ ORDER BY t.created_at DESC, t.id DESC
     int? userId,
     required int amount,
     required String type,
-    String? depositKind,
-    String? withdrawKind,
     String? note,
     DateTime? createdAt,
   }) async {
@@ -152,8 +136,6 @@ ORDER BY t.created_at DESC, t.id DESC
             userId: d.Value(userId),
             amount: amount,
             type: type,
-            depositKind: d.Value(depositKind),
-            withdrawKind: d.Value(withdrawKind),
             note: d.Value(note),
             createdAt: d.Value(createdAt ?? DateTime.now()),
           ),
@@ -166,8 +148,6 @@ ORDER BY t.created_at DESC, t.id DESC
     int? userId,
     required int amount,
     required String type,
-    String? depositKind,
-    String? withdrawKind,
     String? note,
   }) async {
     await (db.update(db.transactions)..where((t) => t.id.equals(id))).write(
@@ -176,8 +156,6 @@ ORDER BY t.created_at DESC, t.id DESC
         userId: d.Value(userId),
         amount: d.Value(amount),
         type: d.Value(type),
-        depositKind: d.Value(depositKind),
-        withdrawKind: d.Value(withdrawKind),
         note: d.Value(note),
         updatedAt: d.Value(DateTime.now()),
       ),
@@ -201,9 +179,8 @@ ORDER BY t.created_at DESC, t.id DESC
           .insert(
             TransactionsCompanion.insert(
               bankId: fromBankId,
-              amount: amount,
-              type: 'withdraw',
-              withdrawKind: const d.Value('withdraw_from_bank_transfer'),
+              amount: -amount,
+              type: 'جابجایی بین بانکی',
               note: d.Value(note),
               createdAt: d.Value(now),
             ),
@@ -214,8 +191,7 @@ ORDER BY t.created_at DESC, t.id DESC
             TransactionsCompanion.insert(
               bankId: toBankId,
               amount: amount,
-              type: 'deposit',
-              depositKind: const d.Value('deposit_to_bank_transfer'),
+              type: 'جابجایی بین بانکی',
               note: d.Value(note),
               createdAt: d.Value(now),
             ),
@@ -227,8 +203,8 @@ ORDER BY t.created_at DESC, t.id DESC
   watchBankFlowSums() {
     const sql = '''
 SELECT b.bank_name,
-       COALESCE(SUM(CASE WHEN t.type = 'deposit' THEN t.amount END), 0) AS deposit,
-       COALESCE(SUM(CASE WHEN t.type = 'withdraw' THEN t.amount END), 0) AS withdraw
+       COALESCE(SUM(CASE WHEN t.amount > 0 THEN t.amount END), 0) AS deposit,
+       COALESCE(SUM(CASE WHEN t.amount < 0 THEN -t.amount END), 0) AS withdraw
 FROM banks b
 LEFT JOIN transactions t ON t.bank_id = b.id
 GROUP BY b.bank_name

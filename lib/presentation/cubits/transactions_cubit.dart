@@ -52,8 +52,6 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     int? userId,
     required int amount,
     required String type,
-    String? depositKind,
-    String? withdrawKind,
     String? note,
     DateTime? createdAt,
   }) async {
@@ -62,8 +60,6 @@ class TransactionsCubit extends Cubit<TransactionsState> {
       userId: userId,
       amount: amount,
       type: type,
-      depositKind: depositKind,
-      withdrawKind: withdrawKind,
       note: note,
       createdAt: createdAt,
     );
@@ -75,8 +71,6 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     int? userId,
     required int amount,
     required String type,
-    String? depositKind,
-    String? withdrawKind,
     String? note,
   }) async {
     await repository.updateTransaction(
@@ -85,8 +79,6 @@ class TransactionsCubit extends Cubit<TransactionsState> {
       userId: userId,
       amount: amount,
       type: type,
-      depositKind: depositKind,
-      withdrawKind: withdrawKind,
       note: note,
     );
   }

@@ -26,9 +26,17 @@ class _UsersView extends StatefulWidget {
 
 class _UsersViewState extends State<_UsersView> {
   final TextEditingController _search = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final Map<String, GlobalKey> _sectionKeys = {};
+
+  GlobalKey _getSectionKey(String letter) {
+    return _sectionKeys.putIfAbsent(letter, () => GlobalKey());
+  }
+
   @override
   void dispose() {
     _search.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -37,116 +45,61 @@ class _UsersViewState extends State<_UsersView> {
     final cubit = context.read<UsersCubit>();
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: TextField(
-                controller: _search,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
-                  hintText: tr('users.search_hint'),
-                  suffixIcon: _search.text.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _search.clear();
-                            cubit.watch('');
-                            setState(() {});
-                          },
-                        ),
+        child: BlocBuilder<UsersCubit, UsersState>(
+          builder: (context, state) {
+            final users = state.users;
+            final List<String> letters = _computeLetters(users);
+            return Stack(
+              children: [
+                CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _SearchHeaderDelegate(
+                        searchController: _search,
+                        hintText: tr('users.search_hint'),
+                        onChanged: (v) {
+                          cubit.watch(v);
+                          setState(() {});
+                        },
+                        onClear: () {
+                          _search.clear();
+                          cubit.watch('');
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                    if (state.loading)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (users.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(child: Text(tr('users.not_found'))),
+                      )
+                    else
+                      ..._buildGroupedUserSlivers(users),
+                  ],
                 ),
-                onChanged: (v) {
-                  cubit.watch(v);
-                  setState(() {});
-                },
-              ),
-            ),
-            Expanded(
-              child: BlocBuilder<UsersCubit, UsersState>(
-                builder: (context, state) {
-                  if (state.loading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (state.users.isEmpty) {
-                    return Center(child: Text(tr('users.not_found')));
-                  }
-                  return ListView.separated(
-                    itemCount: state.users.length,
-                    separatorBuilder: (_, __) => const Divider(height: 0),
-                    itemBuilder: (context, index) {
-                      final u = state.users[index];
-                      return ListTile(
-                        title: Text('${u.firstName} ${u.lastName}'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              [
-                                u.fatherName,
-                                u.mobileNumber,
-                              ].where((e) => (e ?? '').isNotEmpty).join(' · '),
-                            ),
-                            const SizedBox(height: 2),
-                            _UserBalanceText(userId: u.id),
-                          ],
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (v) async {
-                            if (v == 'edit') {
-                              _openUserSheet(context, user: u);
-                            } else if (v == 'delete') {
-                              final ok = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text(tr('users.delete')),
-                                  content: Text(
-                                    tr(
-                                      'users.confirm_delete',
-                                      args: ['${u.firstName} ${u.lastName}'],
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: const Text('انصراف'),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: Text(tr('users.delete')),
-                                    ),
-                                  ],
-                                ),
-                              );
-                              if (ok == true && context.mounted) {
-                                await context.read<UsersCubit>().deleteUser(
-                                  u.id,
-                                );
-                              }
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Text(tr('users.edit')),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text(tr('users.delete')),
-                            ),
-                          ],
-                        ),
-                        onTap: () => _openUserSheet(context, user: u),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+                if (!state.loading && users.isNotEmpty)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    child: IgnorePointer(
+                      ignoring: false,
+                      child: _AlphabetIndex(
+                        letters: letters,
+                        onSelect: _scrollToLetter,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -154,6 +107,116 @@ class _UsersViewState extends State<_UsersView> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  List<Widget> _buildGroupedUserSlivers(List<User> users) {
+    final List<Widget> slivers = [];
+    String? currentHeader;
+    final List<User> buffer = [];
+
+    void flushBuffer() {
+      if (currentHeader == null || buffer.isEmpty) return;
+      final String safeHeader = currentHeader;
+      slivers.add(
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _SectionHeaderDelegate(
+            title: safeHeader,
+            keyWidgetKey: _getSectionKey(safeHeader),
+          ),
+        ),
+      );
+      final List<User> sectionItems = List<User>.from(buffer);
+      slivers.add(
+        SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final u = sectionItems[index];
+            return _UserTile(
+              user: u,
+              onTap: () => _openUserSheet(context, user: u),
+              onSelectedAction: (v) async {
+                if (v == 'edit') {
+                  _openUserSheet(context, user: u);
+                } else if (v == 'delete') {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(tr('users.delete')),
+                      content: Text(
+                        tr(
+                          'users.confirm_delete',
+                          args: ['${u.firstName} ${u.lastName}'],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('انصراف'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: Text(tr('users.delete')),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok == true && context.mounted) {
+                    await context.read<UsersCubit>().deleteUser(u.id);
+                  }
+                }
+              },
+            );
+          }, childCount: sectionItems.length),
+        ),
+      );
+      buffer.clear();
+    }
+
+    for (final u in users) {
+      final hdr = _initialOf(u);
+      if (currentHeader == null) {
+        currentHeader = hdr;
+      }
+      if (hdr != currentHeader) {
+        flushBuffer();
+        currentHeader = hdr;
+      }
+      buffer.add(u);
+    }
+    flushBuffer();
+
+    return slivers;
+  }
+
+  String _initialOf(User u) {
+    final source = (u.firstName.isNotEmpty ? u.firstName : u.lastName).trim();
+    if (source.isEmpty) return '#';
+    return source.substring(0, 1).toUpperCase();
+  }
+
+  List<String> _computeLetters(List<User> users) {
+    final List<String> letters = [];
+    String? prev;
+    for (final u in users) {
+      final l = _initialOf(u);
+      if (l != prev) {
+        if (letters.isEmpty || letters.last != l) letters.add(l);
+        prev = l;
+      }
+    }
+    return letters;
+  }
+
+  Future<void> _scrollToLetter(String letter) async {
+    final key = _sectionKeys[letter];
+    final contextForKey = key?.currentContext;
+    if (contextForKey != null) {
+      await Scrollable.ensureVisible(
+        contextForKey,
+        duration: const Duration(milliseconds: 200),
+        alignment: 0,
+      );
+    }
   }
 
   Future<void> _openUserSheet(BuildContext context, {User? user}) async {
@@ -314,5 +377,213 @@ class _UserSheetState extends State<_UserSheet> {
         ),
       ),
     );
+  }
+}
+
+class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final TextEditingController searchController;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  _SearchHeaderDelegate({
+    required this.searchController,
+    required this.hintText,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  double get minExtent => 72;
+
+  @override
+  double get maxExtent => 72;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      elevation: overlapsContent ? 1 : 0,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: TextField(
+            controller: searchController,
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              hintText: hintText,
+              suffixIcon: searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: onClear,
+                    ),
+            ),
+            onChanged: onChanged,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _SearchHeaderDelegate oldDelegate) {
+    return oldDelegate.searchController != searchController ||
+        oldDelegate.hintText != hintText;
+  }
+}
+
+class _SectionHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final String title;
+  final GlobalKey keyWidgetKey;
+  _SectionHeaderDelegate({required this.title, required this.keyWidgetKey});
+
+  @override
+  double get minExtent => 36;
+
+  @override
+  double get maxExtent => 36;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final theme = Theme.of(context);
+    return Container(
+      key: keyWidgetKey,
+      color: theme.colorScheme.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _SectionHeaderDelegate oldDelegate) {
+    return oldDelegate.title != title;
+  }
+}
+
+class _UserTile extends StatelessWidget {
+  final User user;
+  final VoidCallback onTap;
+  final ValueChanged<String> onSelectedAction;
+
+  const _UserTile({
+    required this.user,
+    required this.onTap,
+    required this.onSelectedAction,
+  });
+
+  String _initials() {
+    final first = user.firstName.trim();
+    final last = user.lastName.trim();
+    if (first.isEmpty && last.isEmpty) return '#';
+    final i1 = first.isNotEmpty ? first[0] : '';
+    final i2 = last.isNotEmpty ? last[0] : '';
+    final initials = (i1 + i2).toUpperCase();
+    return initials.isEmpty ? '#' : initials;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ListTile(
+          leading: CircleAvatar(child: Text(_initials())),
+          title: Text('${user.firstName} ${user.lastName}'),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                [
+                  user.fatherName,
+                  user.mobileNumber,
+                ].where((e) => (e ?? '').isNotEmpty).join(' · '),
+              ),
+              const SizedBox(height: 2),
+              _UserBalanceText(userId: user.id),
+            ],
+          ),
+          trailing: PopupMenuButton<String>(
+            onSelected: onSelectedAction,
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'edit', child: Text(tr('users.edit'))),
+              PopupMenuItem(value: 'delete', child: Text(tr('users.delete'))),
+            ],
+          ),
+          onTap: onTap,
+        ),
+        const Divider(height: 0),
+      ],
+    );
+  }
+}
+
+class _AlphabetIndex extends StatelessWidget {
+  final List<String> letters;
+  final ValueChanged<String> onSelect;
+  const _AlphabetIndex({required this.letters, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 28,
+      color: Colors.transparent,
+      alignment: Alignment.center,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onVerticalDragDown: (d) => _handle(context, d.localPosition.dy),
+        onVerticalDragUpdate: (d) => _handle(context, d.localPosition.dy),
+        onTapDown: (d) => _handle(context, d.localPosition.dy),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final height = constraints.maxHeight;
+            final itemHeight = height / letters.length;
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (final l in letters)
+                  SizedBox(
+                    height: itemHeight,
+                    child: Center(
+                      child: Text(
+                        l,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _handle(BuildContext context, double dy) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || letters.isEmpty) return;
+    final height = box.size.height;
+    final idx = (dy.clamp(0, height) / height * letters.length).floor();
+    final safeIndex = idx.clamp(0, letters.length - 1);
+    onSelect(letters[safeIndex]);
   }
 }

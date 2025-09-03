@@ -87,9 +87,8 @@ ORDER BY l.created_at DESC, l.id DESC
             TransactionsCompanion.insert(
               bankId: bankId,
               userId: d.Value(userId),
-              amount: principalAmount,
-              type: 'withdraw',
-              withdrawKind: const d.Value('loan_principal'),
+              amount: -principalAmount,
+              type: 'پرداخت وام به کاربر',
               note: d.Value(note),
             ),
           );
@@ -150,8 +149,6 @@ ORDER BY lp.paid_at DESC, lp.id DESC
               userId: r.readNullable<int>('user_id'),
               amount: r.read<int>('t.amount'),
               type: r.read<String>('type'),
-              depositKind: r.readNullable<String>('deposit_kind'),
-              withdrawKind: r.readNullable<String>('withdraw_kind'),
               note: r.readNullable<String>('note'),
               createdAt: r.read<DateTime>('t.created_at'),
               updatedAt: r.readNullable<DateTime>('t.updated_at'),
@@ -176,15 +173,14 @@ ORDER BY lp.paid_at DESC, lp.id DESC
     required int amount,
     String? note,
   }) async {
-    // Create a deposit transaction for loan installment
+    // Create a positive transaction for loan installment
     final trId = await db
         .into(db.transactions)
         .insert(
           TransactionsCompanion.insert(
             bankId: bankId,
             amount: amount,
-            type: 'deposit',
-            depositKind: const d.Value('loan_installment'),
+            type: 'پرداخت قسط وام',
             note: d.Value(note),
           ),
         );

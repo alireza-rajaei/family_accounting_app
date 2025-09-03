@@ -6,36 +6,23 @@ class UsersRepository {
   final AppDatabase db;
   UsersRepository(this.db);
 
-  Stream<List<User>> watchUsers({String query = ''}) {
-    final q =
-        (db.select(db.users)..orderBy([
-              (t) => d.OrderingTerm(
-                expression: t.lastName,
-                mode: d.OrderingMode.asc,
-              ),
-              (t) => d.OrderingTerm(
-                expression: t.firstName,
-                mode: d.OrderingMode.asc,
-              ),
-            ]))
-            .watch();
-
-    if (query.trim().isEmpty) return q;
-    final normalized = query.trim();
-    final pattern = '%$normalized%';
-    return (db.select(db.users)
-          ..where((t) => t.firstName.like(pattern) | t.lastName.like(pattern))
-          ..orderBy([
-            (t) => d.OrderingTerm(
-              expression: t.lastName,
-              mode: d.OrderingMode.asc,
-            ),
-            (t) => d.OrderingTerm(
-              expression: t.firstName,
-              mode: d.OrderingMode.asc,
-            ),
-          ]))
-        .watch();
+  Stream<List<User>> watchUsers(String query) {
+    final sel = db.select(db.users);
+    final q = query.trim();
+    if (q.isNotEmpty) {
+      final like = '%$q%';
+      sel.where(
+        (u) =>
+            u.firstName.like(like) |
+            u.lastName.like(like) |
+            u.mobileNumber.like(like),
+      );
+    }
+    sel.orderBy([
+      (u) => d.OrderingTerm(expression: u.firstName),
+      (u) => d.OrderingTerm(expression: u.lastName),
+    ]);
+    return sel.watch();
   }
 
   Future<int> addUser({
@@ -82,7 +69,7 @@ class UsersRepository {
     const sql = '''
 SELECT COALESCE(SUM(t.amount), 0) AS balance
 FROM transactions t
-WHERE t.user_id = ? AND t.type = 'deposit' AND t.deposit_kind = 'deposit_to_user'
+WHERE t.user_id = ?
 ''';
     final row = await db
         .customSelect(

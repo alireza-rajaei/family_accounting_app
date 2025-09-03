@@ -34,11 +34,10 @@ enum TransactionType { deposit, withdraw }
 class Transactions extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get bankId => integer().named('bank_id').references(Banks, #id)();
-  IntColumn get userId => integer().named('user_id').nullable().references(Users, #id)();
+  IntColumn get userId =>
+      integer().named('user_id').nullable().references(Users, #id)();
   IntColumn get amount => integer()();
-  TextColumn get type => text()(); // 'deposit' | 'withdraw'
-  TextColumn get depositKind => text().named('deposit_kind').nullable()();
-  TextColumn get withdrawKind => text().named('withdraw_kind').nullable()();
+  TextColumn get type => text()(); // unified type in Persian
   TextColumn get note => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -57,9 +56,8 @@ class Loans extends Table {
 class LoanPayments extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get loanId => integer().named('loan_id').references(Loans, #id)();
-  IntColumn get transactionId => integer().named('transaction_id').references(Transactions, #id)();
+  IntColumn get transactionId =>
+      integer().named('transaction_id').references(Transactions, #id)();
   IntColumn get amount => integer()();
   DateTimeColumn get paidAt => dateTime().withDefault(currentDateAndTime)();
 }
-
-

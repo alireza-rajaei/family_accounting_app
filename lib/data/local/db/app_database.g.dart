@@ -1410,28 +1410,6 @@ class $TransactionsTable extends Transactions
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _depositKindMeta = const VerificationMeta(
-    'depositKind',
-  );
-  @override
-  late final GeneratedColumn<String> depositKind = GeneratedColumn<String>(
-    'deposit_kind',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _withdrawKindMeta = const VerificationMeta(
-    'withdrawKind',
-  );
-  @override
-  late final GeneratedColumn<String> withdrawKind = GeneratedColumn<String>(
-    'withdraw_kind',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _noteMeta = const VerificationMeta('note');
   @override
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -1471,8 +1449,6 @@ class $TransactionsTable extends Transactions
     userId,
     amount,
     type,
-    depositKind,
-    withdrawKind,
     note,
     createdAt,
     updatedAt,
@@ -1522,24 +1498,6 @@ class $TransactionsTable extends Transactions
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
-    if (data.containsKey('deposit_kind')) {
-      context.handle(
-        _depositKindMeta,
-        depositKind.isAcceptableOrUnknown(
-          data['deposit_kind']!,
-          _depositKindMeta,
-        ),
-      );
-    }
-    if (data.containsKey('withdraw_kind')) {
-      context.handle(
-        _withdrawKindMeta,
-        withdrawKind.isAcceptableOrUnknown(
-          data['withdraw_kind']!,
-          _withdrawKindMeta,
-        ),
-      );
-    }
     if (data.containsKey('note')) {
       context.handle(
         _noteMeta,
@@ -1587,14 +1545,6 @@ class $TransactionsTable extends Transactions
         DriftSqlType.string,
         data['${effectivePrefix}type'],
       )!,
-      depositKind: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}deposit_kind'],
-      ),
-      withdrawKind: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}withdraw_kind'],
-      ),
       note: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}note'],
@@ -1622,8 +1572,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final int? userId;
   final int amount;
   final String type;
-  final String? depositKind;
-  final String? withdrawKind;
   final String? note;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -1633,8 +1581,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     this.userId,
     required this.amount,
     required this.type,
-    this.depositKind,
-    this.withdrawKind,
     this.note,
     required this.createdAt,
     this.updatedAt,
@@ -1649,12 +1595,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     }
     map['amount'] = Variable<int>(amount);
     map['type'] = Variable<String>(type);
-    if (!nullToAbsent || depositKind != null) {
-      map['deposit_kind'] = Variable<String>(depositKind);
-    }
-    if (!nullToAbsent || withdrawKind != null) {
-      map['withdraw_kind'] = Variable<String>(withdrawKind);
-    }
     if (!nullToAbsent || note != null) {
       map['note'] = Variable<String>(note);
     }
@@ -1674,12 +1614,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           : Value(userId),
       amount: Value(amount),
       type: Value(type),
-      depositKind: depositKind == null && nullToAbsent
-          ? const Value.absent()
-          : Value(depositKind),
-      withdrawKind: withdrawKind == null && nullToAbsent
-          ? const Value.absent()
-          : Value(withdrawKind),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
@@ -1699,8 +1633,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       userId: serializer.fromJson<int?>(json['userId']),
       amount: serializer.fromJson<int>(json['amount']),
       type: serializer.fromJson<String>(json['type']),
-      depositKind: serializer.fromJson<String?>(json['depositKind']),
-      withdrawKind: serializer.fromJson<String?>(json['withdrawKind']),
       note: serializer.fromJson<String?>(json['note']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
@@ -1715,8 +1647,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'userId': serializer.toJson<int?>(userId),
       'amount': serializer.toJson<int>(amount),
       'type': serializer.toJson<String>(type),
-      'depositKind': serializer.toJson<String?>(depositKind),
-      'withdrawKind': serializer.toJson<String?>(withdrawKind),
       'note': serializer.toJson<String?>(note),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
@@ -1729,8 +1659,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     Value<int?> userId = const Value.absent(),
     int? amount,
     String? type,
-    Value<String?> depositKind = const Value.absent(),
-    Value<String?> withdrawKind = const Value.absent(),
     Value<String?> note = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
@@ -1740,8 +1668,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     userId: userId.present ? userId.value : this.userId,
     amount: amount ?? this.amount,
     type: type ?? this.type,
-    depositKind: depositKind.present ? depositKind.value : this.depositKind,
-    withdrawKind: withdrawKind.present ? withdrawKind.value : this.withdrawKind,
     note: note.present ? note.value : this.note,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
@@ -1753,12 +1679,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       userId: data.userId.present ? data.userId.value : this.userId,
       amount: data.amount.present ? data.amount.value : this.amount,
       type: data.type.present ? data.type.value : this.type,
-      depositKind: data.depositKind.present
-          ? data.depositKind.value
-          : this.depositKind,
-      withdrawKind: data.withdrawKind.present
-          ? data.withdrawKind.value
-          : this.withdrawKind,
       note: data.note.present ? data.note.value : this.note,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -1773,8 +1693,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('userId: $userId, ')
           ..write('amount: $amount, ')
           ..write('type: $type, ')
-          ..write('depositKind: $depositKind, ')
-          ..write('withdrawKind: $withdrawKind, ')
           ..write('note: $note, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
@@ -1783,18 +1701,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    bankId,
-    userId,
-    amount,
-    type,
-    depositKind,
-    withdrawKind,
-    note,
-    createdAt,
-    updatedAt,
-  );
+  int get hashCode =>
+      Object.hash(id, bankId, userId, amount, type, note, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1804,8 +1712,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.userId == this.userId &&
           other.amount == this.amount &&
           other.type == this.type &&
-          other.depositKind == this.depositKind &&
-          other.withdrawKind == this.withdrawKind &&
           other.note == this.note &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
@@ -1817,8 +1723,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<int?> userId;
   final Value<int> amount;
   final Value<String> type;
-  final Value<String?> depositKind;
-  final Value<String?> withdrawKind;
   final Value<String?> note;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
@@ -1828,8 +1732,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.userId = const Value.absent(),
     this.amount = const Value.absent(),
     this.type = const Value.absent(),
-    this.depositKind = const Value.absent(),
-    this.withdrawKind = const Value.absent(),
     this.note = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -1840,8 +1742,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.userId = const Value.absent(),
     required int amount,
     required String type,
-    this.depositKind = const Value.absent(),
-    this.withdrawKind = const Value.absent(),
     this.note = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -1854,8 +1754,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<int>? userId,
     Expression<int>? amount,
     Expression<String>? type,
-    Expression<String>? depositKind,
-    Expression<String>? withdrawKind,
     Expression<String>? note,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -1866,8 +1764,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (userId != null) 'user_id': userId,
       if (amount != null) 'amount': amount,
       if (type != null) 'type': type,
-      if (depositKind != null) 'deposit_kind': depositKind,
-      if (withdrawKind != null) 'withdraw_kind': withdrawKind,
       if (note != null) 'note': note,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -1880,8 +1776,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Value<int?>? userId,
     Value<int>? amount,
     Value<String>? type,
-    Value<String?>? depositKind,
-    Value<String?>? withdrawKind,
     Value<String?>? note,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
@@ -1892,8 +1786,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       userId: userId ?? this.userId,
       amount: amount ?? this.amount,
       type: type ?? this.type,
-      depositKind: depositKind ?? this.depositKind,
-      withdrawKind: withdrawKind ?? this.withdrawKind,
       note: note ?? this.note,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -1918,12 +1810,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (type.present) {
       map['type'] = Variable<String>(type.value);
     }
-    if (depositKind.present) {
-      map['deposit_kind'] = Variable<String>(depositKind.value);
-    }
-    if (withdrawKind.present) {
-      map['withdraw_kind'] = Variable<String>(withdrawKind.value);
-    }
     if (note.present) {
       map['note'] = Variable<String>(note.value);
     }
@@ -1944,8 +1830,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('userId: $userId, ')
           ..write('amount: $amount, ')
           ..write('type: $type, ')
-          ..write('depositKind: $depositKind, ')
-          ..write('withdrawKind: $withdrawKind, ')
           ..write('note: $note, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
@@ -3761,8 +3645,6 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       Value<int?> userId,
       required int amount,
       required String type,
-      Value<String?> depositKind,
-      Value<String?> withdrawKind,
       Value<String?> note,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
@@ -3774,8 +3656,6 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<int?> userId,
       Value<int> amount,
       Value<String> type,
-      Value<String?> depositKind,
-      Value<String?> withdrawKind,
       Value<String?> note,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
@@ -3864,16 +3744,6 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<String> get type => $composableBuilder(
     column: $table.type,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get depositKind => $composableBuilder(
-    column: $table.depositKind,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get withdrawKind => $composableBuilder(
-    column: $table.withdrawKind,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3988,16 +3858,6 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get depositKind => $composableBuilder(
-    column: $table.depositKind,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get withdrawKind => $composableBuilder(
-    column: $table.withdrawKind,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get note => $composableBuilder(
     column: $table.note,
     builder: (column) => ColumnOrderings(column),
@@ -4077,16 +3937,6 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
-
-  GeneratedColumn<String> get depositKind => $composableBuilder(
-    column: $table.depositKind,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get withdrawKind => $composableBuilder(
-    column: $table.withdrawKind,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
@@ -4206,8 +4056,6 @@ class $$TransactionsTableTableManager
                 Value<int?> userId = const Value.absent(),
                 Value<int> amount = const Value.absent(),
                 Value<String> type = const Value.absent(),
-                Value<String?> depositKind = const Value.absent(),
-                Value<String?> withdrawKind = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
@@ -4217,8 +4065,6 @@ class $$TransactionsTableTableManager
                 userId: userId,
                 amount: amount,
                 type: type,
-                depositKind: depositKind,
-                withdrawKind: withdrawKind,
                 note: note,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -4230,8 +4076,6 @@ class $$TransactionsTableTableManager
                 Value<int?> userId = const Value.absent(),
                 required int amount,
                 required String type,
-                Value<String?> depositKind = const Value.absent(),
-                Value<String?> withdrawKind = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
@@ -4241,8 +4085,6 @@ class $$TransactionsTableTableManager
                 userId: userId,
                 amount: amount,
                 type: type,
-                depositKind: depositKind,
-                withdrawKind: withdrawKind,
                 note: note,
                 createdAt: createdAt,
                 updatedAt: updatedAt,

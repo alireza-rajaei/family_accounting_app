@@ -50,12 +50,7 @@ class _TransactionsView extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final it = state.items[index];
                       final trn = it.transaction;
-                      final isDeposit = trn.type == 'deposit';
-                      final kind = _kindLabel(
-                        trn.type,
-                        trn.depositKind,
-                        trn.withdrawKind,
-                      );
+                      final isIncome = trn.amount >= 0;
                       return ListTile(
                         leading: BankCircleAvatar(
                           bankKey: it.bank.bankKey,
@@ -72,13 +67,15 @@ class _TransactionsView extends StatelessWidget {
                             Text(
                               '${it.bank.accountName} · ${JalaliUtils.formatJalali(trn.createdAt)}',
                             ),
-                            if (kind.isNotEmpty) Text(kind),
+                            if ((trn.type).isNotEmpty) Text('نوع: ${trn.type}'),
                           ],
                         ),
                         trailing: Text(
-                          _formatCurrency(trn.amount),
+                          _formatCurrency(
+                            trn.amount.abs() * (isIncome ? 1 : -1),
+                          ),
                           style: TextStyle(
-                            color: isDeposit ? Colors.green : Colors.red,
+                            color: isIncome ? Colors.green : Colors.red,
                           ),
                         ),
                         onTap: () => _openTransactionSheet(context, data: it),
@@ -124,14 +121,20 @@ class _FiltersBar extends StatelessWidget {
           DropdownButton<String>(
             value: cubit.state.filter.type,
             hint: Text(tr('transactions.type')),
-            items: [
+            items: const [
+              DropdownMenuItem(value: 'واریز', child: Text('واریز')),
+              DropdownMenuItem(value: 'برداشت', child: Text('برداشت')),
               DropdownMenuItem(
-                value: 'deposit',
-                child: Text(tr('transactions.deposit')),
+                value: 'پرداخت وام به کاربر',
+                child: Text('پرداخت وام به کاربر'),
               ),
               DropdownMenuItem(
-                value: 'withdraw',
-                child: Text(tr('transactions.withdraw')),
+                value: 'پرداخت قسط وام',
+                child: Text('پرداخت قسط وام'),
+              ),
+              DropdownMenuItem(
+                value: 'جابجایی بین بانکی',
+                child: Text('جابجایی بین بانکی'),
               ),
             ],
             onChanged: (v) {
@@ -295,9 +298,7 @@ class _TransactionSheetState extends State<_TransactionSheet> {
   final _formKey = GlobalKey<FormState>();
   int? bankId;
   int? userId;
-  String type = 'deposit';
-  String? depositKind;
-  String? withdrawKind;
+  String type = 'واریز';
   int? toBankId;
   final amountCtrl = TextEditingController();
   final noteCtrl = TextEditingController();
@@ -310,9 +311,7 @@ class _TransactionSheetState extends State<_TransactionSheet> {
       bankId = d.bank.id;
       userId = d.user?.id;
       type = d.transaction.type;
-      depositKind = d.transaction.depositKind;
-      withdrawKind = d.transaction.withdrawKind;
-      amountCtrl.text = d.transaction.amount.toString();
+      amountCtrl.text = d.transaction.amount.abs().toString();
       noteCtrl.text = d.transaction.note ?? '';
     }
   }
@@ -329,15 +328,12 @@ class _TransactionSheetState extends State<_TransactionSheet> {
     final isEdit = widget.data != null;
     final padding =
         MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
-    final depositOptions = <(String, String)>[
-      ('loan_installment', 'پرداخت قسط وام'),
-      ('deposit_to_user', 'واریز به حساب کاربری'),
-      ('deposit_to_bank_transfer', 'واریز به بانک (انتقال بین بانک‌ها)'),
-    ];
-    final withdrawOptions = <(String, String)>[
-      ('loan_principal', 'پرداخت وام به فرد'),
-      ('withdraw_from_user', 'برداشت از حساب کاربری'),
-      ('withdraw_from_bank_transfer', 'برداشت از بانک (انتقال بین بانک‌ها)'),
+    final typeOptions = <String>[
+      'واریز',
+      'برداشت',
+      'پرداخت وام به کاربر',
+      'پرداخت قسط وام',
+      'جابجایی بین بانکی',
     ];
     return Padding(
       padding: padding,
@@ -375,17 +371,13 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: type,
-                      items: [
-                        DropdownMenuItem(
-                          value: 'deposit',
-                          child: Text(tr('transactions.deposit')),
-                        ),
-                        DropdownMenuItem(
-                          value: 'withdraw',
-                          child: Text(tr('transactions.withdraw')),
-                        ),
-                      ],
-                      onChanged: (v) => setState(() => type = v ?? 'deposit'),
+                      items: typeOptions
+                          .map(
+                            (opt) =>
+                                DropdownMenuItem(value: opt, child: Text(opt)),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => type = v ?? 'واریز'),
                       decoration: InputDecoration(
                         labelText: tr('transactions.type'),
                       ),
@@ -407,52 +399,8 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                 ],
               ),
               const SizedBox(height: 12),
-              if (type == 'deposit')
-                DropdownButtonFormField<String>(
-                  value: depositKind,
-                  items: depositOptions
-                      .map(
-                        (opt) => DropdownMenuItem(
-                          value: opt.$1,
-                          child: Text(opt.$2),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => depositKind = v),
-                  decoration: InputDecoration(
-                    labelText: tr('transactions.deposit_kind'),
-                  ),
-                ),
-              if (type == 'withdraw')
-                DropdownButtonFormField<String>(
-                  value: withdrawKind,
-                  items: withdrawOptions
-                      .map(
-                        (opt) => DropdownMenuItem(
-                          value: opt.$1,
-                          child: Text(opt.$2),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) => setState(() => withdrawKind = v),
-                  decoration: InputDecoration(
-                    labelText: tr('transactions.withdraw_kind'),
-                  ),
-                ),
-              if (type == 'deposit' &&
-                  depositKind == 'deposit_to_bank_transfer')
-                const SizedBox(height: 12),
-              if (type == 'deposit' &&
-                  depositKind == 'deposit_to_bank_transfer')
-                _DestinationBankDropdown(
-                  value: toBankId,
-                  onChanged: (v) => setState(() => toBankId = v),
-                ),
-              if (type == 'withdraw' &&
-                  withdrawKind == 'withdraw_from_bank_transfer')
-                const SizedBox(height: 12),
-              if (type == 'withdraw' &&
-                  withdrawKind == 'withdraw_from_bank_transfer')
+              if (type == 'جابجایی بین بانکی') const SizedBox(height: 12),
+              if (type == 'جابجایی بین بانکی')
                 _DestinationBankDropdown(
                   value: toBankId,
                   onChanged: (v) => setState(() => toBankId = v),
@@ -470,15 +418,7 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                     if (_formKey.currentState!.validate() && bankId != null) {
                       final c = context.read<TransactionsCubit>();
                       final amount = _parseInt(amountCtrl.text)!;
-                      final isDepositTransfer =
-                          type == 'deposit' &&
-                          depositKind == 'deposit_to_bank_transfer';
-                      final isWithdrawTransfer =
-                          type == 'withdraw' &&
-                          withdrawKind == 'withdraw_from_bank_transfer';
-
-                      if ((isDepositTransfer || isWithdrawTransfer) &&
-                          toBankId != null) {
+                      if (type == 'جابجایی بین بانکی' && toBankId != null) {
                         final from = bankId!;
                         final to = toBankId!;
                         if (from == to) {
@@ -520,8 +460,8 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                         if (context.mounted) Navigator.pop(context);
                         return;
                       }
-                      // Balance check for normal withdraw
-                      if (type == 'withdraw') {
+                      // Balance check for normal withdraw-like operations
+                      if (type == 'برداشت' || type == 'پرداخت وام به کاربر') {
                         final banksState = context.read<BanksCubit>().state;
                         final srcMatch = banksState.banks.where(
                           (b) => b.bank.id == bankId,
@@ -539,34 +479,18 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                           );
                           return;
                         }
-
-                        // If withdraw from user account, check user balance too
-                        if (withdrawKind == 'withdraw_from_user' &&
-                            userId != null) {
-                          final userBalance = await context
-                              .read<UsersCubit>()
-                              .getUserBalance(userId!);
-                          if (amount > userBalance) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'مبلغ برداشت از موجودی کاربر بیشتر است',
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-                        }
                       }
+                      final signedAmount =
+                          (type == 'برداشت' || type == 'پرداخت وام به کاربر')
+                          ? -amount
+                          : amount;
                       if (isEdit) {
                         await c.update(
                           id: widget.data!.transaction.id,
                           bankId: bankId!,
                           userId: userId,
-                          amount: amount,
+                          amount: signedAmount,
                           type: type,
-                          depositKind: depositKind,
-                          withdrawKind: withdrawKind,
                           note: noteCtrl.text.trim().isEmpty
                               ? null
                               : noteCtrl.text.trim(),
@@ -575,10 +499,8 @@ class _TransactionSheetState extends State<_TransactionSheet> {
                         await c.add(
                           bankId: bankId!,
                           userId: userId,
-                          amount: amount,
+                          amount: signedAmount,
                           type: type,
-                          depositKind: depositKind,
-                          withdrawKind: withdrawKind,
                           note: noteCtrl.text.trim().isEmpty
                               ? null
                               : noteCtrl.text.trim(),
@@ -881,34 +803,4 @@ Future<int?> _showUserPicker(BuildContext context, UsersState state) async {
       );
     },
   );
-}
-
-String _kindLabel(String type, String? depositKind, String? withdrawKind) {
-  String? label;
-  if (type == 'deposit') {
-    switch (depositKind) {
-      case 'loan_installment':
-        label = 'پرداخت قسط وام';
-        break;
-      case 'deposit_to_user':
-        label = 'واریز به حساب کاربری';
-        break;
-      case 'deposit_to_bank_transfer':
-        label = 'واریز به بانک (انتقال بین بانک‌ها)';
-        break;
-    }
-  } else if (type == 'withdraw') {
-    switch (withdrawKind) {
-      case 'loan_principal':
-        label = 'پرداخت وام به فرد';
-        break;
-      case 'withdraw_from_user':
-        label = 'برداشت از حساب کاربری';
-        break;
-      case 'withdraw_from_bank_transfer':
-        label = 'برداشت از بانک (انتقال بین بانک‌ها)';
-        break;
-    }
-  }
-  return label == null ? '' : 'نوع: $label';
 }

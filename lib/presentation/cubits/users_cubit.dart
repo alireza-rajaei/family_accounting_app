@@ -36,7 +36,7 @@ class UsersCubit extends Cubit<UsersState> {
   void watch([String q = '']) {
     _sub?.cancel();
     emit(state.copyWith(loading: true, query: q));
-    _sub = repository.watchUsers(query: q).listen((data) {
+    _sub = repository.watchUsers(q).listen((data) {
       emit(state.copyWith(users: data, loading: false));
     });
   }
