@@ -20,7 +20,11 @@ class ShellScaffold extends StatefulWidget {
   State<ShellScaffold> createState() => _ShellScaffoldState();
 }
 
-class _ShellScaffoldState extends State<ShellScaffold> {
+class _ShellScaffoldState extends State<ShellScaffold>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   int _currentIndexByLocation(String location) {
     if (location.startsWith('/transactions')) return 1;
     if (location.startsWith('/loans')) return 2;
@@ -51,6 +55,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // final settings = context.watch<SettingsCubit>().state;
 
     final location = GoRouterState.of(context).uri.toString();
@@ -59,7 +64,7 @@ class _ShellScaffoldState extends State<ShellScaffold> {
     return Scaffold(
       appBar: AppBar(title: Text(tr('app_title'))),
       drawer: const _AppDrawer(),
-      body: widget.child,
+      body: PageStorage(bucket: PageStorageBucket(), child: widget.child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndexByLocation(location),
         onDestinationSelected: _onItemTapped,

@@ -54,7 +54,8 @@
     "save": "ذخیره تغییرات",
     "create": "ایجاد بانک",
     "delete": "حذف",
-    "confirm_delete": "آیا از حذف {name} مطمئن هستید؟"
+    "confirm_delete": "آیا از حذف {name} مطمئن هستید؟",
+    "rial": "ریال"
   },
   "transactions": {
     "title": "تراکنش‌ها",
@@ -91,4 +92,3 @@
     "bank": "بانک"
   }
 }
-

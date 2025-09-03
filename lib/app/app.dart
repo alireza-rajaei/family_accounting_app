@@ -9,13 +9,18 @@ import '../presentation/cubits/settings_cubit.dart';
 import '../presentation/router/app_router.dart';
 import 'theme/app_theme.dart';
 
-class FamilyAccountingApp extends StatelessWidget {
+class FamilyAccountingApp extends StatefulWidget {
   const FamilyAccountingApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final GoRouter router = createAppRouter();
+  State<FamilyAccountingApp> createState() => _FamilyAccountingAppState();
+}
 
+class _FamilyAccountingAppState extends State<FamilyAccountingApp> {
+  late final GoRouter _router = createAppRouter();
+
+  @override
+  Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => SettingsCubit()..load()),
@@ -26,7 +31,7 @@ class FamilyAccountingApp extends StatelessWidget {
           return MaterialApp.router(
             title: tr('app_title'),
             debugShowCheckedModeBanner: false,
-            routerConfig: router,
+            routerConfig: _router,
             themeMode: state.themeMode,
             theme: AppTheme.light(scale: state.fontScale),
             darkTheme: AppTheme.dark(scale: state.fontScale),

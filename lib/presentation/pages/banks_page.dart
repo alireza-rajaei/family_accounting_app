@@ -74,33 +74,168 @@ class _BanksViewState extends State<_BanksView> {
                   }
                   return ListView.separated(
                     itemCount: state.banks.length,
-                    separatorBuilder: (_, __) => const Divider(height: 0),
+                    separatorBuilder: (_, __) => const SizedBox(height: 24),
                     itemBuilder: (context, index) {
                       final item = state.banks[index];
                       final b = item.bank;
-                      return ListTile(
-                        leading: BankCircleAvatar(
-                          bankKey: b.bankKey,
-                          name: b.bankName,
+                      final colors = BankIcons.gradients[b.bankKey];
+                      return Container(
+                        height: 200,
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: colors == null
+                              ? null
+                              : LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: colors,
+                                ),
                         ),
-                        title: Text('${b.bankName} · ${b.accountName}'),
-                        subtitle: Text('شماره حساب: ${b.accountNumber}'),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                        child: Stack(
                           children: [
-                            Text(
-                              _formatCurrency(item.balance),
-                              style: TextStyle(
-                                color: item.balance >= 0
-                                    ? Colors.green
-                                    : Colors.red,
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: RadialGradient(
+                                      center: Alignment.center,
+                                      radius: 0.72,
+                                      colors: [
+                                        Colors.white.withOpacity(0.32),
+                                        Colors.white.withOpacity(0.10),
+                                        Colors.white.withOpacity(0.0),
+                                      ],
+                                      stops: const [0.0, 0.55, 1.0],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            IgnorePointer(
+                              child: Align(
+                                alignment: Alignment.center,
+                                child: Opacity(
+                                  opacity: 0.12,
+                                  child: BankIcons.logo(
+                                    b.bankKey,
+                                    size: 140,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Align(
+                              alignment: Alignment.center,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Text(
+                                  b.accountNumber,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.8,
+                                        fontSize: 28,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      // Bank logo (left) with white translucent circle behind
+                                      Container(
+                                        width: 56,
+                                        height: 56,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.5),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: SizedBox(
+                                            width: 40,
+                                            height: 40,
+                                            child: BankCircleAvatar(
+                                              bankKey: b.bankKey,
+                                              name: b.bankName,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      // Bank title + english subtitle (similar to sample)
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              b.bankName,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleLarge
+                                                  ?.copyWith(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                            Text(
+                                              BankIcons.englishNames[b
+                                                      .bankKey] ??
+                                                  '',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color: Colors.white
+                                                        .withOpacity(0.9),
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Spacer(),
+                                  // Card number and balance footer
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      const Expanded(child: SizedBox()),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        '${_formatCurrency(item.balance)} ${tr('banks.rial')}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                        onTap: () => _openBankSheet(context, bank: b),
-                        onLongPress: () => _openBankMenu(context, b),
                       );
                     },
                   );
