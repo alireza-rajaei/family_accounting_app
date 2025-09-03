@@ -6,6 +6,8 @@ import '../../di/locator.dart';
 import '../../data/local/db/app_database.dart';
 import '../cubits/users_cubit.dart';
 import '../../app/utils/format.dart';
+// removed: not needed here after using openTransactionSheet
+import 'transactions_page.dart' show showTransactionSheet;
 
 class UsersPage extends StatelessWidget {
   const UsersPage({super.key});
@@ -79,8 +81,8 @@ class _UsersViewState extends State<_UsersView> {
                       SliverFillRemaining(
                         hasScrollBody: false,
                         child: Center(child: Text(tr('users.not_found'))),
-                      )
-                    else
+                      ),
+                    if (!state.loading && users.isNotEmpty)
                       ..._buildGroupedUserSlivers(users),
                   ],
                 ),
@@ -135,7 +137,9 @@ class _UsersViewState extends State<_UsersView> {
               user: u,
               onTap: () => _openUserSheet(context, user: u),
               onSelectedAction: (v) async {
-                if (v == 'edit') {
+                if (v == 'add_tx') {
+                  await _openTransactionSheetForUser(context, userId: u.id);
+                } else if (v == 'edit') {
                   _openUserSheet(context, user: u);
                 } else if (v == 'delete') {
                   final ok = await showDialog<bool>(
@@ -186,6 +190,13 @@ class _UsersViewState extends State<_UsersView> {
     flushBuffer();
 
     return slivers;
+  }
+
+  Future<void> _openTransactionSheetForUser(
+    BuildContext context, {
+    int? userId,
+  }) async {
+    await showTransactionSheet(context, initialUserId: userId);
   }
 
   String _initialOf(User u) {
@@ -256,6 +267,9 @@ class _UserSheet extends StatefulWidget {
   @override
   State<_UserSheet> createState() => _UserSheetState();
 }
+
+// Transaction sheet wrapper customized for Users page to preselect user
+// wrapper حذف شد
 
 class _UserSheetState extends State<_UserSheet> {
   final _formKey = GlobalKey<FormState>();
@@ -500,35 +514,40 @@ class _UserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ListTile(
-          leading: CircleAvatar(child: Text(_initials())),
-          title: Text('${user.firstName} ${user.lastName}'),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                [
-                  user.fatherName,
-                  user.mobileNumber,
-                ].where((e) => (e ?? '').isNotEmpty).join(' · '),
-              ),
-              const SizedBox(height: 2),
-              _UserBalanceText(userId: user.id),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: CircleAvatar(child: Text(_initials())),
+            title: Text('${user.firstName} ${user.lastName}'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  [
+                    user.fatherName,
+                    user.mobileNumber,
+                  ].where((e) => (e ?? '').isNotEmpty).join(' · '),
+                ),
+                const SizedBox(height: 2),
+                _UserBalanceText(userId: user.id),
+              ],
+            ),
+            trailing: PopupMenuButton<String>(
+              padding: EdgeInsets.zero,
+              onSelected: onSelectedAction,
+              itemBuilder: (context) => [
+                PopupMenuItem(value: 'add_tx', child: Text('افزودن تراکنش')),
+                PopupMenuItem(value: 'edit', child: Text(tr('users.edit'))),
+                PopupMenuItem(value: 'delete', child: Text(tr('users.delete'))),
+              ],
+            ),
+            onTap: onTap,
           ),
-          trailing: PopupMenuButton<String>(
-            onSelected: onSelectedAction,
-            itemBuilder: (context) => [
-              PopupMenuItem(value: 'edit', child: Text(tr('users.edit'))),
-              PopupMenuItem(value: 'delete', child: Text(tr('users.delete'))),
-            ],
-          ),
-          onTap: onTap,
-        ),
-        const Divider(height: 0),
-      ],
+        ],
+      ),
     );
   }
 }

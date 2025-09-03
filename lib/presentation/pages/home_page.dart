@@ -149,12 +149,8 @@ class _HomeView extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                _formatCurrency(b.balance),
-                                style: TextStyle(
-                                  color: b.balance >= 0
-                                      ? Colors.green
-                                      : Colors.red,
-                                ),
+                                _formatCurrency(b.balance) +
+                                    ' ${tr('banks.rial')}',
                               ),
                             ],
                           ),

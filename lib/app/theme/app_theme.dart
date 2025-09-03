@@ -16,6 +16,14 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.lightBackground,
       appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+      navigationBarTheme: NavigationBarThemeData(
+        labelTextStyle: MaterialStatePropertyAll(
+          TextStyle(
+            fontSize: 13, // +2 over default (~11)
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -39,6 +47,11 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.darkBackground,
       appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
+      navigationBarTheme: NavigationBarThemeData(
+        labelTextStyle: MaterialStatePropertyAll(
+          TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

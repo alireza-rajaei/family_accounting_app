@@ -272,29 +272,45 @@ class _DateRangePicker extends StatelessWidget {
 Future<void> _openTransactionSheet(
   BuildContext context, {
   TransactionWithJoins? data,
+  int? initialUserId,
 }) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     builder: (sheetContext) => MultiBlocProvider(
       providers: [
-        BlocProvider.value(value: context.read<TransactionsCubit>()),
-        BlocProvider.value(value: context.read<BanksCubit>()),
-        BlocProvider.value(value: context.read<UsersCubit>()),
+        // Create fresh cubits for the sheet to avoid dependency on ancestors
+        BlocProvider(create: (_) => TransactionsCubit(locator())..watch()),
+        BlocProvider(create: (_) => BanksCubit(locator())..watch()),
+        BlocProvider(create: (_) => UsersCubit(locator())..watch()),
       ],
-      child: _TransactionSheet(data: data),
+      child: TransactionSheet(data: data, initialUserId: initialUserId),
     ),
   );
 }
 
-class _TransactionSheet extends StatefulWidget {
-  final TransactionWithJoins? data;
-  const _TransactionSheet({this.data});
-  @override
-  State<_TransactionSheet> createState() => _TransactionSheetState();
+// Public helper so other pages can open the transaction sheet without navigating
+Future<void> showTransactionSheet(
+  BuildContext context, {
+  TransactionWithJoins? data,
+  int? initialUserId,
+}) {
+  return _openTransactionSheet(
+    context,
+    data: data,
+    initialUserId: initialUserId,
+  );
 }
 
-class _TransactionSheetState extends State<_TransactionSheet> {
+class TransactionSheet extends StatefulWidget {
+  final TransactionWithJoins? data;
+  final int? initialUserId;
+  const TransactionSheet({this.data, this.initialUserId});
+  @override
+  State<TransactionSheet> createState() => _TransactionSheetState();
+}
+
+class _TransactionSheetState extends State<TransactionSheet> {
   final _formKey = GlobalKey<FormState>();
   int? bankId;
   int? userId;
@@ -313,6 +329,8 @@ class _TransactionSheetState extends State<_TransactionSheet> {
       type = d.transaction.type;
       amountCtrl.text = d.transaction.amount.abs().toString();
       noteCtrl.text = d.transaction.note ?? '';
+    } else if (widget.initialUserId != null) {
+      userId = widget.initialUserId;
     }
   }
 
@@ -628,20 +646,25 @@ class _SearchableUserFieldState extends State<_SearchableUserField> {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: _controller,
-      readOnly: true,
-      decoration: InputDecoration(
-        labelText: tr('loans.user'),
-        suffixIcon: const Icon(Icons.search),
-      ),
-      onTap: () async {
-        final state = context.read<UsersCubit>().state;
-        final picked = await _showUserPicker(context, state);
-        if (picked != null) {
-          widget.onChanged(picked);
-          _syncLabel();
-        }
+    return BlocBuilder<UsersCubit, UsersState>(
+      builder: (context, state) {
+        // sync label when users list changes
+        _syncLabel();
+        return TextFormField(
+          controller: _controller,
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: tr('loans.user'),
+            suffixIcon: const Icon(Icons.search),
+          ),
+          onTap: () async {
+            final picked = await _showUserPicker(context, state);
+            if (picked != null) {
+              widget.onChanged(picked);
+              _syncLabel();
+            }
+          },
+        );
       },
     );
   }

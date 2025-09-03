@@ -73,6 +73,7 @@ class _BanksViewState extends State<_BanksView> {
                     return Center(child: Text(tr('banks.not_found')));
                   }
                   return ListView.separated(
+                    padding: const EdgeInsets.only(top: 12),
                     itemCount: state.banks.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 24),
                     itemBuilder: (context, index) {
