@@ -54,8 +54,7 @@ dependencies:
   google_fonts: ^6.2.1
   easy_localization: ^3.0.5
   file_picker: ^8.1.2
-  flutter_svg: ^2.0.10+1
-  iransansx: ^1.0.0
+  flutter_svg: ^2.0.10+1 
 
 dev_dependencies:
   flutter_test:
