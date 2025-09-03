@@ -539,7 +539,10 @@ class _UserTile extends StatelessWidget {
               padding: EdgeInsets.zero,
               onSelected: onSelectedAction,
               itemBuilder: (context) => [
-                PopupMenuItem(value: 'add_tx', child: Text('افزودن تراکنش')),
+                PopupMenuItem(
+                  value: 'add_tx',
+                  child: Text(tr('users.add_transaction')),
+                ),
                 PopupMenuItem(value: 'edit', child: Text(tr('users.edit'))),
                 PopupMenuItem(value: 'delete', child: Text(tr('users.delete'))),
               ],

@@ -243,12 +243,16 @@ class _BankDropdown extends StatelessWidget {
     return BlocBuilder<BanksCubit, BanksState>(
       builder: (context, state) {
         return DropdownButtonFormField<int>(
+          isExpanded: true,
           value: value,
           items: state.banks
               .map(
                 (e) => DropdownMenuItem(
                   value: e.bank.id,
-                  child: Text('${e.bank.bankName} · ${e.bank.accountName}'),
+                  child: Text(
+                    '${e.bank.bankName} · ${e.bank.accountName}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               )
               .toList(),

@@ -71,9 +71,7 @@ class _TransactionsView extends StatelessWidget {
                           ],
                         ),
                         trailing: Text(
-                          _formatCurrency(
-                            trn.amount.abs() * (isIncome ? 1 : -1),
-                          ),
+                          '${_formatCurrency(trn.amount.abs() * (isIncome ? 1 : -1))} ${tr('banks.rial')}',
                           style: TextStyle(
                             color: isIncome ? Colors.green : Colors.red,
                           ),

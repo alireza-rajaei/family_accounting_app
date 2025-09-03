@@ -40,6 +40,7 @@
     "save": "ذخیره تغییرات",
     "create": "ایجاد کاربر",
     "delete": "حذف",
+    "add_transaction": "افزودن تراکنش",
     "confirm_delete": "آیا از حذف {name} مطمئن هستید؟"
   },
   "banks": {
