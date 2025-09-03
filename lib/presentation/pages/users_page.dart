@@ -29,11 +29,6 @@ class _UsersView extends StatefulWidget {
 class _UsersViewState extends State<_UsersView> {
   final TextEditingController _search = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final Map<String, GlobalKey> _sectionKeys = {};
-
-  GlobalKey _getSectionKey(String letter) {
-    return _sectionKeys.putIfAbsent(letter, () => GlobalKey());
-  }
 
   @override
   void dispose() {
@@ -50,7 +45,6 @@ class _UsersViewState extends State<_UsersView> {
         child: BlocBuilder<UsersCubit, UsersState>(
           builder: (context, state) {
             final users = state.users;
-            final List<String> letters = _computeLetters(users);
             return Stack(
               children: [
                 CustomScrollView(
@@ -86,19 +80,6 @@ class _UsersViewState extends State<_UsersView> {
                       ..._buildGroupedUserSlivers(users),
                   ],
                 ),
-                if (!state.loading && users.isNotEmpty)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    child: IgnorePointer(
-                      ignoring: false,
-                      child: _AlphabetIndex(
-                        letters: letters,
-                        onSelect: _scrollToLetter,
-                      ),
-                    ),
-                  ),
               ],
             );
           },
@@ -120,11 +101,19 @@ class _UsersViewState extends State<_UsersView> {
       if (currentHeader == null || buffer.isEmpty) return;
       final String safeHeader = currentHeader;
       slivers.add(
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _SectionHeaderDelegate(
-            title: safeHeader,
-            keyWidgetKey: _getSectionKey(safeHeader),
+        SliverToBoxAdapter(
+          child: Container(
+            color: Theme.of(context).colorScheme.surface,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.centerLeft,
+            height: 36,
+            child: Text(
+              safeHeader,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ),
       );
@@ -203,31 +192,6 @@ class _UsersViewState extends State<_UsersView> {
     final source = (u.firstName.isNotEmpty ? u.firstName : u.lastName).trim();
     if (source.isEmpty) return '#';
     return source.substring(0, 1).toUpperCase();
-  }
-
-  List<String> _computeLetters(List<User> users) {
-    final List<String> letters = [];
-    String? prev;
-    for (final u in users) {
-      final l = _initialOf(u);
-      if (l != prev) {
-        if (letters.isEmpty || letters.last != l) letters.add(l);
-        prev = l;
-      }
-    }
-    return letters;
-  }
-
-  Future<void> _scrollToLetter(String letter) async {
-    final key = _sectionKeys[letter];
-    final contextForKey = key?.currentContext;
-    if (contextForKey != null) {
-      await Scrollable.ensureVisible(
-        contextForKey,
-        duration: const Duration(milliseconds: 200),
-        alignment: 0,
-      );
-    }
   }
 
   Future<void> _openUserSheet(BuildContext context, {User? user}) async {
@@ -452,45 +416,6 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-class _SectionHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final String title;
-  final GlobalKey keyWidgetKey;
-  _SectionHeaderDelegate({required this.title, required this.keyWidgetKey});
-
-  @override
-  double get minExtent => 36;
-
-  @override
-  double get maxExtent => 36;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    final theme = Theme.of(context);
-    return Container(
-      key: keyWidgetKey,
-      color: theme.colorScheme.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: theme.colorScheme.primary,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _SectionHeaderDelegate oldDelegate) {
-    return oldDelegate.title != title;
-  }
-}
-
 class _UserTile extends StatelessWidget {
   final User user;
   final VoidCallback onTap;
@@ -552,60 +477,5 @@ class _UserTile extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _AlphabetIndex extends StatelessWidget {
-  final List<String> letters;
-  final ValueChanged<String> onSelect;
-  const _AlphabetIndex({required this.letters, required this.onSelect});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: 28,
-      color: Colors.transparent,
-      alignment: Alignment.center,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onVerticalDragDown: (d) => _handle(context, d.localPosition.dy),
-        onVerticalDragUpdate: (d) => _handle(context, d.localPosition.dy),
-        onTapDown: (d) => _handle(context, d.localPosition.dy),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final height = constraints.maxHeight;
-            final itemHeight = height / letters.length;
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (final l in letters)
-                  SizedBox(
-                    height: itemHeight,
-                    child: Center(
-                      child: Text(
-                        l,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  void _handle(BuildContext context, double dy) {
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || letters.isEmpty) return;
-    final height = box.size.height;
-    final idx = (dy.clamp(0, height) / height * letters.length).floor();
-    final safeIndex = idx.clamp(0, letters.length - 1);
-    onSelect(letters[safeIndex]);
   }
 }
