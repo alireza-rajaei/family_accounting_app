@@ -1,4 +1,4 @@
-part of 'transactions_page.dart';
+part of '../transactions_page.dart';
 
 class TransactionSheet extends StatefulWidget {
   final TransactionWithJoins? data;

@@ -1,4 +1,4 @@
-part of 'transactions_page.dart';
+part of '../transactions_page.dart';
 
 class _SearchableBankField extends StatefulWidget {
   final int? value;

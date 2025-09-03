@@ -1,4 +1,4 @@
-part of 'transactions_page.dart';
+part of '../transactions_page.dart';
 
 class _TransactionSheetState extends State<TransactionSheet> {
   final _formKey = GlobalKey<FormState>();

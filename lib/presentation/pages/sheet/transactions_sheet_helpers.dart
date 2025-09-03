@@ -1,4 +1,4 @@
-part of 'transactions_page.dart';
+part of '../transactions_page.dart';
 
 Future<void> _openTransactionSheet(
   BuildContext context, {

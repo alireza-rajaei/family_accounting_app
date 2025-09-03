@@ -72,7 +72,7 @@ class UsersCubit extends Cubit<UsersState> {
   }
 
   Future<void> deleteUser(int id) async {
-    await repository.deleteUser(id);
+    await repository.deleteUserCascade(id);
   }
 
   Future<int> getUserBalance(int userId) => repository.getUserBalance(userId);

@@ -16,12 +16,12 @@ part 'transactions_filters_bar.dart';
 part 'transactions_bank_picker.dart';
 part 'transactions_user_picker.dart';
 part 'transactions_date_range_picker.dart';
-part 'transactions_sheet_helpers.dart';
-part 'transactions_transaction_sheet.dart';
-part 'transactions_transaction_sheet_state.dart';
-part 'transactions_destination_bank_dropdown.dart';
-part 'transactions_searchable_bank_field.dart';
-part 'transactions_searchable_user_field.dart';
+part 'sheet/transactions_sheet_helpers.dart';
+part 'sheet/transactions_transaction_sheet.dart';
+part 'sheet/transactions_transaction_sheet_state.dart';
+part 'sheet/transactions_destination_bank_dropdown.dart';
+part 'sheet/transactions_searchable_bank_field.dart';
+part 'sheet/transactions_searchable_user_field.dart';
 
 class TransactionsPage extends StatelessWidget {
   const TransactionsPage({super.key});
