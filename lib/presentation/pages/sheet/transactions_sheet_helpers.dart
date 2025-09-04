@@ -37,9 +37,16 @@ int? _parseInt(String? v) {
   return int.tryParse(digits);
 }
 
-Future<int?> _showBankPicker(BuildContext context, BanksState state) async {
+Future<int?> _showBankPicker(
+  BuildContext context,
+  BanksState state, {
+  int? excludeBankId,
+}) async {
   final controller = TextEditingController();
-  List<int> filtered = state.banks.map((e) => e.bank.id).toList();
+  List<int> filtered = state.banks
+      .where((b) => b.bank.id != excludeBankId)
+      .map((e) => e.bank.id)
+      .toList();
   return showModalBottomSheet<int>(
     context: context,
     isScrollControlled: true,
@@ -57,6 +64,7 @@ Future<int?> _showBankPicker(BuildContext context, BanksState state) async {
               setStateSB(() {
                 final pat = q.trim();
                 filtered = state.banks
+                    .where((b) => b.bank.id != excludeBankId)
                     .where(
                       (b) =>
                           '${BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey} ${b.bank.accountName}'

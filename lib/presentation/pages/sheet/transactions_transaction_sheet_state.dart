@@ -87,8 +87,9 @@ class _TransactionSheetState extends State<TransactionSheet> {
                 Row(
                   children: [
                     Expanded(
-                      child: _DestinationBankDropdown(
+                      child: _SearchableDestinationBankField(
                         value: toBankId,
+                        sourceBankId: bankId,
                         onChanged: (v) => setState(() => toBankId = v),
                       ),
                     ),

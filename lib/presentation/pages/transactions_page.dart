@@ -22,6 +22,7 @@ part 'sheet/transactions_transaction_sheet_state.dart';
 part 'sheet/transactions_destination_bank_dropdown.dart';
 part 'sheet/transactions_searchable_bank_field.dart';
 part 'sheet/transactions_searchable_user_field.dart';
+part 'sheet/transactions_searchable_destination_bank_field.dart';
 
 class TransactionsPage extends StatelessWidget {
   const TransactionsPage({super.key});

@@ -121,6 +121,12 @@ class _HomeView extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Row(
                             children: [
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: BankIcons.logo(b.bank.bankKey, size: 24),
+                              ),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   '${BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey} · ${b.bank.accountName}',

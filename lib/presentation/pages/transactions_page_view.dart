@@ -5,10 +5,14 @@ class _TransactionsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(tr('transactions.title')),
+        actions: const [_FiltersButton()],
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            _FiltersBar(),
+            // Optionally keep inline filters hidden; only the button opens the sheet
             Expanded(
               child: BlocBuilder<TransactionsCubit, TransactionsState>(
                 builder: (context, state) {
@@ -80,5 +84,92 @@ class _TransactionsView extends StatelessWidget {
     }
     final str = buf.toString().split('').reversed.join();
     return (v < 0 ? '-' : '') + str;
+  }
+}
+
+class _FiltersButton extends StatelessWidget {
+  const _FiltersButton();
+  int _activeFiltersCount(TransactionsFilter f) {
+    int c = 0;
+    if (f.type != null) c++;
+    if (f.bankId != null) c++;
+    if (f.userId != null) c++;
+    if (f.from != null || f.to != null) c++;
+    return c;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<TransactionsCubit, TransactionsState>(
+      builder: (context, state) {
+        final count = _activeFiltersCount(state.filter);
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Stack(
+            alignment: Alignment.topRight,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                tooltip: tr('transactions.filters'),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (ctx) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider.value(
+                          value: ctx.read<TransactionsCubit>(),
+                        ),
+                        BlocProvider.value(value: ctx.read<BanksCubit>()),
+                        BlocProvider.value(value: ctx.read<UsersCubit>()),
+                      ],
+                      child: const _FiltersSheet(),
+                    ),
+                  );
+                },
+              ),
+              if (count > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FiltersSheet extends StatelessWidget {
+  const _FiltersSheet();
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: _FiltersBar(),
+      ),
+    );
   }
 }

@@ -16,22 +16,46 @@ class _BankPicker extends StatelessWidget {
             )
             .toList();
         final sel = context.read<TransactionsCubit>().state.filter.bankId;
-        return DropdownButton<int>(
-          value: sel,
-          hint: Text(tr('transactions.search_bank')),
-          items: items,
-          onChanged: (v) {
-            final c = context.read<TransactionsCubit>();
-            c.updateFilter(
-              TransactionsFilter(
-                from: c.state.filter.from,
-                to: c.state.filter.to,
-                type: c.state.filter.type,
-                userId: c.state.filter.userId,
-                bankId: v,
-              ),
-            );
-          },
+        return SizedBox(
+          width: 220,
+          child: DropdownButtonFormField<int>(
+            value: sel,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: tr('transactions.search_bank'),
+              suffixIcon: sel == null
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: tr('common.clear'),
+                      onPressed: () {
+                        final c = context.read<TransactionsCubit>();
+                        c.updateFilter(
+                          TransactionsFilter(
+                            from: c.state.filter.from,
+                            to: c.state.filter.to,
+                            type: c.state.filter.type,
+                            userId: c.state.filter.userId,
+                            bankId: null,
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            items: items,
+            onChanged: (v) {
+              final c = context.read<TransactionsCubit>();
+              c.updateFilter(
+                TransactionsFilter(
+                  from: c.state.filter.from,
+                  to: c.state.filter.to,
+                  type: c.state.filter.type,
+                  userId: c.state.filter.userId,
+                  bankId: v,
+                ),
+              );
+            },
+          ),
         );
       },
     );
