@@ -6,10 +6,13 @@ import '../../di/locator.dart';
 import '../cubits/transactions_cubit.dart';
 import '../cubits/banks_cubit.dart';
 import '../cubits/users_cubit.dart';
+import '../cubits/loans_cubit.dart';
 import '../../data/repositories/transactions_repository.dart';
+import '../../data/repositories/loans_repository.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/jalali_utils.dart';
 import '../../app/utils/thousands_input_formatter.dart';
+import 'package:shamsi_date/shamsi_date.dart' as shamsi;
 
 part 'transactions_page_view.dart';
 part 'transactions_filters_bar.dart';
@@ -33,6 +36,9 @@ class TransactionsPage extends StatelessWidget {
         BlocProvider(create: (_) => TransactionsCubit(locator())..watch()),
         BlocProvider(create: (_) => BanksCubit(locator())..watch()),
         BlocProvider(create: (_) => UsersCubit(locator())..watch()),
+        BlocProvider(
+          create: (_) => LoansCubit(LoansRepository(locator()))..watch(),
+        ),
       ],
       child: const _TransactionsView(),
     );

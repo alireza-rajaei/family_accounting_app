@@ -3,7 +3,12 @@ part of '../transactions_page.dart';
 class _SearchableBankField extends StatefulWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
-  const _SearchableBankField({required this.value, required this.onChanged});
+  final String? Function()? validator;
+  const _SearchableBankField({
+    required this.value,
+    required this.onChanged,
+    this.validator,
+  });
   @override
   State<_SearchableBankField> createState() => _SearchableBankFieldState();
 }
@@ -51,6 +56,7 @@ class _SearchableBankFieldState extends State<_SearchableBankField> {
     return TextFormField(
       controller: _controller,
       readOnly: true,
+      validator: (_) => widget.validator?.call(),
       decoration: InputDecoration(
         labelText: tr('banks.bank'),
         prefixIcon: bankKey == null

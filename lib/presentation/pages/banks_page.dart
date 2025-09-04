@@ -302,9 +302,10 @@ class _BanksViewState extends State<_BanksView> {
           content: Text(
             tr(
               'banks.confirm_delete',
-              args: [
-                '${BankIcons.persianNames[bank.bankKey] ?? bank.bankKey} - ${bank.accountName}',
-              ],
+              namedArgs: {
+                'name':
+                    '${BankIcons.persianNames[bank.bankKey] ?? bank.bankKey} - ${bank.accountName}',
+              },
             ),
           ),
           actions: [

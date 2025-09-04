@@ -17,7 +17,14 @@ class JalaliUtils {
     int jy = (gy <= 1600) ? 0 : 979;
     gy -= (gy <= 1600) ? 621 : 1600;
     int gy2 = (gm > 2) ? (gy + 1) : gy;
-    int days = (365 * gy) + ((gy2 + 3) ~/ 4) - ((gy2 + 99) ~/ 100) + ((gy2 + 399) ~/ 400) - 80 + gd + g_d_m[gm - 1];
+    int days =
+        (365 * gy) +
+        ((gy2 + 3) ~/ 4) -
+        ((gy2 + 99) ~/ 100) +
+        ((gy2 + 399) ~/ 400) -
+        80 +
+        gd +
+        g_d_m[gm - 1];
     jy += 33 * (days ~/ 12053);
     days %= 12053;
     jy += 4 * (days ~/ 1461);
@@ -33,10 +40,11 @@ class JalaliUtils {
 
   static String formatJalali(DateTime date) {
     final j = fromDateTime(date);
-    return '${_toFa(j.year)}-${_two(_toFa(j.month))}-${_two(_toFa(j.day))}';
+    return '${_toFa(j.year)}/${_two(_toFa(j.month))}/${_two(_toFa(j.day))}';
   }
 
-  static String _two(String x) => x.length == 1 ? '0$x' : x;
+  // Ensure leading zero uses Persian numeral to avoid mixed scripts
+  static String _two(String x) => x.length == 1 ? '۰$x' : x;
 
   static String _toFaNum(String input) {
     const en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
@@ -50,5 +58,3 @@ class JalaliUtils {
 
   static String _toFa(int number) => _toFaNum(number.toString());
 }
-
-

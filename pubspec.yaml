@@ -55,6 +55,8 @@ dependencies:
   easy_localization: ^3.0.5
   file_picker: ^8.1.2
   flutter_svg: ^2.0.10+1 
+  persian_datetime_picker: ^2.7.0
+  shamsi_date: ^1.0.2
 
 dev_dependencies:
   flutter_test:

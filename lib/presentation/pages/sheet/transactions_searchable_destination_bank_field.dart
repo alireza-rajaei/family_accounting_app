@@ -4,10 +4,12 @@ class _SearchableDestinationBankField extends StatefulWidget {
   final int? value;
   final int? sourceBankId;
   final ValueChanged<int?> onChanged;
+  final String? Function()? validator;
   const _SearchableDestinationBankField({
     required this.value,
     required this.onChanged,
     required this.sourceBankId,
+    this.validator,
   });
   @override
   State<_SearchableDestinationBankField> createState() =>
@@ -58,6 +60,7 @@ class _SearchableDestinationBankFieldState
     return TextFormField(
       controller: _controller,
       readOnly: true,
+      validator: (_) => widget.validator?.call(),
       decoration: InputDecoration(
         labelText: 'بانک مقصد',
         prefixIcon: bankKey == null

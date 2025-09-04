@@ -58,6 +58,32 @@ class _TransactionsView extends StatelessWidget {
                           ),
                         ),
                         onTap: () => _openTransactionSheet(context, data: it),
+                        onLongPress: () async {
+                          final ok = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('حذف تراکنش'),
+                              content: const Text(
+                                'آیا از حذف این تراکنش مطمئن هستید؟',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('انصراف'),
+                                ),
+                                FilledButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('حذف'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (ok == true && context.mounted) {
+                            await context.read<TransactionsCubit>().delete(
+                              trn.id,
+                            );
+                          }
+                        },
                       );
                     },
                   );
@@ -112,16 +138,24 @@ class _FiltersButton extends StatelessWidget {
                 icon: const Icon(Icons.filter_list),
                 tooltip: tr('transactions.filters'),
                 onPressed: () {
+                  final parentContext = context;
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
+                    useRootNavigator: false,
+                    useSafeArea: true,
+                    // Use default bottom sheet styling like other sheets
                     builder: (ctx) => MultiBlocProvider(
                       providers: [
                         BlocProvider.value(
-                          value: ctx.read<TransactionsCubit>(),
+                          value: parentContext.read<TransactionsCubit>(),
                         ),
-                        BlocProvider.value(value: ctx.read<BanksCubit>()),
-                        BlocProvider.value(value: ctx.read<UsersCubit>()),
+                        BlocProvider.value(
+                          value: parentContext.read<BanksCubit>(),
+                        ),
+                        BlocProvider.value(
+                          value: parentContext.read<UsersCubit>(),
+                        ),
                       ],
                       child: const _FiltersSheet(),
                     ),
@@ -168,7 +202,7 @@ class _FiltersSheet extends StatelessWidget {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: _FiltersBar(),
+        child: Builder(builder: (inner) => _FiltersBar()),
       ),
     );
   }

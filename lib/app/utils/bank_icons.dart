@@ -28,7 +28,8 @@ class BankIcons {
     'saman': [Color(0xFF7DCDF1), Color(0xFF00AAE7), Color(0xFF006FBA)],
     'sepah': [Color(0xFF1B5FC1), Color(0xFF0E3F8F)],
     'tejarat': [Color(0xFF2F4A98), Color(0xFF1B2D6D)],
-    'melli': [Color(0xFFD6A933), Color(0xFF8D6B20)], // approx until confirmed
+    'melli': [Color(0xFFD6A933), Color(0xFF8D6B20)],
+    'sandogh': [Color(0xFF8B5CF6), Color(0xFF6366F1), Color(0xFF2563EB)],
   };
 
   // English display names for banks (for card header subtitle)

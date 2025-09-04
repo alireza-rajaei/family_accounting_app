@@ -3,7 +3,12 @@ part of '../transactions_page.dart';
 class _SearchableUserField extends StatefulWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
-  const _SearchableUserField({required this.value, required this.onChanged});
+  final String? Function()? validator;
+  const _SearchableUserField({
+    required this.value,
+    required this.onChanged,
+    this.validator,
+  });
   @override
   State<_SearchableUserField> createState() => _SearchableUserFieldState();
 }
@@ -44,6 +49,7 @@ class _SearchableUserFieldState extends State<_SearchableUserField> {
         return TextFormField(
           controller: _controller,
           readOnly: true,
+          validator: (_) => widget.validator?.call(),
           decoration: InputDecoration(
             labelText: tr('loans.user'),
             suffixIcon: const Icon(Icons.search),

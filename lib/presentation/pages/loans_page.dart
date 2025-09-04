@@ -9,7 +9,9 @@ import '../cubits/users_cubit.dart';
 import '../cubits/banks_cubit.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/format.dart';
+import '../../app/utils/jalali_utils.dart';
 import '../../app/utils/thousands_input_formatter.dart';
+import 'transactions_page.dart' show showTransactionSheet;
 
 class LoansPage extends StatelessWidget {
   const LoansPage({super.key});
@@ -43,16 +45,62 @@ class _LoansView extends StatelessWidget {
               separatorBuilder: (_, __) => const Divider(height: 0),
               itemBuilder: (context, index) {
                 final it = state.items[index];
+                final usersState = context.read<UsersCubit>().state;
+                final us = usersState.users
+                    .where((x) => x.id == it.loan.userId)
+                    .toList();
+                final userName = us.isNotEmpty
+                    ? '${us.first.firstName} ${us.first.lastName}'
+                    : 'کاربر نامشخص';
+                final dateFa = JalaliUtils.formatJalali(it.loan.createdAt);
                 return ListTile(
+                  leading: _LoanAvatar(),
                   title: Text(
-                    'ID ${it.loan.id} · ${formatThousands(it.loan.principalAmount)}',
+                    '$userName · ${formatThousands(it.loan.principalAmount)}',
                   ),
                   subtitle: Text(
-                    '${tr('loans.remaining')}: ${formatThousands(it.remaining)}',
+                    '${dateFa} · ${tr('loans.remaining')}: ${formatThousands(it.remaining)} ${tr('banks.rial')}',
                   ),
-                  trailing: Icon(
-                    it.settled ? Icons.check_circle : Icons.pending,
-                    color: it.settled ? Colors.green : Colors.orange,
+                  trailing: _LoanActionsMenu(
+                    settled: it.settled,
+                    onPayInstallment: () async {
+                      final usersState = context.read<UsersCubit>().state;
+                      final user = usersState.users.firstWhere(
+                        (u) => u.id == it.loan.userId,
+                        orElse: () => usersState.users.first,
+                      );
+                      await showTransactionSheet(
+                        context,
+                        initialUserId: user.id,
+                        initialType: 'پرداخت قسط وام',
+                        initialLoanId: it.loan.id,
+                      );
+                    },
+                    onEdit: () => _openLoanSheet(context, loan: it.loan),
+                    onDelete: () async {
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('حذف وام'),
+                          content: const Text(
+                            'آیا از حذف این وام مطمئن هستید؟ این کار تمام اقساط و تراکنش‌های مرتبط را نیز حذف می‌کند.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('انصراف'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('حذف'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (ok == true) {
+                        await context.read<LoansCubit>().deleteLoan(it.loan.id);
+                      }
+                    },
                   ),
                   onTap: () => _openLoanDetails(context, it.loan),
                   onLongPress: () => _openLoanSheet(context, loan: it.loan),
@@ -66,6 +114,55 @@ class _LoansView extends StatelessWidget {
         onPressed: () => _openLoanSheet(context),
         child: const Icon(Icons.add),
       ),
+    );
+  }
+}
+
+class _LoanAvatar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: scheme.primary.withOpacity(0.12),
+      ),
+      alignment: Alignment.center,
+      child: Icon(Icons.request_quote_rounded, color: scheme.primary, size: 22),
+    );
+  }
+}
+
+class _LoanActionsMenu extends StatelessWidget {
+  final bool settled;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final VoidCallback onPayInstallment;
+  const _LoanActionsMenu({
+    required this.settled,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onPayInstallment,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: Icon(
+        settled ? Icons.check_circle : Icons.more_vert,
+        color: settled ? Colors.green : null,
+      ),
+      onSelected: (value) {
+        if (value == 'pay') onPayInstallment();
+        if (value == 'edit') onEdit();
+        if (value == 'delete') onDelete();
+      },
+      itemBuilder: (ctx) => const [
+        PopupMenuItem<String>(value: 'pay', child: Text('پرداخت قسط')),
+        PopupMenuItem<String>(value: 'edit', child: Text('ویرایش')),
+        PopupMenuItem<String>(value: 'delete', child: Text('حذف')),
+      ],
     );
   }
 }

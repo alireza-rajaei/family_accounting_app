@@ -12,5 +12,3 @@ LazyDatabase openConnection() {
     return NativeDatabase.createInBackground(file);
   });
 }
-
-

@@ -7,73 +7,99 @@ class _FiltersBar extends StatelessWidget {
     // This widget is now meant to be shown inside a bottom sheet
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              SizedBox(
-                width: 200,
-                child: DropdownButtonFormField<String>(
-                  value: cubit.state.filter.type,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: tr('transactions.type'),
-                    suffixIcon: cubit.state.filter.type == null
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.close),
-                            tooltip: tr('common.clear'),
-                            onPressed: () {
-                              cubit.updateFilter(
-                                TransactionsFilter(
-                                  from: cubit.state.filter.from,
-                                  to: cubit.state.filter.to,
-                                  type: null,
-                                  userId: cubit.state.filter.userId,
-                                  bankId: cubit.state.filter.bankId,
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'واریز', child: Text('واریز')),
-                    DropdownMenuItem(value: 'برداشت', child: Text('برداشت')),
-                    DropdownMenuItem(
-                      value: 'پرداخت وام به کاربر',
-                      child: Text('پرداخت وام به کاربر'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'پرداخت قسط وام',
-                      child: Text('پرداخت قسط وام'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'جابجایی بین بانکی',
-                      child: Text('جابجایی بین بانکی'),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    cubit.updateFilter(
-                      TransactionsFilter(
-                        from: cubit.state.filter.from,
-                        to: cubit.state.filter.to,
-                        type: v,
-                        userId: cubit.state.filter.userId,
-                        bankId: cubit.state.filter.bankId,
-                      ),
-                    );
-                  },
-                ),
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                tr('transactions.filters'),
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              const _FilterBankField(),
-              const _FilterUserField(),
-              _DateRangePicker(),
-            ],
-          ),
-        ],
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        width: 200,
+                        child: DropdownButtonFormField<String>(
+                          value: cubit.state.filter.type,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: tr('transactions.type'),
+                            suffixIcon: cubit.state.filter.type == null
+                                ? null
+                                : IconButton(
+                                    icon: const Icon(Icons.close),
+                                    tooltip: tr('common.clear'),
+                                    onPressed: () {
+                                      cubit.updateFilter(
+                                        TransactionsFilter(
+                                          from: cubit.state.filter.from,
+                                          to: cubit.state.filter.to,
+                                          type: null,
+                                          userId: cubit.state.filter.userId,
+                                          bankId: cubit.state.filter.bankId,
+                                        ),
+                                      );
+                                      // Also reset field UI selection
+                                      (FocusManager.instance.primaryFocus)
+                                          ?.unfocus();
+                                    },
+                                  ),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'واریز',
+                              child: Text('واریز'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'برداشت',
+                              child: Text('برداشت'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'پرداخت وام به کاربر',
+                              child: Text('پرداخت وام به کاربر'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'پرداخت قسط وام',
+                              child: Text('پرداخت قسط وام'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'جابجایی بین بانکی',
+                              child: Text('جابجایی بین بانکی'),
+                            ),
+                          ],
+                          onChanged: (v) {
+                            cubit.updateFilter(
+                              TransactionsFilter(
+                                from: cubit.state.filter.from,
+                                to: cubit.state.filter.to,
+                                type: v,
+                                userId: cubit.state.filter.userId,
+                                bankId: cubit.state.filter.bankId,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: const _FilterBankField()),
+                  ],
+                ),
+
+                const _FilterUserField(),
+                _DateRangePicker(),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -173,7 +199,7 @@ class _FilterUserFieldState extends State<_FilterUserField> {
     }
     _controller.text = label;
     return SizedBox(
-      width: 220,
+      width: double.infinity,
       child: TextFormField(
         controller: _controller,
         readOnly: true,

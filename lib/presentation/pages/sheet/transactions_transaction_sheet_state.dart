@@ -6,6 +6,7 @@ class _TransactionSheetState extends State<TransactionSheet> {
   int? userId;
   String type = 'واریز';
   int? toBankId;
+  int? selectedLoanId;
   final amountCtrl = TextEditingController();
   final noteCtrl = TextEditingController();
 
@@ -21,6 +22,13 @@ class _TransactionSheetState extends State<TransactionSheet> {
       noteCtrl.text = d.transaction.note ?? '';
     } else if (widget.initialUserId != null) {
       userId = widget.initialUserId;
+    }
+    // Apply optional initial values for type and loan selection
+    if (widget.initialType != null && widget.initialType!.isNotEmpty) {
+      type = widget.initialType!;
+    }
+    if (widget.initialLoanId != null) {
+      selectedLoanId = widget.initialLoanId;
     }
   }
 
@@ -62,6 +70,7 @@ class _TransactionSheetState extends State<TransactionSheet> {
                     child: _SearchableBankField(
                       value: bankId,
                       onChanged: (v) => setState(() => bankId = v),
+                      validator: () => bankId == null ? 'الزامی' : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -75,6 +84,8 @@ class _TransactionSheetState extends State<TransactionSheet> {
                           )
                           .toList(),
                       onChanged: (v) => setState(() => type = v ?? 'واریز'),
+                      validator: (v) =>
+                          (v == null || v.isEmpty) ? 'الزامی' : null,
                       decoration: InputDecoration(
                         labelText: tr('transactions.type'),
                       ),
@@ -91,6 +102,7 @@ class _TransactionSheetState extends State<TransactionSheet> {
                         value: toBankId,
                         sourceBankId: bankId,
                         onChanged: (v) => setState(() => toBankId = v),
+                        validator: () => (toBankId == null) ? 'الزامی' : null,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -115,6 +127,9 @@ class _TransactionSheetState extends State<TransactionSheet> {
                       child: _SearchableUserField(
                         value: userId,
                         onChanged: (v) => setState(() => userId = v),
+                        validator: () => (type == 'جابجایی بین بانکی')
+                            ? null
+                            : (userId == null ? 'الزامی' : null),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -132,6 +147,15 @@ class _TransactionSheetState extends State<TransactionSheet> {
                     ),
                   ],
                 ),
+              if (type == 'پرداخت قسط وام') ...[
+                const SizedBox(height: 12),
+                _UnsettledLoanField(
+                  selectedUserId: userId,
+                  selectedLoanId: selectedLoanId,
+                  requiredSelection: true,
+                  onSelected: (v) => setState(() => selectedLoanId = v),
+                ),
+              ],
               const SizedBox(height: 12),
               TextFormField(
                 controller: noteCtrl,
@@ -186,6 +210,26 @@ class _TransactionSheetState extends State<TransactionSheet> {
                         await c.transferBetweenBanks(
                           fromBankId: from,
                           toBankId: to,
+                          amount: amount,
+                          note: noteCtrl.text.trim().isEmpty
+                              ? null
+                              : noteCtrl.text.trim(),
+                        );
+                        if (context.mounted) Navigator.pop(context);
+                        return;
+                      }
+                      if (type == 'پرداخت قسط وام') {
+                        if (selectedLoanId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('ابتدا وام را انتخاب کنید'),
+                            ),
+                          );
+                          return;
+                        }
+                        await context.read<LoansCubit>().addPayment(
+                          loanId: selectedLoanId!,
+                          bankId: bankId!,
                           amount: amount,
                           note: noteCtrl.text.trim().isEmpty
                               ? null

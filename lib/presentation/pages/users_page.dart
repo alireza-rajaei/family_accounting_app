@@ -136,10 +136,7 @@ class _UsersViewState extends State<_UsersView> {
                     builder: (context) => AlertDialog(
                       title: Text(tr('users.delete')),
                       content: Text(
-                        tr(
-                          'users.confirm_delete',
-                          args: ['${u.firstName} ${u.lastName}'],
-                        ),
+                        '${tr('users.confirm_delete', namedArgs: {'name': '${u.firstName} ${u.lastName}'})}\nاین کار تمام تراکنش‌ها و وام‌های مرتبط را نیز حذف می‌کند.',
                       ),
                       actions: [
                         TextButton(

@@ -4,6 +4,8 @@ Future<void> _openTransactionSheet(
   BuildContext context, {
   TransactionWithJoins? data,
   int? initialUserId,
+  String? initialType,
+  int? initialLoanId,
 }) async {
   await showModalBottomSheet(
     context: context,
@@ -13,8 +15,14 @@ Future<void> _openTransactionSheet(
         BlocProvider(create: (_) => TransactionsCubit(locator())..watch()),
         BlocProvider(create: (_) => BanksCubit(locator())..watch()),
         BlocProvider(create: (_) => UsersCubit(locator())..watch()),
+        BlocProvider(create: (_) => LoansCubit(locator())..watch()),
       ],
-      child: TransactionSheet(data: data, initialUserId: initialUserId),
+      child: TransactionSheet(
+        data: data,
+        initialUserId: initialUserId,
+        initialType: initialType,
+        initialLoanId: initialLoanId,
+      ),
     ),
   );
 }
@@ -23,11 +31,15 @@ Future<void> showTransactionSheet(
   BuildContext context, {
   TransactionWithJoins? data,
   int? initialUserId,
+  String? initialType,
+  int? initialLoanId,
 }) {
   return _openTransactionSheet(
     context,
     data: data,
     initialUserId: initialUserId,
+    initialType: initialType,
+    initialLoanId: initialLoanId,
   );
 }
 

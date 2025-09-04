@@ -17,11 +17,16 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    beforeOpen: (details) async {
+      // Ensure foreign keys are enforced for cascade deletes
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
     onUpgrade: (m, from, to) async {
+      // No-op on create; constraints declared in table definitions apply
       if (from < 2) {
         // Normalize amounts by making withdrawals negative and deposits positive
         await customStatement("""
@@ -58,28 +63,94 @@ END
         );
       }
       if (from < 3) {
-        // Drop bank_name column by recreating banks table without it
-        await m.alterTable(
-          TableMigration(
-            banks,
-            newColumns: [
-              banks.id,
-              banks.bankKey,
-              banks.accountName,
-              banks.accountNumber,
-              banks.createdAt,
-              banks.updatedAt,
-            ],
-            // Explicitly map columns from the old table using bare names (no alias)
-            columnTransformer: {
-              banks.id: const CustomExpression('id'),
-              banks.bankKey: const CustomExpression('bank_key'),
-              banks.accountName: const CustomExpression('account_name'),
-              banks.accountNumber: const CustomExpression('account_number'),
-              banks.createdAt: const CustomExpression('created_at'),
-              banks.updatedAt: const CustomExpression('updated_at'),
-            },
-          ),
+        // Rebuild banks table to drop deprecated bank_name column using SQL to avoid
+        // columnTransformer issues on some older schemas.
+        await customStatement('''
+CREATE TABLE IF NOT EXISTS banks_new (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  bank_key TEXT NOT NULL,
+  account_name TEXT NOT NULL,
+  account_number TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER
+);
+''');
+        await customStatement('''
+INSERT INTO banks_new (id, bank_key, account_name, account_number, created_at, updated_at)
+SELECT id, bank_key, account_name, account_number, created_at, updated_at FROM banks;
+''');
+        await customStatement('DROP TABLE banks;');
+        await customStatement('ALTER TABLE banks_new RENAME TO banks;');
+      }
+      if (from < 4) {
+        // Ensure legacy schemas have the optional loan_id column before copying
+        try {
+          await customStatement(
+            'ALTER TABLE transactions ADD COLUMN loan_id INTEGER',
+          );
+        } catch (_) {
+          // Ignore if the column already exists
+        }
+        // Recreate tables with ON DELETE CASCADE constraints where needed
+        // 1) transactions references banks, users, loans
+        await customStatement('''
+CREATE TABLE IF NOT EXISTS transactions_new (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  bank_id INTEGER NOT NULL REFERENCES banks(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  loan_id INTEGER REFERENCES loans(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  type TEXT NOT NULL,
+  note TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER
+);
+''');
+        await customStatement('''
+INSERT INTO transactions_new (id, bank_id, user_id, loan_id, amount, type, note, created_at, updated_at)
+SELECT id, bank_id, user_id, loan_id, amount, type, note, created_at, updated_at FROM transactions;
+''');
+        await customStatement('DROP TABLE transactions;');
+        await customStatement(
+          'ALTER TABLE transactions_new RENAME TO transactions;',
+        );
+
+        // 2) loans references users
+        await customStatement('''
+CREATE TABLE IF NOT EXISTS loans_new (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  principal_amount INTEGER NOT NULL,
+  installments INTEGER NOT NULL,
+  note TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER
+);
+''');
+        await customStatement('''
+INSERT INTO loans_new (id, user_id, principal_amount, installments, note, created_at, updated_at)
+SELECT id, user_id, principal_amount, installments, note, created_at, updated_at FROM loans;
+''');
+        await customStatement('DROP TABLE loans;');
+        await customStatement('ALTER TABLE loans_new RENAME TO loans;');
+
+        // 3) loan_payments references loans and transactions
+        await customStatement('''
+CREATE TABLE IF NOT EXISTS loan_payments_new (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  loan_id INTEGER NOT NULL REFERENCES loans(id) ON DELETE CASCADE,
+  transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  paid_at INTEGER NOT NULL
+);
+''');
+        await customStatement('''
+INSERT INTO loan_payments_new (id, loan_id, transaction_id, amount, paid_at)
+SELECT id, loan_id, transaction_id, amount, paid_at FROM loan_payments;
+''');
+        await customStatement('DROP TABLE loan_payments;');
+        await customStatement(
+          'ALTER TABLE loan_payments_new RENAME TO loan_payments;',
         );
       }
     },
