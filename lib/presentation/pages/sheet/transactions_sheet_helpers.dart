@@ -58,8 +58,9 @@ Future<int?> _showBankPicker(BuildContext context, BanksState state) async {
                 final pat = q.trim();
                 filtered = state.banks
                     .where(
-                      (b) => '${b.bank.bankName} ${b.bank.accountName}'
-                          .contains(pat),
+                      (b) =>
+                          '${BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey} ${b.bank.accountName}'
+                              .contains(pat),
                     )
                     .map((e) => e.bank.id)
                     .toList();
@@ -85,8 +86,13 @@ Future<int?> _showBankPicker(BuildContext context, BanksState state) async {
                       final id = filtered[index];
                       final b = state.banks.firstWhere((e) => e.bank.id == id);
                       return ListTile(
+                        leading: BankIcons.avatar(
+                          b.bank.bankKey,
+                          BankIcons.persianNames[b.bank.bankKey] ??
+                              b.bank.bankKey,
+                        ),
                         title: Text(
-                          '${b.bank.bankName} · ${b.bank.accountName}',
+                          '${BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey} · ${b.bank.accountName}',
                         ),
                         onTap: () => Navigator.pop(context, id),
                       );
@@ -147,6 +153,11 @@ Future<int?> _showUserPicker(BuildContext context, UsersState state) async {
                       final id = filtered[index];
                       final u = state.users.firstWhere((e) => e.id == id);
                       return ListTile(
+                        leading: CircleAvatar(
+                          child: Text(
+                            '${u.firstName.characters.first}${u.lastName.characters.first}',
+                          ),
+                        ),
                         title: Text('${u.firstName} ${u.lastName}'),
                         onTap: () => Navigator.pop(context, id),
                       );

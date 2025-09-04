@@ -32,7 +32,7 @@ class _SearchableBankFieldState extends State<_SearchableBankField> {
       final match = state.banks.where((b) => b.bank.id == widget.value);
       if (match.isNotEmpty) {
         label =
-            '${match.first.bank.bankName} · ${match.first.bank.accountName}';
+            '${BankIcons.persianNames[match.first.bank.bankKey] ?? match.first.bank.bankKey} · ${match.first.bank.accountName}';
       }
     }
     _controller.text = label;
@@ -40,11 +40,25 @@ class _SearchableBankFieldState extends State<_SearchableBankField> {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.read<BanksCubit>().state;
+    String? bankKey;
+    if (widget.value != null) {
+      final match = state.banks.where((b) => b.bank.id == widget.value);
+      if (match.isNotEmpty) {
+        bankKey = match.first.bank.bankKey;
+      }
+    }
     return TextFormField(
       controller: _controller,
       readOnly: true,
       decoration: InputDecoration(
         labelText: tr('banks.bank'),
+        prefixIcon: bankKey == null
+            ? null
+            : Padding(
+                padding: const EdgeInsets.all(8),
+                child: BankIcons.logo(bankKey, size: 20),
+              ),
         suffixIcon: const Icon(Icons.search),
       ),
       onTap: () async {

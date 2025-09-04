@@ -5,11 +5,14 @@ class _HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final repo = locator<TransactionsRepository>();
+    // Ensure we have access to bank names map and gradients in this file
+    // ignore: unused_import
+    BankIcons;
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          StreamBuilder<List<(String bankName, int deposit, int withdraw)>>(
+          StreamBuilder<List<(String bankKey, int deposit, int withdraw)>>(
             stream: repo.watchBankFlowSums(),
             builder: (context, snapshot) {
               final data = snapshot.data ?? [];
@@ -73,7 +76,8 @@ class _HomeView extends StatelessWidget {
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 6),
                                       child: Text(
-                                        data[idx].$1,
+                                        BankIcons.persianNames[data[idx].$1] ??
+                                            data[idx].$1,
                                         style: Theme.of(
                                           context,
                                         ).textTheme.bodySmall,
@@ -119,7 +123,7 @@ class _HomeView extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  '${b.bank.bankName} · ${b.bank.accountName}',
+                                  '${BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey} · ${b.bank.accountName}',
                                 ),
                               ),
                               Text(

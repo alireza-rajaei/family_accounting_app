@@ -117,9 +117,13 @@ class _LoanDetailsSheet extends StatelessWidget {
                     return ListTile(
                       leading: BankCircleAvatar(
                         bankKey: bank.bankKey,
-                        name: bank.bankName,
+                        name:
+                            BankIcons.persianNames[bank.bankKey] ??
+                            bank.bankKey,
                       ),
-                      title: Text('${bank.bankName} · ${bank.accountName}'),
+                      title: Text(
+                        '${BankIcons.persianNames[bank.bankKey] ?? bank.bankKey} · ${bank.accountName}',
+                      ),
                       subtitle: Text(trn.note ?? ''),
                       trailing: Text(formatThousands(lp.amount)),
                     );
@@ -250,7 +254,7 @@ class _BankDropdown extends StatelessWidget {
                 (e) => DropdownMenuItem(
                   value: e.bank.id,
                   child: Text(
-                    '${e.bank.bankName} · ${e.bank.accountName}',
+                    '${BankIcons.persianNames[e.bank.bankKey] ?? e.bank.bankKey} · ${e.bank.accountName}',
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

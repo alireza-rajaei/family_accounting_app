@@ -28,12 +28,15 @@ class _TransactionsView extends StatelessWidget {
                       return ListTile(
                         leading: BankCircleAvatar(
                           bankKey: it.bank.bankKey,
-                          name: it.bank.bankName,
+                          name:
+                              BankIcons.persianNames[it.bank.bankKey] ??
+                              it.bank.bankKey,
                         ),
                         title: Text(
                           it.user != null
                               ? '${it.user!.firstName} ${it.user!.lastName}'
-                              : it.bank.bankName,
+                              : (BankIcons.persianNames[it.bank.bankKey] ??
+                                    it.bank.bankKey),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

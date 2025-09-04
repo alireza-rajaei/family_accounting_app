@@ -45,6 +45,21 @@ class BankIcons {
     'ayandeh': 'bank ayandeh',
   };
 
+  // Persian display names for banks based on key (used across UI after removing bank_name column)
+  static const Map<String, String> persianNames = {
+    'melli': 'بانک ملی',
+    'sepah': 'بانک سپه',
+    'mellat': 'بانک ملت',
+    'tejarat': 'بانک تجارت',
+    'saman': 'بانک سامان',
+    'pasargad': 'بانک پاسارگاد',
+    'saderat': 'بانک صادرات',
+    'refah': 'بانک رفاه',
+    'keshavarzi': 'بانک کشاورزی',
+    'ayandeh': 'بانک آینده',
+    'sandogh': 'صندوق',
+  };
+
   /// Renders the raw bank logo asset (SVG/PNG) at a given size.
   /// If [color] is provided, the logo will be colorized (useful for faded overlays).
   static Widget logo(String bankKey, {double size = 140, Color? color}) {

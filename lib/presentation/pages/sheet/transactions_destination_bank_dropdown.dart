@@ -18,7 +18,22 @@ class _DestinationBankDropdown extends StatelessWidget {
             .map(
               (e) => DropdownMenuItem(
                 value: e.bank.id,
-                child: Text('${e.bank.bankName} · ${e.bank.accountName}'),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: BankIcons.logo(e.bank.bankKey, size: 24),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        '${BankIcons.persianNames[e.bank.bankKey] ?? e.bank.bankKey} · ${e.bank.accountName}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
             .toList();
@@ -26,7 +41,11 @@ class _DestinationBankDropdown extends StatelessWidget {
           value: value,
           items: items,
           onChanged: onChanged,
-          decoration: const InputDecoration(labelText: 'بانک مقصد'),
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'بانک مقصد',
+            hintText: 'بانک مقصد',
+          ),
         );
       },
     );

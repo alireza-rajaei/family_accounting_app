@@ -916,17 +916,6 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _bankNameMeta = const VerificationMeta(
-    'bankName',
-  );
-  @override
-  late final GeneratedColumn<String> bankName = GeneratedColumn<String>(
-    'bank_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _accountNameMeta = const VerificationMeta(
     'accountName',
   );
@@ -976,7 +965,6 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
   List<GeneratedColumn> get $columns => [
     id,
     bankKey,
-    bankName,
     accountName,
     accountNumber,
     createdAt,
@@ -1004,14 +992,6 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
       );
     } else if (isInserting) {
       context.missing(_bankKeyMeta);
-    }
-    if (data.containsKey('bank_name')) {
-      context.handle(
-        _bankNameMeta,
-        bankName.isAcceptableOrUnknown(data['bank_name']!, _bankNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_bankNameMeta);
     }
     if (data.containsKey('account_name')) {
       context.handle(
@@ -1064,10 +1044,6 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
         DriftSqlType.string,
         data['${effectivePrefix}bank_key'],
       )!,
-      bankName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}bank_name'],
-      )!,
       accountName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}account_name'],
@@ -1096,7 +1072,6 @@ class $BanksTable extends Banks with TableInfo<$BanksTable, Bank> {
 class Bank extends DataClass implements Insertable<Bank> {
   final int id;
   final String bankKey;
-  final String bankName;
   final String accountName;
   final String accountNumber;
   final DateTime createdAt;
@@ -1104,7 +1079,6 @@ class Bank extends DataClass implements Insertable<Bank> {
   const Bank({
     required this.id,
     required this.bankKey,
-    required this.bankName,
     required this.accountName,
     required this.accountNumber,
     required this.createdAt,
@@ -1115,7 +1089,6 @@ class Bank extends DataClass implements Insertable<Bank> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['bank_key'] = Variable<String>(bankKey);
-    map['bank_name'] = Variable<String>(bankName);
     map['account_name'] = Variable<String>(accountName);
     map['account_number'] = Variable<String>(accountNumber);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -1129,7 +1102,6 @@ class Bank extends DataClass implements Insertable<Bank> {
     return BanksCompanion(
       id: Value(id),
       bankKey: Value(bankKey),
-      bankName: Value(bankName),
       accountName: Value(accountName),
       accountNumber: Value(accountNumber),
       createdAt: Value(createdAt),
@@ -1147,7 +1119,6 @@ class Bank extends DataClass implements Insertable<Bank> {
     return Bank(
       id: serializer.fromJson<int>(json['id']),
       bankKey: serializer.fromJson<String>(json['bankKey']),
-      bankName: serializer.fromJson<String>(json['bankName']),
       accountName: serializer.fromJson<String>(json['accountName']),
       accountNumber: serializer.fromJson<String>(json['accountNumber']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -1160,7 +1131,6 @@ class Bank extends DataClass implements Insertable<Bank> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'bankKey': serializer.toJson<String>(bankKey),
-      'bankName': serializer.toJson<String>(bankName),
       'accountName': serializer.toJson<String>(accountName),
       'accountNumber': serializer.toJson<String>(accountNumber),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -1171,7 +1141,6 @@ class Bank extends DataClass implements Insertable<Bank> {
   Bank copyWith({
     int? id,
     String? bankKey,
-    String? bankName,
     String? accountName,
     String? accountNumber,
     DateTime? createdAt,
@@ -1179,7 +1148,6 @@ class Bank extends DataClass implements Insertable<Bank> {
   }) => Bank(
     id: id ?? this.id,
     bankKey: bankKey ?? this.bankKey,
-    bankName: bankName ?? this.bankName,
     accountName: accountName ?? this.accountName,
     accountNumber: accountNumber ?? this.accountNumber,
     createdAt: createdAt ?? this.createdAt,
@@ -1189,7 +1157,6 @@ class Bank extends DataClass implements Insertable<Bank> {
     return Bank(
       id: data.id.present ? data.id.value : this.id,
       bankKey: data.bankKey.present ? data.bankKey.value : this.bankKey,
-      bankName: data.bankName.present ? data.bankName.value : this.bankName,
       accountName: data.accountName.present
           ? data.accountName.value
           : this.accountName,
@@ -1206,7 +1173,6 @@ class Bank extends DataClass implements Insertable<Bank> {
     return (StringBuffer('Bank(')
           ..write('id: $id, ')
           ..write('bankKey: $bankKey, ')
-          ..write('bankName: $bankName, ')
           ..write('accountName: $accountName, ')
           ..write('accountNumber: $accountNumber, ')
           ..write('createdAt: $createdAt, ')
@@ -1219,7 +1185,6 @@ class Bank extends DataClass implements Insertable<Bank> {
   int get hashCode => Object.hash(
     id,
     bankKey,
-    bankName,
     accountName,
     accountNumber,
     createdAt,
@@ -1231,7 +1196,6 @@ class Bank extends DataClass implements Insertable<Bank> {
       (other is Bank &&
           other.id == this.id &&
           other.bankKey == this.bankKey &&
-          other.bankName == this.bankName &&
           other.accountName == this.accountName &&
           other.accountNumber == this.accountNumber &&
           other.createdAt == this.createdAt &&
@@ -1241,7 +1205,6 @@ class Bank extends DataClass implements Insertable<Bank> {
 class BanksCompanion extends UpdateCompanion<Bank> {
   final Value<int> id;
   final Value<String> bankKey;
-  final Value<String> bankName;
   final Value<String> accountName;
   final Value<String> accountNumber;
   final Value<DateTime> createdAt;
@@ -1249,7 +1212,6 @@ class BanksCompanion extends UpdateCompanion<Bank> {
   const BanksCompanion({
     this.id = const Value.absent(),
     this.bankKey = const Value.absent(),
-    this.bankName = const Value.absent(),
     this.accountName = const Value.absent(),
     this.accountNumber = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1258,19 +1220,16 @@ class BanksCompanion extends UpdateCompanion<Bank> {
   BanksCompanion.insert({
     this.id = const Value.absent(),
     required String bankKey,
-    required String bankName,
     required String accountName,
     required String accountNumber,
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : bankKey = Value(bankKey),
-       bankName = Value(bankName),
        accountName = Value(accountName),
        accountNumber = Value(accountNumber);
   static Insertable<Bank> custom({
     Expression<int>? id,
     Expression<String>? bankKey,
-    Expression<String>? bankName,
     Expression<String>? accountName,
     Expression<String>? accountNumber,
     Expression<DateTime>? createdAt,
@@ -1279,7 +1238,6 @@ class BanksCompanion extends UpdateCompanion<Bank> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (bankKey != null) 'bank_key': bankKey,
-      if (bankName != null) 'bank_name': bankName,
       if (accountName != null) 'account_name': accountName,
       if (accountNumber != null) 'account_number': accountNumber,
       if (createdAt != null) 'created_at': createdAt,
@@ -1290,7 +1248,6 @@ class BanksCompanion extends UpdateCompanion<Bank> {
   BanksCompanion copyWith({
     Value<int>? id,
     Value<String>? bankKey,
-    Value<String>? bankName,
     Value<String>? accountName,
     Value<String>? accountNumber,
     Value<DateTime>? createdAt,
@@ -1299,7 +1256,6 @@ class BanksCompanion extends UpdateCompanion<Bank> {
     return BanksCompanion(
       id: id ?? this.id,
       bankKey: bankKey ?? this.bankKey,
-      bankName: bankName ?? this.bankName,
       accountName: accountName ?? this.accountName,
       accountNumber: accountNumber ?? this.accountNumber,
       createdAt: createdAt ?? this.createdAt,
@@ -1315,9 +1271,6 @@ class BanksCompanion extends UpdateCompanion<Bank> {
     }
     if (bankKey.present) {
       map['bank_key'] = Variable<String>(bankKey.value);
-    }
-    if (bankName.present) {
-      map['bank_name'] = Variable<String>(bankName.value);
     }
     if (accountName.present) {
       map['account_name'] = Variable<String>(accountName.value);
@@ -1339,7 +1292,6 @@ class BanksCompanion extends UpdateCompanion<Bank> {
     return (StringBuffer('BanksCompanion(')
           ..write('id: $id, ')
           ..write('bankKey: $bankKey, ')
-          ..write('bankName: $bankName, ')
           ..write('accountName: $accountName, ')
           ..write('accountNumber: $accountNumber, ')
           ..write('createdAt: $createdAt, ')
@@ -3313,7 +3265,6 @@ typedef $$BanksTableCreateCompanionBuilder =
     BanksCompanion Function({
       Value<int> id,
       required String bankKey,
-      required String bankName,
       required String accountName,
       required String accountNumber,
       Value<DateTime> createdAt,
@@ -3323,7 +3274,6 @@ typedef $$BanksTableUpdateCompanionBuilder =
     BanksCompanion Function({
       Value<int> id,
       Value<String> bankKey,
-      Value<String> bankName,
       Value<String> accountName,
       Value<String> accountNumber,
       Value<DateTime> createdAt,
@@ -3368,11 +3318,6 @@ class $$BanksTableFilterComposer extends Composer<_$AppDatabase, $BanksTable> {
 
   ColumnFilters<String> get bankKey => $composableBuilder(
     column: $table.bankKey,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get bankName => $composableBuilder(
-    column: $table.bankName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3441,11 +3386,6 @@ class $$BanksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get bankName => $composableBuilder(
-    column: $table.bankName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get accountName => $composableBuilder(
     column: $table.accountName,
     builder: (column) => ColumnOrderings(column),
@@ -3481,9 +3421,6 @@ class $$BanksTableAnnotationComposer
 
   GeneratedColumn<String> get bankKey =>
       $composableBuilder(column: $table.bankKey, builder: (column) => column);
-
-  GeneratedColumn<String> get bankName =>
-      $composableBuilder(column: $table.bankName, builder: (column) => column);
 
   GeneratedColumn<String> get accountName => $composableBuilder(
     column: $table.accountName,
@@ -3557,7 +3494,6 @@ class $$BanksTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> bankKey = const Value.absent(),
-                Value<String> bankName = const Value.absent(),
                 Value<String> accountName = const Value.absent(),
                 Value<String> accountNumber = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -3565,7 +3501,6 @@ class $$BanksTableTableManager
               }) => BanksCompanion(
                 id: id,
                 bankKey: bankKey,
-                bankName: bankName,
                 accountName: accountName,
                 accountNumber: accountNumber,
                 createdAt: createdAt,
@@ -3575,7 +3510,6 @@ class $$BanksTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String bankKey,
-                required String bankName,
                 required String accountName,
                 required String accountNumber,
                 Value<DateTime> createdAt = const Value.absent(),
@@ -3583,7 +3517,6 @@ class $$BanksTableTableManager
               }) => BanksCompanion.insert(
                 id: id,
                 bankKey: bankKey,
-                bankName: bankName,
                 accountName: accountName,
                 accountNumber: accountNumber,
                 createdAt: createdAt,

@@ -17,7 +17,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -54,6 +54,31 @@ END
               transactions.createdAt,
               transactions.updatedAt,
             ],
+          ),
+        );
+      }
+      if (from < 3) {
+        // Drop bank_name column by recreating banks table without it
+        await m.alterTable(
+          TableMigration(
+            banks,
+            newColumns: [
+              banks.id,
+              banks.bankKey,
+              banks.accountName,
+              banks.accountNumber,
+              banks.createdAt,
+              banks.updatedAt,
+            ],
+            // Explicitly map columns from the old table using bare names (no alias)
+            columnTransformer: {
+              banks.id: const CustomExpression('id'),
+              banks.bankKey: const CustomExpression('bank_key'),
+              banks.accountName: const CustomExpression('account_name'),
+              banks.accountNumber: const CustomExpression('account_number'),
+              banks.createdAt: const CustomExpression('created_at'),
+              banks.updatedAt: const CustomExpression('updated_at'),
+            },
           ),
         );
       }

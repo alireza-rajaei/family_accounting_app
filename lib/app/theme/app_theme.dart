@@ -18,6 +18,74 @@ class AppTheme {
         backgroundColor: AppColors.lightSurface,
         foregroundColor: AppColors.lightOnSurface,
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const MaterialStatePropertyAll(Size(48, 52)),
+          padding: const MaterialStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          shape: MaterialStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          textStyle: const MaterialStatePropertyAll(
+            TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.disabled)) {
+              return colorScheme.primary.withOpacity(0.35);
+            }
+            return colorScheme.primary;
+          }),
+          foregroundColor: MaterialStatePropertyAll(colorScheme.onPrimary),
+          elevation: const MaterialStatePropertyAll(0),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const MaterialStatePropertyAll(Size(48, 52)),
+          padding: const MaterialStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          shape: MaterialStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          textStyle: const MaterialStatePropertyAll(
+            TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: MaterialStatePropertyAll(colorScheme.primary),
+          foregroundColor: MaterialStatePropertyAll(colorScheme.onPrimary),
+          elevation: const MaterialStatePropertyAll(0),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const MaterialStatePropertyAll(Size(48, 52)),
+          padding: const MaterialStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          shape: MaterialStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          textStyle: const MaterialStatePropertyAll(
+            TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          side: MaterialStatePropertyAll(
+            BorderSide(color: AppColors.lightOutline),
+          ),
+          foregroundColor: MaterialStatePropertyAll(colorScheme.primary),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          padding: const MaterialStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+          textStyle: const MaterialStatePropertyAll(
+            TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          foregroundColor: MaterialStatePropertyAll(colorScheme.primary),
+        ),
+      ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.lightSurface,
         indicatorColor: colorScheme.primary.withOpacity(0.15),
@@ -75,6 +143,74 @@ class AppTheme {
         elevation: 0,
         backgroundColor: AppColors.darkSurface,
         foregroundColor: AppColors.darkOnSurface,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const MaterialStatePropertyAll(Size(48, 52)),
+          padding: const MaterialStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          shape: MaterialStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          textStyle: const MaterialStatePropertyAll(
+            TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.disabled)) {
+              return colorScheme.primary.withOpacity(0.35);
+            }
+            return colorScheme.primary;
+          }),
+          foregroundColor: MaterialStatePropertyAll(colorScheme.onPrimary),
+          elevation: const MaterialStatePropertyAll(0),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const MaterialStatePropertyAll(Size(48, 52)),
+          padding: const MaterialStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          shape: MaterialStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          textStyle: const MaterialStatePropertyAll(
+            TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: MaterialStatePropertyAll(colorScheme.primary),
+          foregroundColor: MaterialStatePropertyAll(colorScheme.onPrimary),
+          elevation: const MaterialStatePropertyAll(0),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const MaterialStatePropertyAll(Size(48, 52)),
+          padding: const MaterialStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          shape: MaterialStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          textStyle: const MaterialStatePropertyAll(
+            TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          side: MaterialStatePropertyAll(
+            BorderSide(color: AppColors.darkOutline),
+          ),
+          foregroundColor: MaterialStatePropertyAll(colorScheme.primary),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          padding: const MaterialStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+          textStyle: const MaterialStatePropertyAll(
+            TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          foregroundColor: MaterialStatePropertyAll(colorScheme.primary),
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         labelTextStyle: MaterialStateProperty.resolveWith((states) {

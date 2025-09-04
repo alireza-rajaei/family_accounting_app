@@ -174,7 +174,10 @@ class _BanksViewState extends State<_BanksView> {
                                             height: 40,
                                             child: BankCircleAvatar(
                                               bankKey: b.bankKey,
-                                              name: b.bankName,
+                                              name:
+                                                  BankIcons.persianNames[b
+                                                      .bankKey] ??
+                                                  b.bankKey,
                                             ),
                                           ),
                                         ),
@@ -187,7 +190,9 @@ class _BanksViewState extends State<_BanksView> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              b.bankName,
+                                              BankIcons.persianNames[b
+                                                      .bankKey] ??
+                                                  b.bankKey,
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .titleLarge
@@ -297,7 +302,9 @@ class _BanksViewState extends State<_BanksView> {
           content: Text(
             tr(
               'banks.confirm_delete',
-              args: ['${bank.bankName} - ${bank.accountName}'],
+              args: [
+                '${BankIcons.persianNames[bank.bankKey] ?? bank.bankKey} - ${bank.accountName}',
+              ],
             ),
           ),
           actions: [
@@ -356,12 +363,15 @@ class _BankSheetState extends State<_BankSheet> {
     {'key': 'refah', 'name': 'بانک رفاه'},
     {'key': 'keshavarzi', 'name': 'بانک کشاورزی'},
     {'key': 'ayandeh', 'name': 'بانک آینده'},
+    {'key': 'sandogh', 'name': 'صندوق'},
   ];
 
   @override
   void initState() {
     super.initState();
-    bankName = TextEditingController(text: widget.bank?.bankName ?? '');
+    bankName = TextEditingController(
+      text: BankIcons.persianNames[widget.bank?.bankKey ?? ''] ?? '',
+    );
     accountName = TextEditingController(text: widget.bank?.accountName ?? '');
     accountNumber = TextEditingController(
       text: widget.bank?.accountNumber ?? '',
@@ -408,12 +418,7 @@ class _BankSheetState extends State<_BankSheet> {
               decoration: InputDecoration(labelText: tr('banks.bank')),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: bankName,
-              decoration: InputDecoration(labelText: tr('banks.display_name')),
-              validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
-            ),
-            const SizedBox(height: 12),
+
             TextFormField(
               controller: accountName,
               decoration: InputDecoration(labelText: tr('banks.account_name')),
@@ -438,14 +443,12 @@ class _BankSheetState extends State<_BankSheet> {
                       await cubit.updateBank(
                         id: widget.bank!.id,
                         bankKey: bankKey,
-                        bankName: bankName.text.trim(),
                         accountName: accountName.text.trim(),
                         accountNumber: accountNumber.text.trim(),
                       );
                     } else {
                       await cubit.addBank(
                         bankKey: bankKey,
-                        bankName: bankName.text.trim(),
                         accountName: accountName.text.trim(),
                         accountNumber: accountNumber.text.trim(),
                       );

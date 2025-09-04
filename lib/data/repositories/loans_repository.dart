@@ -120,7 +120,7 @@ ORDER BY l.created_at DESC, l.id DESC
 
   Stream<List<(LoanPayment, Transaction, Bank)>> watchPayments(int loanId) {
     final sql = '''
-SELECT lp.*, t.*, b.id AS b_id, b.bank_key, b.bank_name, b.account_name, b.account_number, b.created_at AS b_created, b.updated_at AS b_updated
+SELECT lp.*, t.*, b.id AS b_id, b.bank_key, b.account_name, b.account_number, b.created_at AS b_created, b.updated_at AS b_updated
 FROM loan_payments lp
 JOIN transactions t ON t.id = lp.transaction_id
 JOIN banks b ON b.id = t.bank_id
@@ -156,7 +156,6 @@ ORDER BY lp.paid_at DESC, lp.id DESC
             final bank = Bank(
               id: r.read<int>('b_id'),
               bankKey: r.read<String>('bank_key'),
-              bankName: r.read<String>('bank_name'),
               accountName: r.read<String>('account_name'),
               accountNumber: r.read<String>('account_number'),
               createdAt: r.read<DateTime>('b_created'),

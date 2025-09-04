@@ -66,17 +66,6 @@ class _TransactionSheetState extends State<TransactionSheet> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _SearchableUserField(
-                      value: userId,
-                      onChanged: (v) => setState(() => userId = v),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
                     child: DropdownButtonFormField<String>(
                       value: type,
                       items: typeOptions
@@ -91,27 +80,56 @@ class _TransactionSheetState extends State<TransactionSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: amountCtrl,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [ThousandsSeparatorInputFormatter()],
-                      decoration: InputDecoration(
-                        labelText: tr('transactions.amount'),
-                      ),
-                      validator: (v) =>
-                          (_parseInt(v) == null) ? 'الزامی' : null,
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
-              if (type == 'جابجایی بین بانکی') const SizedBox(height: 12),
               if (type == 'جابجایی بین بانکی')
-                _DestinationBankDropdown(
-                  value: toBankId,
-                  onChanged: (v) => setState(() => toBankId = v),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DestinationBankDropdown(
+                        value: toBankId,
+                        onChanged: (v) => setState(() => toBankId = v),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: amountCtrl,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [ThousandsSeparatorInputFormatter()],
+                        decoration: InputDecoration(
+                          labelText: tr('transactions.amount'),
+                        ),
+                        validator: (v) =>
+                            (_parseInt(v) == null) ? 'الزامی' : null,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SearchableUserField(
+                        value: userId,
+                        onChanged: (v) => setState(() => userId = v),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: amountCtrl,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [ThousandsSeparatorInputFormatter()],
+                        decoration: InputDecoration(
+                          labelText: tr('transactions.amount'),
+                        ),
+                        validator: (v) =>
+                            (_parseInt(v) == null) ? 'الزامی' : null,
+                      ),
+                    ),
+                  ],
                 ),
               const SizedBox(height: 12),
               TextFormField(
@@ -126,7 +144,15 @@ class _TransactionSheetState extends State<TransactionSheet> {
                     if (_formKey.currentState!.validate() && bankId != null) {
                       final c = context.read<TransactionsCubit>();
                       final amount = _parseInt(amountCtrl.text)!;
-                      if (type == 'جابجایی بین بانکی' && toBankId != null) {
+                      if (type == 'جابجایی بین بانکی') {
+                        if (toBankId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('بانک مقصد را انتخاب کنید'),
+                            ),
+                          );
+                          return;
+                        }
                         final from = bankId!;
                         final to = toBankId!;
                         if (from == to) {

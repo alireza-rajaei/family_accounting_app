@@ -9,10 +9,22 @@ class BanksState extends Equatable {
   final List<BankWithBalance> banks;
   final String query;
   final bool loading;
-  const BanksState({this.banks = const [], this.query = '', this.loading = false});
+  const BanksState({
+    this.banks = const [],
+    this.query = '',
+    this.loading = false,
+  });
 
-  BanksState copyWith({List<BankWithBalance>? banks, String? query, bool? loading}) {
-    return BanksState(banks: banks ?? this.banks, query: query ?? this.query, loading: loading ?? this.loading);
+  BanksState copyWith({
+    List<BankWithBalance>? banks,
+    String? query,
+    bool? loading,
+  }) {
+    return BanksState(
+      banks: banks ?? this.banks,
+      query: query ?? this.query,
+      loading: loading ?? this.loading,
+    );
   }
 
   @override
@@ -32,12 +44,30 @@ class BanksCubit extends Cubit<BanksState> {
     });
   }
 
-  Future<void> addBank({required String bankKey, required String bankName, required String accountName, required String accountNumber}) async {
-    await repository.addBank(bankKey: bankKey, bankName: bankName, accountName: accountName, accountNumber: accountNumber);
+  Future<void> addBank({
+    required String bankKey,
+    required String accountName,
+    required String accountNumber,
+  }) async {
+    await repository.addBank(
+      bankKey: bankKey,
+      accountName: accountName,
+      accountNumber: accountNumber,
+    );
   }
 
-  Future<void> updateBank({required int id, required String bankKey, required String bankName, required String accountName, required String accountNumber}) async {
-    await repository.updateBank(id: id, bankKey: bankKey, bankName: bankName, accountName: accountName, accountNumber: accountNumber);
+  Future<void> updateBank({
+    required int id,
+    required String bankKey,
+    required String accountName,
+    required String accountNumber,
+  }) async {
+    await repository.updateBank(
+      id: id,
+      bankKey: bankKey,
+      accountName: accountName,
+      accountNumber: accountNumber,
+    );
   }
 
   Future<void> deleteBank(int id) async {
@@ -50,5 +80,3 @@ class BanksCubit extends Cubit<BanksState> {
     return super.close();
   }
 }
-
-

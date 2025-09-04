@@ -62,7 +62,7 @@ class TransactionsRepository {
         : 'WHERE ${whereClauses.join(' AND ')}';
     final sql =
         '''
-SELECT t.*, b.id AS b_id, b.bank_key, b.bank_name, b.account_name, b.account_number, b.created_at AS b_created, b.updated_at AS b_updated,
+SELECT t.*, b.id AS b_id, b.bank_key, b.account_name, b.account_number, b.created_at AS b_created, b.updated_at AS b_updated,
        u.id AS u_id, u.first_name, u.last_name, u.father_name, u.mobile_number, u.created_at AS u_created, u.updated_at AS u_updated
 FROM transactions t
 JOIN banks b ON b.id = t.bank_id
@@ -93,7 +93,6 @@ ORDER BY t.created_at DESC, t.id DESC
             final bank = Bank(
               id: r.read<int>('b_id'),
               bankKey: r.read<String>('bank_key'),
-              bankName: r.read<String>('bank_name'),
               accountName: r.read<String>('account_name'),
               accountNumber: r.read<String>('account_number'),
               createdAt: r.read<DateTime>('b_created'),
@@ -199,16 +198,16 @@ ORDER BY t.created_at DESC, t.id DESC
     });
   }
 
-  Stream<List<(String bankName, int deposit, int withdraw)>>
+  Stream<List<(String bankKey, int deposit, int withdraw)>>
   watchBankFlowSums() {
     const sql = '''
-SELECT b.bank_name,
+SELECT b.bank_key,
        COALESCE(SUM(CASE WHEN t.amount > 0 THEN t.amount END), 0) AS deposit,
        COALESCE(SUM(CASE WHEN t.amount < 0 THEN -t.amount END), 0) AS withdraw
 FROM banks b
 LEFT JOIN transactions t ON t.bank_id = b.id
-GROUP BY b.bank_name
-ORDER BY b.bank_name
+GROUP BY b.bank_key
+ORDER BY b.bank_key
 ''';
     return db
         .customSelect(sql, readsFrom: {db.transactions, db.banks})
@@ -217,7 +216,7 @@ ORDER BY b.bank_name
           return rows
               .map(
                 (r) => (
-                  r.read<String>('bank_name'),
+                  r.read<String>('bank_key'),
                   r.read<int>('deposit'),
                   r.read<int>('withdraw'),
                 ),

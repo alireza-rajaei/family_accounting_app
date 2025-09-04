@@ -9,7 +9,9 @@ class _BankPicker extends StatelessWidget {
             .map(
               (e) => DropdownMenuItem(
                 value: e.bank.id,
-                child: Text('${e.bank.bankName} · ${e.bank.accountName}'),
+                child: Text(
+                  '${BankIcons.persianNames[e.bank.bankKey] ?? e.bank.bankKey} · ${e.bank.accountName}',
+                ),
               ),
             )
             .toList();

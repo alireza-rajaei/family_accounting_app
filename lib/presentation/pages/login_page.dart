@@ -41,15 +41,22 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   TextFormField(
                     controller: _usernameController,
-                    decoration: InputDecoration(labelText: tr('login.username')),
-                    validator: (v) => (v == null || v.isEmpty) ? 'نام کاربری الزامی است' : null,
+                    decoration: InputDecoration(
+                      labelText: tr('login.username'),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? 'نام کاربری الزامی است'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _passwordController,
-                    decoration: InputDecoration(labelText: tr('login.password')),
+                    decoration: InputDecoration(
+                      labelText: tr('login.password'),
+                    ),
                     obscureText: true,
-                    validator: (v) => (v == null || v.isEmpty) ? tr('login.password') : null,
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? tr('login.password') : null,
                   ),
                   const SizedBox(height: 16),
                   BlocBuilder<AuthCubit, AuthState>(
@@ -64,22 +71,39 @@ class _LoginPageState extends State<LoginPage> {
                               final authCubit = context.read<AuthCubit>();
                               bool ok = false;
                               if (auth is AuthNeedsSetup) {
-                                ok = await authCubit.setupAndLogin(username, password);
+                                ok = await authCubit.setupAndLogin(
+                                  username,
+                                  password,
+                                );
                               } else {
                                 ok = await authCubit.login(username, password);
                               }
                               if (ok && context.mounted) {
-                                context.read<SettingsCubit>().setUsername(username);
-                                context.read<SettingsCubit>().setLastLogin(DateTime.now());
+                                context.read<SettingsCubit>().setUsername(
+                                  username,
+                                );
+                                context.read<SettingsCubit>().setLastLogin(
+                                  DateTime.now(),
+                                );
                                 context.go('/');
                               } else {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('نام کاربری یا رمز عبور نادرست است')));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'نام کاربری یا رمز عبور نادرست است',
+                                      ),
+                                    ),
+                                  );
                                 }
                               }
                             }
                           },
-                          child: Text(auth is AuthNeedsSetup ? tr('login.setup_and_login') : tr('login.submit')),
+                          child: Text(
+                            auth is AuthNeedsSetup
+                                ? tr('login.setup_and_login')
+                                : tr('login.submit'),
+                          ),
                         ),
                       );
                     },
@@ -93,5 +117,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-
-

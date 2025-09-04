@@ -5,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../../di/locator.dart';
 import '../cubits/banks_cubit.dart';
+import '../../app/utils/bank_icons.dart';
 import '../cubits/users_cubit.dart';
 import '../cubits/transactions_cubit.dart';
 import '../../data/repositories/transactions_repository.dart';
