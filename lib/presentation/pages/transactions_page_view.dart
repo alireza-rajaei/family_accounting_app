@@ -48,7 +48,8 @@ class _TransactionsView extends StatelessWidget {
                             Text(
                               '${it.bank.accountName} · ${JalaliUtils.formatJalali(trn.createdAt)}',
                             ),
-                            if ((trn.type).isNotEmpty) Text('نوع: ${trn.type}'),
+                            if ((trn.type).isNotEmpty)
+                              Text('${tr('transactions.type')}: ${trn.type}'),
                           ],
                         ),
                         trailing: Text(
@@ -62,18 +63,19 @@ class _TransactionsView extends StatelessWidget {
                           final ok = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('حذف تراکنش'),
+                              title: Text(tr('transactions.delete')),
                               content: const Text(
+                                // Consider adding a translation key if needed
                                 'آیا از حذف این تراکنش مطمئن هستید؟',
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('انصراف'),
+                                  child: Text(tr('common.cancel')),
                                 ),
                                 FilledButton(
                                   onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('حذف'),
+                                  child: Text(tr('transactions.delete')),
                                 ),
                               ],
                             ),

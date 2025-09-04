@@ -136,12 +136,12 @@ class _UsersViewState extends State<_UsersView> {
                     builder: (context) => AlertDialog(
                       title: Text(tr('users.delete')),
                       content: Text(
-                        '${tr('users.confirm_delete', namedArgs: {'name': '${u.firstName} ${u.lastName}'})}\nاین کار تمام تراکنش‌ها و وام‌های مرتبط را نیز حذف می‌کند.',
+                        '${tr('users.confirm_delete', namedArgs: {'name': '${u.firstName} ${u.lastName}'})}\n${tr('users.delete_cascade_note')}',
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('انصراف'),
+                          child: Text(tr('common.cancel')),
                         ),
                         FilledButton(
                           onPressed: () => Navigator.pop(context, true),
@@ -213,10 +213,10 @@ class _UserBalanceText extends StatelessWidget {
       future: context.read<UsersCubit>().getUserBalance(userId),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Text('موجودی: ...');
+          return Text('${tr('users.balance')}: ...');
         }
         final balance = snapshot.data ?? 0;
-        return Text('موجودی: ${formatThousands(balance)}');
+        return Text('${tr('users.balance')}: ${formatThousands(balance)}');
       },
     );
   }

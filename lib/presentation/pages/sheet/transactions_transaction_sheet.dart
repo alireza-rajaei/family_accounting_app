@@ -50,8 +50,8 @@ class _UnsettledLoanField extends StatelessWidget {
                     return DropdownButtonFormField<int>(
                       isExpanded: true,
                       value: selectedLoanId,
-                      decoration: const InputDecoration(
-                        labelText: 'انتخاب وام',
+                      decoration: InputDecoration(
+                        labelText: tr('loans.select'),
                       ),
                       items: loans.map((e) {
                         final user = context
@@ -64,7 +64,8 @@ class _UnsettledLoanField extends StatelessWidget {
                         );
                         final title =
                             '${user.firstName} ${user.lastName} · ${dateFa}';
-                        final subtitle = 'باقیمانده: ${e.remaining}';
+                        final subtitle =
+                            '${tr('loans.remaining')}: ${e.remaining}';
                         return DropdownMenuItem(
                           value: e.loan.id,
                           child: Column(
@@ -92,7 +93,7 @@ class _UnsettledLoanField extends StatelessWidget {
                           e.loan.createdAt,
                         );
                         final text =
-                            '${user.firstName} ${user.lastName} · ${dateFa} · باقیمانده: ${e.remaining}';
+                            '${user.firstName} ${user.lastName} · ${dateFa} · ${tr('loans.remaining')}: ${e.remaining}';
                         return Align(
                           alignment: Alignment.centerLeft,
                           child: Text(

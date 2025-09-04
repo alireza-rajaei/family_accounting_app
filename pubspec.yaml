@@ -57,6 +57,8 @@ dependencies:
   flutter_svg: ^2.0.10+1 
   persian_datetime_picker: ^2.7.0
   shamsi_date: ^1.0.2
+  pdf: ^3.11.0 
+  share_plus: ^10.0.2
 
 dev_dependencies:
   flutter_test:
@@ -86,6 +88,7 @@ flutter:
   assets:
     - assets/translations/
     - assets/banks/
+    - assets/fonts/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

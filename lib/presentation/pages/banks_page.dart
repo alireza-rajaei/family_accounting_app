@@ -114,13 +114,13 @@ class _BanksViewState extends State<_BanksView> {
                                       builder: (ctx) => AlertDialog(
                                         title: Text(tr('banks.delete')),
                                         content: Text(
-                                          '${tr('banks.confirm_delete', namedArgs: {'name': '${BankIcons.persianNames[b.bankKey] ?? b.bankKey} - ${b.accountName}'})}\nاین کار تمام تراکنش‌ها و داده‌های مرتبط با این بانک را نیز حذف می‌کند.',
+                                          '${tr('banks.confirm_delete', namedArgs: {'name': '${BankIcons.persianNames[b.bankKey] ?? b.bankKey} - ${b.accountName}'})}\n${tr('banks.delete_cascade_note')}',
                                         ),
                                         actions: [
                                           TextButton(
                                             onPressed: () =>
                                                 Navigator.pop(ctx, false),
-                                            child: const Text('انصراف'),
+                                            child: Text(tr('common.cancel')),
                                           ),
                                           FilledButton(
                                             onPressed: () =>

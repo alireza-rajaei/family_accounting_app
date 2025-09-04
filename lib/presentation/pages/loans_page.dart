@@ -12,6 +12,15 @@ import '../../app/utils/format.dart';
 import '../../app/utils/jalali_utils.dart';
 import '../../app/utils/thousands_input_formatter.dart';
 import 'transactions_page.dart' show showTransactionSheet;
+import '../../data/repositories/loans_repository.dart';
+import '../../data/repositories/transactions_repository.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+// Using custom TTF fonts from assets instead of google fonts package
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class LoansPage extends StatelessWidget {
   const LoansPage({super.key});
@@ -25,6 +34,311 @@ class LoansPage extends StatelessWidget {
       ],
       child: const _LoansView(),
     );
+  }
+}
+
+Future<void> _openLoanReportSheet(BuildContext context, Loan loan) async {
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) => MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.read<LoansCubit>()),
+        BlocProvider.value(value: context.read<UsersCubit>()),
+        BlocProvider.value(value: context.read<BanksCubit>()),
+      ],
+      child: _LoanReportSheet(loan: loan),
+    ),
+  );
+}
+
+class _LoanReportSheet extends StatelessWidget {
+  final Loan loan;
+  const _LoanReportSheet({required this.loan});
+  @override
+  Widget build(BuildContext context) {
+    final usersState = context.read<UsersCubit>().state;
+    final user = usersState.users.firstWhere(
+      (u) => u.id == loan.userId,
+      orElse: () => usersState.users.isNotEmpty
+          ? usersState.users.first
+          : User(
+              id: -1,
+              firstName: tr('common.unknown_user'),
+              lastName: '',
+              fatherName: null,
+              mobileNumber: null,
+              createdAt: DateTime.now(),
+              updatedAt: null,
+            ),
+    );
+
+    final dateFa = JalaliUtils.formatJalali(loan.createdAt);
+    final loansCubit = context.read<LoansCubit>();
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      builder: (ctx, controller) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                tr('loans.report_title'),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: _LoanAvatar(),
+                title: Text('${user.firstName} ${user.lastName}'),
+                subtitle: Text(
+                  '${tr('loans.principal')}: ${formatThousands(loan.principalAmount)} · ${tr('loans.installments')}: ${loan.installments}',
+                ),
+                trailing: Text(dateFa),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.icon(
+                  onPressed: () => _exportLoanReportPdf(context, loan),
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: Text(tr('common.export_pdf')),
+                ),
+              ),
+              StreamBuilder<List<LoanWithStats>>(
+                stream: loansCubit.repository.watchLoans(),
+                builder: (context, snap) {
+                  final loanStats = (snap.data ?? [])
+                      .where((e) => e.loan.id == loan.id)
+                      .toList();
+                  final remaining = loanStats.isNotEmpty
+                      ? loanStats.first.remaining
+                      : loan.principalAmount;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      '${tr('loans.remaining')}: ${formatThousands(remaining)} ${tr('banks.rial')}',
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                tr('transactions.title'),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: StreamBuilder<List<(Transaction, Bank)>>(
+                  stream: context
+                      .read<LoansCubit>()
+                      .repository
+                      .watchLoanTransactions(loan.id),
+                  builder: (context, snapshot) {
+                    final items = snapshot.data ?? [];
+                    if (items.isNotEmpty) {
+                      return ListView.separated(
+                        controller: controller,
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => const Divider(height: 0),
+                        itemBuilder: (context, index) {
+                          final (trn, bank) = items[index];
+                          final uMatch = usersState.users
+                              .where((u) => u.id == trn.userId)
+                              .toList();
+                          final payer = uMatch.isNotEmpty
+                              ? '${uMatch.first.firstName} ${uMatch.first.lastName}'
+                              : tr('common.unknown_user');
+                          return ListTile(
+                            leading: BankCircleAvatar(
+                              bankKey: bank.bankKey,
+                              name:
+                                  BankIcons.persianNames[bank.bankKey] ??
+                                  bank.bankKey,
+                            ),
+                            title: Text(payer),
+                            subtitle: Text(
+                              '${JalaliUtils.formatJalali(trn.createdAt)} · ${trn.type}',
+                            ),
+                            trailing: Text(formatThousands(trn.amount.abs())),
+                          );
+                        },
+                      );
+                    }
+                    // Fallback: watch all transactions of the principal bank for this loan (legacy data without loan_id)
+                    return FutureBuilder<int?>(
+                      future: context
+                          .read<LoansCubit>()
+                          .repository
+                          .getPrincipalBankIdForLoan(loan.id),
+                      builder: (context, bankSnap) {
+                        final bankId = bankSnap.data;
+                        if (bankId == null) {
+                          return Center(
+                            child: Text(tr('transactions.not_found')),
+                          );
+                        }
+                        final txRepo = locator<TransactionsRepository>();
+                        return StreamBuilder<List<TransactionWithJoins>>(
+                          stream: txRepo.watchTransactions(
+                            TransactionsFilter(bankId: bankId),
+                          ),
+                          builder: (context, bankTxSnap) {
+                            final txs = bankTxSnap.data ?? [];
+                            if (txs.isEmpty) {
+                              return Center(
+                                child: Text(tr('transactions.not_found')),
+                              );
+                            }
+                            return ListView.separated(
+                              controller: controller,
+                              itemCount: txs.length,
+                              separatorBuilder: (_, __) =>
+                                  const Divider(height: 0),
+                              itemBuilder: (context, index) {
+                                final it = txs[index];
+                                final bank = it.bank;
+                                final trn = it.transaction;
+                                final payer = it.user == null
+                                    ? tr('common.unknown_user')
+                                    : '${it.user!.firstName} ${it.user!.lastName}';
+                                return ListTile(
+                                  leading: BankCircleAvatar(
+                                    bankKey: bank.bankKey,
+                                    name:
+                                        BankIcons.persianNames[bank.bankKey] ??
+                                        bank.bankKey,
+                                  ),
+                                  title: Text(payer),
+                                  subtitle: Text(
+                                    '${JalaliUtils.formatJalali(trn.createdAt)} · ${trn.type}',
+                                  ),
+                                  trailing: Text(
+                                    formatThousands(trn.amount.abs()),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+Future<void> _exportLoanReportPdf(BuildContext context, Loan loan) async {
+  final usersState = context.read<UsersCubit>().state;
+  final user = usersState.users.firstWhere(
+    (u) => u.id == loan.userId,
+    orElse: () => usersState.users.first,
+  );
+
+  final loansCubit = context.read<LoansCubit>();
+  final payments = await loansCubit.watchPayments(loan.id).first;
+
+  // Load local Persian-capable fonts from assets/fonts/
+  final baseFontData = await rootBundle.load(
+    'assets/fonts/Vazirmatn-Regular.ttf',
+  );
+  final boldFontData = await rootBundle.load('assets/fonts/Vazirmatn-Bold.ttf');
+  final baseFont = pw.Font.ttf(baseFontData.buffer.asByteData());
+  final boldFont = pw.Font.ttf(boldFontData.buffer.asByteData());
+  final doc = pw.Document();
+  final dateFa = JalaliUtils.formatJalali(loan.createdAt);
+  doc.addPage(
+    pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
+      build: (ctx) => [
+        pw.Directionality(
+          textDirection: pw.TextDirection.rtl,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                tr('loans.report_title'),
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Text('${user.firstName} ${user.lastName}'),
+              pw.Text(
+                '${tr('loans.principal')}: ${formatThousands(loan.principalAmount)}  ·  ${tr('loans.installments')}: ${loan.installments}',
+              ),
+              pw.Text('${tr('transactions.date')}: $dateFa'),
+              pw.SizedBox(height: 12),
+              pw.Text(
+                tr('loans.payments'),
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              if (payments.isEmpty)
+                pw.Text(tr('transactions.not_found'))
+              else
+                pw.Table.fromTextArray(
+                  headers: [
+                    tr('transactions.date'),
+                    tr('transactions.type'),
+                    tr('transactions.amount'),
+                    tr('loans.user'),
+                  ],
+                  cellAlignments: {
+                    0: pw.Alignment.centerRight,
+                    1: pw.Alignment.centerRight,
+                    2: pw.Alignment.centerRight,
+                    3: pw.Alignment.centerRight,
+                  },
+                  data: payments.map((e) {
+                    final (lp, trn, bank) = e;
+                    final matches = usersState.users
+                        .where((u) => u.id == trn.userId)
+                        .toList();
+                    final userName = matches.isNotEmpty
+                        ? '${matches.first.firstName} ${matches.first.lastName}'
+                        : tr('common.unknown_user');
+                    return [
+                      JalaliUtils.formatJalali(trn.createdAt),
+                      trn.type,
+                      formatThousands(lp.amount),
+                      userName,
+                    ];
+                  }).toList(),
+                ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  final dir = await getTemporaryDirectory();
+  final file = File('${dir.path}/loan_${loan.id}.pdf');
+  await file.writeAsBytes(await doc.save());
+  try {
+    await Share.shareXFiles([XFile(file.path)], text: tr('loans.report_title'));
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Share failed: $e')));
+    }
   }
 }
 
@@ -52,6 +366,8 @@ class _LoansViewState extends State<_LoansView> {
                       .where((e) => e.loan.userId == _filterUserId)
                       .toList();
 
+            final usersState = context.watch<UsersCubit>().state;
+
             if (filteredItems.isEmpty)
               return Column(
                 children: [
@@ -63,7 +379,9 @@ class _LoansViewState extends State<_LoansView> {
                       onClear: () => setState(() => _filterUserId = null),
                     ),
                   ),
-                  const Expanded(child: Center(child: Text('موردی یافت نشد'))),
+                  Expanded(
+                    child: Center(child: Text(tr('transactions.not_found'))),
+                  ),
                 ],
               );
 
@@ -83,13 +401,12 @@ class _LoansViewState extends State<_LoansView> {
                     separatorBuilder: (_, __) => const Divider(height: 0),
                     itemBuilder: (context, index) {
                       final it = filteredItems[index];
-                      final usersState = context.read<UsersCubit>().state;
                       final us = usersState.users
                           .where((x) => x.id == it.loan.userId)
                           .toList();
                       final userName = us.isNotEmpty
                           ? '${us.first.firstName} ${us.first.lastName}'
-                          : 'کاربر نامشخص';
+                          : tr('common.unknown_user');
                       final dateFa = JalaliUtils.formatJalali(
                         it.loan.createdAt,
                       );
@@ -104,7 +421,6 @@ class _LoansViewState extends State<_LoansView> {
                         trailing: _LoanActionsMenu(
                           settled: it.settled,
                           onPayInstallment: () async {
-                            final usersState = context.read<UsersCubit>().state;
                             final user = usersState.users.firstWhere(
                               (u) => u.id == it.loan.userId,
                               orElse: () => usersState.users.first,
@@ -112,7 +428,7 @@ class _LoansViewState extends State<_LoansView> {
                             await showTransactionSheet(
                               context,
                               initialUserId: user.id,
-                              initialType: 'پرداخت قسط وام',
+                              initialType: tr('transactions.loan_installment'),
                               initialLoanId: it.loan.id,
                             );
                           },
@@ -121,18 +437,16 @@ class _LoansViewState extends State<_LoansView> {
                             final ok = await showDialog<bool>(
                               context: context,
                               builder: (ctx) => AlertDialog(
-                                title: const Text('حذف وام'),
-                                content: const Text(
-                                  'آیا از حذف این وام مطمئن هستید؟ این کار تمام اقساط و تراکنش‌های مرتبط را نیز حذف می‌کند.',
-                                ),
+                                title: Text(tr('loans.delete')),
+                                content: Text('${tr('loans.confirm_delete')}'),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('انصراف'),
+                                    child: Text(tr('common.cancel')),
                                   ),
                                   FilledButton(
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('حذف'),
+                                    child: Text(tr('loans.delete')),
                                   ),
                                 ],
                               ),
@@ -143,6 +457,8 @@ class _LoansViewState extends State<_LoansView> {
                               );
                             }
                           },
+                          onReport: () =>
+                              _openLoanReportSheet(context, it.loan),
                         ),
                         onTap: () => _openLoanDetails(context, it.loan),
                         onLongPress: () =>
@@ -186,11 +502,13 @@ class _LoanActionsMenu extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onPayInstallment;
+  final VoidCallback onReport;
   const _LoanActionsMenu({
     required this.settled,
     required this.onEdit,
     required this.onDelete,
     required this.onPayInstallment,
+    required this.onReport,
   });
   @override
   Widget build(BuildContext context) {
@@ -203,11 +521,16 @@ class _LoanActionsMenu extends StatelessWidget {
         if (value == 'pay') onPayInstallment();
         if (value == 'edit') onEdit();
         if (value == 'delete') onDelete();
+        if (value == 'report') onReport();
       },
-      itemBuilder: (ctx) => const [
-        PopupMenuItem<String>(value: 'pay', child: Text('پرداخت قسط')),
-        PopupMenuItem<String>(value: 'edit', child: Text('ویرایش')),
-        PopupMenuItem<String>(value: 'delete', child: Text('حذف')),
+      itemBuilder: (ctx) => [
+        PopupMenuItem<String>(
+          value: 'pay',
+          child: Text(tr('loans.add_payment')),
+        ),
+        PopupMenuItem<String>(value: 'edit', child: Text(tr('loans.edit'))),
+        PopupMenuItem<String>(value: 'delete', child: Text(tr('loans.delete'))),
+        PopupMenuItem<String>(value: 'report', child: Text(tr('loans.report'))),
       ],
     );
   }
@@ -348,8 +671,10 @@ class _AddPaymentRowState extends State<_AddPaymentRow> {
                 if (amount > remaining) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('مبلغ پرداختی از باقیمانده بیشتر است'),
+                      SnackBar(
+                        content: Text(
+                          tr('loans.errors.payment_exceeds_remaining'),
+                        ),
                       ),
                     );
                   }
@@ -552,9 +877,11 @@ class _LoanSheetState extends State<_LoanSheet> {
                         if (principal > currentBalance) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text(
-                                  'مبلغ درخواست از موجودی بانک بیشتر است',
+                                  tr(
+                                    'loans.errors.principal_exceeds_bank_balance',
+                                  ),
                                 ),
                               ),
                             );

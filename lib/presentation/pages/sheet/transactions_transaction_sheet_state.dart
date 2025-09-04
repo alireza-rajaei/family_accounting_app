@@ -4,7 +4,7 @@ class _TransactionSheetState extends State<TransactionSheet> {
   final _formKey = GlobalKey<FormState>();
   int? bankId;
   int? userId;
-  String type = 'واریز';
+  String type = tr('transactions.deposit');
   int? toBankId;
   int? selectedLoanId;
   final amountCtrl = TextEditingController();
@@ -45,11 +45,11 @@ class _TransactionSheetState extends State<TransactionSheet> {
     final padding =
         MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
     final typeOptions = <String>[
-      'واریز',
-      'برداشت',
-      'پرداخت وام به کاربر',
-      'پرداخت قسط وام',
-      'جابجایی بین بانکی',
+      tr('transactions.deposit'),
+      tr('transactions.withdraw'),
+      tr('transactions.loan_principal'),
+      tr('transactions.loan_installment'),
+      tr('transactions.bank_transfer'),
     ];
     return Padding(
       padding: padding,
@@ -83,7 +83,9 @@ class _TransactionSheetState extends State<TransactionSheet> {
                                 DropdownMenuItem(value: opt, child: Text(opt)),
                           )
                           .toList(),
-                      onChanged: (v) => setState(() => type = v ?? 'واریز'),
+                      onChanged: (v) => setState(
+                        () => type = v ?? tr('transactions.deposit'),
+                      ),
                       validator: (v) =>
                           (v == null || v.isEmpty) ? 'الزامی' : null,
                       decoration: InputDecoration(
@@ -94,7 +96,7 @@ class _TransactionSheetState extends State<TransactionSheet> {
                 ],
               ),
               const SizedBox(height: 12),
-              if (type == 'جابجایی بین بانکی')
+              if (type == tr('transactions.bank_transfer'))
                 Row(
                   children: [
                     Expanded(
@@ -102,7 +104,8 @@ class _TransactionSheetState extends State<TransactionSheet> {
                         value: toBankId,
                         sourceBankId: bankId,
                         onChanged: (v) => setState(() => toBankId = v),
-                        validator: () => (toBankId == null) ? 'الزامی' : null,
+                        validator: () =>
+                            (toBankId == null) ? tr('common.required') : null,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -114,8 +117,9 @@ class _TransactionSheetState extends State<TransactionSheet> {
                         decoration: InputDecoration(
                           labelText: tr('transactions.amount'),
                         ),
-                        validator: (v) =>
-                            (_parseInt(v) == null) ? 'الزامی' : null,
+                        validator: (v) => (_parseInt(v) == null)
+                            ? tr('common.required')
+                            : null,
                       ),
                     ),
                   ],
@@ -127,9 +131,10 @@ class _TransactionSheetState extends State<TransactionSheet> {
                       child: _SearchableUserField(
                         value: userId,
                         onChanged: (v) => setState(() => userId = v),
-                        validator: () => (type == 'جابجایی بین بانکی')
+                        validator: () =>
+                            (type == tr('transactions.bank_transfer'))
                             ? null
-                            : (userId == null ? 'الزامی' : null),
+                            : (userId == null ? tr('common.required') : null),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -141,13 +146,14 @@ class _TransactionSheetState extends State<TransactionSheet> {
                         decoration: InputDecoration(
                           labelText: tr('transactions.amount'),
                         ),
-                        validator: (v) =>
-                            (_parseInt(v) == null) ? 'الزامی' : null,
+                        validator: (v) => (_parseInt(v) == null)
+                            ? tr('common.required')
+                            : null,
                       ),
                     ),
                   ],
                 ),
-              if (type == 'پرداخت قسط وام') ...[
+              if (type == tr('transactions.loan_installment')) ...[
                 const SizedBox(height: 12),
                 _UnsettledLoanField(
                   selectedUserId: userId,
@@ -172,8 +178,12 @@ class _TransactionSheetState extends State<TransactionSheet> {
                       if (type == 'جابجایی بین بانکی') {
                         if (toBankId == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('بانک مقصد را انتخاب کنید'),
+                            SnackBar(
+                              content: Text(
+                                tr(
+                                  'transactions.errors.select_destination_bank',
+                                ),
+                              ),
                             ),
                           );
                           return;
@@ -182,9 +192,11 @@ class _TransactionSheetState extends State<TransactionSheet> {
                         final to = toBankId!;
                         if (from == to) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
-                                'بانک مبدا و مقصد نباید یکسان باشند',
+                                tr(
+                                  'transactions.errors.same_source_destination',
+                                ),
                               ),
                             ),
                           );
@@ -199,9 +211,11 @@ class _TransactionSheetState extends State<TransactionSheet> {
                             : 0;
                         if (amount > srcBalance) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
-                                'مبلغ برداشت از موجودی بانک بیشتر است',
+                                tr(
+                                  'transactions.errors.withdraw_exceeds_balance',
+                                ),
                               ),
                             ),
                           );
@@ -218,11 +232,13 @@ class _TransactionSheetState extends State<TransactionSheet> {
                         if (context.mounted) Navigator.pop(context);
                         return;
                       }
-                      if (type == 'پرداخت قسط وام') {
+                      if (type == tr('transactions.loan_installment')) {
                         if (selectedLoanId == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('ابتدا وام را انتخاب کنید'),
+                            SnackBar(
+                              content: Text(
+                                tr('loans.errors.select_loan_first'),
+                              ),
                             ),
                           );
                           return;
@@ -248,9 +264,11 @@ class _TransactionSheetState extends State<TransactionSheet> {
                             : 0;
                         if (amount > srcBalance) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
-                                'مبلغ برداشت از موجودی بانک بیشتر است',
+                                tr(
+                                  'transactions.errors.withdraw_exceeds_balance',
+                                ),
                               ),
                             ),
                           );

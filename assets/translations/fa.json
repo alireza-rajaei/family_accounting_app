@@ -23,6 +23,12 @@
     "users": "کاربران",
     "banks": "بانک‌ها"
   },
+  "common": {
+    "cancel": "انصراف",
+    "required": "الزامی",
+    "unknown_user": "کاربر نامشخص",
+    "export_pdf": "خروجی PDF"
+  },
   "home": {
     "chart_card": "نمودار واریزی‌ها و برداشت‌ها (به‌زودی)",
     "balances_card": "موجودی حساب‌ها به تفکیک بانک (به‌زودی)",
@@ -56,7 +62,8 @@
     "create": "ایجاد بانک",
     "delete": "حذف",
     "confirm_delete": "آیا از حذف {name} مطمئن هستید؟",
-    "rial": "ریال"
+    "rial": "ریال",
+    "delete_cascade_note": "این کار تمام تراکنش‌ها و داده‌های مرتبط با این بانک را نیز حذف می‌کند."
   },
   "transactions": {
     "title": "تراکنش‌ها",
@@ -74,7 +81,15 @@
     "create": "ایجاد تراکنش",
     "save": "ذخیره تغییرات",
     "delete": "حذف تراکنش",
-    "not_found": "تراکنشی یافت نشد"
+    "not_found": "تراکنشی یافت نشد",
+    "loan_principal": "پرداخت وام به کاربر",
+    "loan_installment": "پرداخت قسط وام",
+    "bank_transfer": "جابجایی بین بانکی",
+    "errors": {
+      "select_destination_bank": "بانک مقصد را انتخاب کنید",
+      "same_source_destination": "بانک مبدا و مقصد نباید یکسان باشند",
+      "withdraw_exceeds_balance": "مبلغ برداشت از موجودی بانک بیشتر است"
+    }
   },
   "loans": {
     "title": "وام‌ها",
@@ -90,6 +105,16 @@
     "payments": "پرداخت‌ها",
     "add_payment": "ثبت قسط",
     "amount": "مبلغ",
-    "bank": "بانک"
+    "bank": "بانک",
+    "delete": "حذف وام",
+    "confirm_delete": "آیا از حذف این وام مطمئن هستید؟ این کار تمام اقساط و تراکنش‌های مرتبط را نیز حذف می‌کند.",
+    "errors": {
+      "payment_exceeds_remaining": "مبلغ پرداختی از باقیمانده بیشتر است",
+      "principal_exceeds_bank_balance": "مبلغ درخواست از موجودی بانک بیشتر است",
+      "select_loan_first": "ابتدا وام را انتخاب کنید"
+    },
+    "select": "انتخاب وام",
+    "report": "گزارش وام",
+    "report_title": "گزارش وام"
   }
 }

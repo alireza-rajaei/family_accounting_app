@@ -26,6 +26,22 @@ class TransactionsFilter {
     this.userId,
     this.bankId,
   });
+
+  TransactionsFilter copyWith({
+    DateTime? from,
+    DateTime? to,
+    String? type,
+    int? userId,
+    int? bankId,
+  }) {
+    return TransactionsFilter(
+      from: from ?? this.from,
+      to: to ?? this.to,
+      type: type ?? this.type,
+      userId: userId ?? this.userId,
+      bankId: bankId ?? this.bankId,
+    );
+  }
 }
 
 class TransactionsRepository {
