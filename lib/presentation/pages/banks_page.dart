@@ -96,6 +96,59 @@ class _BanksViewState extends State<_BanksView> {
                         ),
                         child: Stack(
                           children: [
+                            Positioned(
+                              left: 8,
+                              top: 8,
+                              child: PopupMenuButton<String>(
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(
+                                  Icons.more_vert,
+                                  color: Colors.white,
+                                ),
+                                onSelected: (action) async {
+                                  if (action == 'edit') {
+                                    _openBankSheet(context, bank: b);
+                                  } else if (action == 'delete') {
+                                    final ok = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: Text(tr('banks.delete')),
+                                        content: Text(
+                                          '${tr('banks.confirm_delete', namedArgs: {'name': '${BankIcons.persianNames[b.bankKey] ?? b.bankKey} - ${b.accountName}'})}\nاین کار تمام تراکنش‌ها و داده‌های مرتبط با این بانک را نیز حذف می‌کند.',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, false),
+                                            child: const Text('انصراف'),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, true),
+                                            child: Text(tr('banks.delete')),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (ok == true && context.mounted) {
+                                      await context
+                                          .read<BanksCubit>()
+                                          .deleteBank(b.id);
+                                    }
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  PopupMenuItem(
+                                    value: 'edit',
+                                    child: Text(tr('banks.edit')),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text(tr('banks.delete')),
+                                  ),
+                                ],
+                              ),
+                            ),
                             Positioned.fill(
                               child: IgnorePointer(
                                 child: DecoratedBox(
@@ -268,62 +321,6 @@ class _BanksViewState extends State<_BanksView> {
     }
     final str = buf.toString().split('').reversed.join();
     return (v < 0 ? '-' : '') + str;
-  }
-
-  Future<void> _openBankMenu(BuildContext context, Bank bank) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: Text(tr('banks.edit')),
-              onTap: () => Navigator.pop(context, 'edit'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: Text(tr('banks.delete')),
-              onTap: () => Navigator.pop(context, 'delete'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (!context.mounted || action == null) return;
-    if (action == 'edit') {
-      _openBankSheet(context, bank: bank);
-    } else if (action == 'delete') {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(tr('banks.delete')),
-          content: Text(
-            tr(
-              'banks.confirm_delete',
-              namedArgs: {
-                'name':
-                    '${BankIcons.persianNames[bank.bankKey] ?? bank.bankKey} - ${bank.accountName}',
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('انصراف'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(tr('banks.delete')),
-            ),
-          ],
-        ),
-      );
-      if (ok == true && context.mounted) {
-        await context.read<BanksCubit>().deleteBank(bank.id);
-      }
-    }
   }
 
   Future<void> _openBankSheet(BuildContext context, {Bank? bank}) async {

@@ -172,12 +172,17 @@ ORDER BY lp.paid_at DESC, lp.id DESC
     required int amount,
     String? note,
   }) async {
-    // Create a positive transaction for loan installment
+    // Create a positive transaction for loan installment and attach userId
+    // inferred from the loan itself so the user becomes searchable/reportable
+    final loan = await (db.select(
+      db.loans,
+    )..where((l) => l.id.equals(loanId))).getSingle();
     final trId = await db
         .into(db.transactions)
         .insert(
           TransactionsCompanion.insert(
             bankId: bankId,
+            userId: d.Value(loan.userId),
             amount: amount,
             type: 'پرداخت قسط وام',
             note: d.Value(note),

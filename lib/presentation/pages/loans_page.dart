@@ -28,8 +28,15 @@ class LoansPage extends StatelessWidget {
   }
 }
 
-class _LoansView extends StatelessWidget {
+class _LoansView extends StatefulWidget {
   const _LoansView();
+  @override
+  State<_LoansView> createState() => _LoansViewState();
+}
+
+class _LoansViewState extends State<_LoansView> {
+  int? _filterUserId;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,74 +45,113 @@ class _LoansView extends StatelessWidget {
           builder: (context, state) {
             if (state.loading)
               return const Center(child: CircularProgressIndicator());
-            if (state.items.isEmpty)
-              return Center(child: Text(tr('transactions.not_found')));
-            return ListView.separated(
-              itemCount: state.items.length,
-              separatorBuilder: (_, __) => const Divider(height: 0),
-              itemBuilder: (context, index) {
-                final it = state.items[index];
-                final usersState = context.read<UsersCubit>().state;
-                final us = usersState.users
-                    .where((x) => x.id == it.loan.userId)
-                    .toList();
-                final userName = us.isNotEmpty
-                    ? '${us.first.firstName} ${us.first.lastName}'
-                    : 'کاربر نامشخص';
-                final dateFa = JalaliUtils.formatJalali(it.loan.createdAt);
-                return ListTile(
-                  leading: _LoanAvatar(),
-                  title: Text(
-                    '$userName · ${formatThousands(it.loan.principalAmount)}',
+
+            final filteredItems = _filterUserId == null
+                ? state.items
+                : state.items
+                      .where((e) => e.loan.userId == _filterUserId)
+                      .toList();
+
+            if (filteredItems.isEmpty)
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: _UserFilterField(
+                      value: _filterUserId,
+                      onChanged: (v) => setState(() => _filterUserId = v),
+                      onClear: () => setState(() => _filterUserId = null),
+                    ),
                   ),
-                  subtitle: Text(
-                    '${dateFa} · ${tr('loans.remaining')}: ${formatThousands(it.remaining)} ${tr('banks.rial')}',
+                  const Expanded(child: Center(child: Text('موردی یافت نشد'))),
+                ],
+              );
+
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: _UserFilterField(
+                    value: _filterUserId,
+                    onChanged: (v) => setState(() => _filterUserId = v),
+                    onClear: () => setState(() => _filterUserId = null),
                   ),
-                  trailing: _LoanActionsMenu(
-                    settled: it.settled,
-                    onPayInstallment: () async {
+                ),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: filteredItems.length,
+                    separatorBuilder: (_, __) => const Divider(height: 0),
+                    itemBuilder: (context, index) {
+                      final it = filteredItems[index];
                       final usersState = context.read<UsersCubit>().state;
-                      final user = usersState.users.firstWhere(
-                        (u) => u.id == it.loan.userId,
-                        orElse: () => usersState.users.first,
+                      final us = usersState.users
+                          .where((x) => x.id == it.loan.userId)
+                          .toList();
+                      final userName = us.isNotEmpty
+                          ? '${us.first.firstName} ${us.first.lastName}'
+                          : 'کاربر نامشخص';
+                      final dateFa = JalaliUtils.formatJalali(
+                        it.loan.createdAt,
                       );
-                      await showTransactionSheet(
-                        context,
-                        initialUserId: user.id,
-                        initialType: 'پرداخت قسط وام',
-                        initialLoanId: it.loan.id,
-                      );
-                    },
-                    onEdit: () => _openLoanSheet(context, loan: it.loan),
-                    onDelete: () async {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('حذف وام'),
-                          content: const Text(
-                            'آیا از حذف این وام مطمئن هستید؟ این کار تمام اقساط و تراکنش‌های مرتبط را نیز حذف می‌کند.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('انصراف'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('حذف'),
-                            ),
-                          ],
+                      return ListTile(
+                        leading: _LoanAvatar(),
+                        title: Text(
+                          '$userName · ${formatThousands(it.loan.principalAmount)}',
                         ),
+                        subtitle: Text(
+                          '${dateFa} · ${tr('loans.remaining')}: ${formatThousands(it.remaining)} ${tr('banks.rial')}',
+                        ),
+                        trailing: _LoanActionsMenu(
+                          settled: it.settled,
+                          onPayInstallment: () async {
+                            final usersState = context.read<UsersCubit>().state;
+                            final user = usersState.users.firstWhere(
+                              (u) => u.id == it.loan.userId,
+                              orElse: () => usersState.users.first,
+                            );
+                            await showTransactionSheet(
+                              context,
+                              initialUserId: user.id,
+                              initialType: 'پرداخت قسط وام',
+                              initialLoanId: it.loan.id,
+                            );
+                          },
+                          onEdit: () => _openLoanSheet(context, loan: it.loan),
+                          onDelete: () async {
+                            final ok = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('حذف وام'),
+                                content: const Text(
+                                  'آیا از حذف این وام مطمئن هستید؟ این کار تمام اقساط و تراکنش‌های مرتبط را نیز حذف می‌کند.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('انصراف'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('حذف'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (ok == true) {
+                              await context.read<LoansCubit>().deleteLoan(
+                                it.loan.id,
+                              );
+                            }
+                          },
+                        ),
+                        onTap: () => _openLoanDetails(context, it.loan),
+                        onLongPress: () =>
+                            _openLoanSheet(context, loan: it.loan),
                       );
-                      if (ok == true) {
-                        await context.read<LoansCubit>().deleteLoan(it.loan.id);
-                      }
                     },
                   ),
-                  onTap: () => _openLoanDetails(context, it.loan),
-                  onLongPress: () => _openLoanSheet(context, loan: it.loan),
-                );
-              },
+                ),
+              ],
             );
           },
         ),
@@ -566,6 +612,44 @@ class _SearchableUserField extends StatelessWidget {
             labelText: tr('loans.user'),
             hintText: label,
             suffixIcon: const Icon(Icons.search),
+          ),
+          onTap: () async {
+            final picked = await _showLoanUserPicker(context, state);
+            if (picked != null) onChanged(picked);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _UserFilterField extends StatelessWidget {
+  final int? value;
+  final ValueChanged<int?> onChanged;
+  final VoidCallback onClear;
+  const _UserFilterField({
+    required this.value,
+    required this.onChanged,
+    required this.onClear,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<UsersCubit, UsersState>(
+      builder: (context, state) {
+        String hint = tr('transactions.search_user');
+        if (value != null) {
+          final sel = state.users.where((u) => u.id == value).toList();
+          if (sel.isNotEmpty)
+            hint = '${sel.first.firstName} ${sel.first.lastName}';
+        }
+        return TextField(
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: tr('transactions.search_user'),
+            hintText: hint,
+            suffixIcon: value == null
+                ? const Icon(Icons.search)
+                : IconButton(icon: const Icon(Icons.clear), onPressed: onClear),
           ),
           onTap: () async {
             final picked = await _showLoanUserPicker(context, state);
