@@ -329,7 +329,8 @@ Future<void> _exportLoanReportPdf(BuildContext context, Loan loan) async {
   );
 
   final dir = await getTemporaryDirectory();
-  final file = File('${dir.path}/loan_${loan.id}.pdf');
+  final ts = DateTime.now().millisecondsSinceEpoch;
+  final file = File('${dir.path}/loan_${loan.id}_$ts.pdf');
   await file.writeAsBytes(await doc.save());
   try {
     await Share.shareXFiles([XFile(file.path)], text: tr('loans.report_title'));
@@ -460,7 +461,7 @@ class _LoansViewState extends State<_LoansView> {
                           onReport: () =>
                               _openLoanReportSheet(context, it.loan),
                         ),
-                        onTap: () => _openLoanDetails(context, it.loan),
+                        // Click on loan disabled per request
                         onLongPress: () =>
                             _openLoanSheet(context, loan: it.loan),
                       );
@@ -532,76 +533,6 @@ class _LoanActionsMenu extends StatelessWidget {
         PopupMenuItem<String>(value: 'delete', child: Text(tr('loans.delete'))),
         PopupMenuItem<String>(value: 'report', child: Text(tr('loans.report'))),
       ],
-    );
-  }
-}
-
-Future<void> _openLoanDetails(BuildContext context, Loan loan) async {
-  await showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    builder: (sheetContext) => MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: context.read<LoansCubit>()),
-        BlocProvider.value(value: context.read<UsersCubit>()),
-        BlocProvider.value(value: context.read<BanksCubit>()),
-      ],
-      child: _LoanDetailsSheet(loan: loan),
-    ),
-  );
-}
-
-class _LoanDetailsSheet extends StatelessWidget {
-  final Loan loan;
-  const _LoanDetailsSheet({required this.loan});
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<LoansCubit>();
-    return Padding(
-      padding: MediaQuery.of(context).viewInsets + const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            tr('loans.payments'),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 12),
-          StreamBuilder<List<(LoanPayment, Transaction, Bank)>>(
-            stream: cubit.watchPayments(loan.id),
-            builder: (context, snapshot) {
-              final items = snapshot.data ?? [];
-              if (items.isEmpty)
-                return Center(child: Text(tr('transactions.not_found')));
-              return SizedBox(
-                height: 300,
-                child: ListView.separated(
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const Divider(height: 0),
-                  itemBuilder: (context, index) {
-                    final (lp, trn, bank) = items[index];
-                    return ListTile(
-                      leading: BankCircleAvatar(
-                        bankKey: bank.bankKey,
-                        name:
-                            BankIcons.persianNames[bank.bankKey] ??
-                            bank.bankKey,
-                      ),
-                      title: Text(
-                        '${BankIcons.persianNames[bank.bankKey] ?? bank.bankKey} · ${bank.accountName}',
-                      ),
-                      subtitle: Text(trn.note ?? ''),
-                      trailing: Text(formatThousands(lp.amount)),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _AddPaymentRow(loan: loan),
-        ],
-      ),
     );
   }
 }

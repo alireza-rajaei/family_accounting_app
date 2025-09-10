@@ -135,6 +135,97 @@ ORDER BY t.created_at DESC, t.id DESC
         );
   }
 
+  Future<List<TransactionWithJoins>> fetchTransactions(
+    TransactionsFilter f, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final whereClauses = <String>[];
+    final vars = <d.Variable>[];
+
+    if (f.from != null) {
+      whereClauses.add('t.created_at >= ?');
+      vars.add(d.Variable<DateTime>(f.from!));
+    }
+    if (f.to != null) {
+      whereClauses.add('t.created_at <= ?');
+      vars.add(d.Variable<DateTime>(f.to!));
+    }
+    if (f.type != null) {
+      whereClauses.add('t.type = ?');
+      vars.add(d.Variable.withString(f.type!));
+    }
+    if (f.userId != null) {
+      whereClauses.add('t.user_id = ?');
+      vars.add(d.Variable.withInt(f.userId!));
+    }
+    if (f.bankId != null) {
+      whereClauses.add('t.bank_id = ?');
+      vars.add(d.Variable.withInt(f.bankId!));
+    }
+
+    final whereSql = whereClauses.isEmpty
+        ? ''
+        : 'WHERE ${whereClauses.join(' AND ')}';
+    final sql =
+        '''
+SELECT t.*, b.id AS b_id, b.bank_key, b.account_name, b.account_number, b.created_at AS b_created, b.updated_at AS b_updated,
+       u.id AS u_id, u.first_name, u.last_name, u.father_name, u.mobile_number, u.created_at AS u_created, u.updated_at AS u_updated
+FROM transactions t
+JOIN banks b ON b.id = t.bank_id
+LEFT JOIN users u ON u.id = t.user_id
+$whereSql
+ORDER BY t.created_at DESC, t.id DESC
+LIMIT ? OFFSET ?
+''';
+
+    final rows = await db
+        .customSelect(
+          sql,
+          variables: [
+            ...vars,
+            d.Variable.withInt(limit),
+            d.Variable.withInt(offset),
+          ],
+          readsFrom: {db.transactions, db.banks, db.users},
+        )
+        .get();
+
+    return rows.map((r) {
+      final tr = Transaction(
+        id: r.read<int>('id'),
+        bankId: r.read<int>('bank_id'),
+        userId: r.readNullable<int>('user_id'),
+        amount: r.read<int>('amount'),
+        type: r.read<String>('type'),
+        note: r.readNullable<String>('note'),
+        createdAt: r.read<DateTime>('created_at'),
+        updatedAt: r.readNullable<DateTime>('updated_at'),
+      );
+      final bank = Bank(
+        id: r.read<int>('b_id'),
+        bankKey: r.read<String>('bank_key'),
+        accountName: r.read<String>('account_name'),
+        accountNumber: r.read<String>('account_number'),
+        createdAt: r.read<DateTime>('b_created'),
+        updatedAt: r.readNullable<DateTime>('b_updated'),
+      );
+      final uid = r.readNullable<int>('u_id');
+      final user = uid == null
+          ? null
+          : User(
+              id: uid,
+              firstName: r.read<String>('first_name'),
+              lastName: r.read<String>('last_name'),
+              fatherName: r.readNullable<String>('father_name'),
+              mobileNumber: r.readNullable<String>('mobile_number'),
+              createdAt: r.read<DateTime>('u_created'),
+              updatedAt: r.readNullable<DateTime>('u_updated'),
+            );
+      return TransactionWithJoins(transaction: tr, bank: bank, user: user);
+    }).toList();
+  }
+
   Future<int> addTransaction({
     required int bankId,
     int? userId,

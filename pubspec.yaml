@@ -59,6 +59,7 @@ dependencies:
   shamsi_date: ^1.0.2
   pdf: ^3.11.0 
   share_plus: ^10.0.2
+  flutter_contacts: ^1.1.9+2
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +74,9 @@ dev_dependencies:
   build_runner: ^2.4.13
   injectable_generator: ^2.6.2
   drift_dev: ^2.20.3
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
+  image: ^4.1.7
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -89,6 +93,9 @@ flutter:
     - assets/translations/
     - assets/banks/
     - assets/fonts/
+    - assets/logos/
+    - assets/icons/
+    - assets/logos/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -120,3 +127,26 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# App icon generation config
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+    image_path: assets/icons/app_icon.png
+    background_color: "#0F172A"
+    theme_color: "#2563EB"
+  image_path: assets/icons/app_icon.png
+  min_sdk_android: 21
+
+# Native splash config
+flutter_native_splash:
+  color: "#0F172A"
+  image: assets/icons/app_icon.png
+  android: true
+  ios: true
+  web: true
+  android_12:
+    color: "#0F172A"
+    image: assets/icons/app_icon_android12.png

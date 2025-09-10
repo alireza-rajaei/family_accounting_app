@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../cubits/settings_cubit.dart';
@@ -106,14 +107,26 @@ class _AppDrawer extends StatelessWidget {
           padding: const EdgeInsets.all(0),
           children: [
             UserAccountsDrawerHeader(
-              accountName: Text(settings.username),
-              accountEmail: Text(
-                settings.lastLoginAt != null
-                    ? 'آخرین ورود: ${settings.lastLoginAt}'
-                    : 'آخرین ورود: -',
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
               ),
-              currentAccountPicture: const CircleAvatar(
-                child: Icon(Icons.person),
+              accountName: Center(child: Text(settings.username)),
+              accountEmail: Center(
+                child: Text(
+                  settings.lastLoginAt != null
+                      ? 'آخرین ورود: ' + _formatJalali(settings.lastLoginAt!)
+                      : 'آخرین ورود: -',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withOpacity(0.12),
+                child: Icon(
+                  Icons.person,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
             ListTile(
@@ -189,6 +202,37 @@ class _AppDrawer extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatJalali(DateTime dt) {
+  final j = dt.toJalali();
+  const weekdays = [
+    'دوشنبه',
+    'سه‌شنبه',
+    'چهارشنبه',
+    'پنجشنبه',
+    'جمعه',
+    'شنبه',
+    'یکشنبه',
+  ];
+  final w = weekdays[j.weekDay % 7];
+  final monthNames = [
+    '',
+    'فروردین',
+    'اردیبهشت',
+    'خرداد',
+    'تیر',
+    'مرداد',
+    'شهریور',
+    'مهر',
+    'آبان',
+    'آذر',
+    'دی',
+    'بهمن',
+    'اسفند',
+  ];
+  final month = monthNames[j.month];
+  return '$w ${j.day} $month ${j.year}';
 }
 
 class _FontScaleDialog extends StatefulWidget {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 
 import '../../di/locator.dart';
 import '../cubits/banks_cubit.dart';
@@ -9,6 +10,7 @@ import '../../app/utils/bank_icons.dart';
 import '../cubits/users_cubit.dart';
 import '../cubits/transactions_cubit.dart';
 import '../../data/repositories/transactions_repository.dart';
+import '../../data/repositories/loans_repository.dart';
 part 'home_page_view.dart';
 part 'home_page_stat_tile.dart';
 

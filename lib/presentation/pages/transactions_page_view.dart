@@ -23,9 +23,17 @@ class _TransactionsView extends StatelessWidget {
                     return Center(child: Text(tr('transactions.not_found')));
                   }
                   return ListView.separated(
-                    itemCount: state.items.length,
+                    itemCount: state.items.length + (state.loadingMore ? 1 : 0),
                     separatorBuilder: (_, __) => const Divider(height: 0),
                     itemBuilder: (context, index) {
+                      if (index >= state.items.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      // Ask cubit to prefetch if user scrolls near the end
+                      context.read<TransactionsCubit>().loadMoreIfNeeded(index);
                       final it = state.items[index];
                       final trn = it.transaction;
                       final isIncome = trn.amount >= 0;
@@ -58,7 +66,12 @@ class _TransactionsView extends StatelessWidget {
                             color: isIncome ? Colors.green : Colors.red,
                           ),
                         ),
-                        onTap: () => _openTransactionSheet(context, data: it),
+                        onTap: () async {
+                          await _openTransactionSheet(context, data: it);
+                          if (context.mounted) {
+                            context.read<TransactionsCubit>().watch();
+                          }
+                        },
                         onLongPress: () async {
                           final ok = await showDialog<bool>(
                             context: context,
@@ -96,7 +109,12 @@ class _TransactionsView extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openTransactionSheet(context),
+        onPressed: () async {
+          await _openTransactionSheet(context);
+          if (context.mounted) {
+            context.read<TransactionsCubit>().watch();
+          }
+        },
         child: const Icon(Icons.add),
       ),
     );

@@ -274,6 +274,22 @@ class _TransactionSheetState extends State<TransactionSheet> {
                           );
                           return;
                         }
+                        // Also ensure user balance is sufficient when withdrawing to a user
+                        if (userId != null) {
+                          final userBalance = await context
+                              .read<UsersCubit>()
+                              .getUserBalance(userId!);
+                          if (amount > userBalance) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'مبلغ برداشت بیشتر از موجودی کاربر است',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                        }
                       }
                       final signedAmount =
                           (type == 'برداشت' || type == 'پرداخت وام به کاربر')
