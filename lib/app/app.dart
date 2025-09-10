@@ -39,8 +39,9 @@ class _FamilyAccountingAppState extends State<FamilyAccountingApp> {
             supportedLocales: context.supportedLocales,
             localizationsDelegates: context.localizationDelegates,
             builder: (context, child) {
+              final isFa = context.locale.languageCode == 'fa';
               return Directionality(
-                textDirection: TextDirection.rtl,
+                textDirection: isFa ? TextDirection.rtl : TextDirection.ltr,
                 child: child ?? const SizedBox(),
               );
             },

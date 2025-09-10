@@ -297,7 +297,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                   child: Text(
-                    'ریز تراکنش های کاربر',
+                    tr('users_report.title_pdf'),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -367,7 +367,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                   child: Text(
-                    '۲۰ تراکنش اخیر',
+                    tr('users_report.last20'),
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
@@ -454,7 +454,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  'ریز تراکنش‌های کاربر',
+                  tr('users_report.title_pdf'),
                   style: pw.TextStyle(
                     fontSize: 16,
                     fontWeight: pw.FontWeight.bold,
@@ -503,7 +503,9 @@ class _UserReportSheetState extends State<_UserReportSheet> {
     final ts = DateTime.now().millisecondsSinceEpoch;
     final file = File('${dir.path}/user_${widget.user.id}_last20_$ts.pdf');
     await file.writeAsBytes(await doc.save());
-    await Share.shareXFiles([XFile(file.path)], text: 'ریز تراکنش‌های کاربر');
+    await Share.shareXFiles([
+      XFile(file.path),
+    ], text: tr('users_report.share_text'));
   }
 }
 
@@ -568,7 +570,7 @@ class _UserSheetState extends State<_UserSheet> {
                       labelText: tr('users.first_name'),
                     ),
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? 'الزامی' : null,
+                        (v == null || v.isEmpty) ? tr('common.required') : null,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -579,7 +581,7 @@ class _UserSheetState extends State<_UserSheet> {
                       labelText: tr('users.last_name'),
                     ),
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? 'الزامی' : null,
+                        (v == null || v.isEmpty) ? tr('common.required') : null,
                   ),
                 ),
               ],
@@ -588,8 +590,9 @@ class _UserSheetState extends State<_UserSheet> {
             TextFormField(
               controller: fatherName,
               decoration: InputDecoration(labelText: tr('users.father_name')),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'الزامی' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? tr('common.required')
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -598,13 +601,14 @@ class _UserSheetState extends State<_UserSheet> {
               decoration: InputDecoration(
                 labelText: tr('users.mobile'),
                 suffixIcon: IconButton(
-                  tooltip: 'انتخاب از مخاطبین',
+                  tooltip: tr('users_report.pick_from_contacts'),
                   icon: const Icon(Icons.contacts),
                   onPressed: _pickContactAndFill,
                 ),
               ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'الزامی' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? tr('common.required')
+                  : null,
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -780,9 +784,7 @@ extension on _UserSheetState {
       if (!isMobilePlatform) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('این قابلیت فقط روی موبایل در دسترس است'),
-            ),
+            SnackBar(content: Text(tr('users_report.mobile_only'))),
           );
         }
         return;
@@ -794,7 +796,7 @@ extension on _UserSheetState {
       if (!granted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('اجازه دسترسی به مخاطبین داده نشد')),
+            SnackBar(content: Text(tr('users_report.perm_denied'))),
           );
         }
         return;
@@ -816,9 +818,9 @@ extension on _UserSheetState {
 
       if (numbers.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('این مخاطب شماره‌ای ندارد')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(tr('users_report.no_phone'))));
         }
         return;
       }
@@ -857,11 +859,11 @@ extension on _UserSheetState {
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           child: Text(
-                            'انتخاب شماره تماس',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                            tr('users_report.choose_number'),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                         Expanded(

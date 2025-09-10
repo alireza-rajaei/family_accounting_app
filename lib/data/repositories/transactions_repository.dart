@@ -16,7 +16,7 @@ class TransactionWithJoins {
 class TransactionsFilter {
   final DateTime? from;
   final DateTime? to;
-  final String? type; // one of Persian labels or null
+  final String? type;
   final int? userId;
   final int? bankId;
   const TransactionsFilter({

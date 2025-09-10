@@ -1,0 +1,158 @@
+{
+    "app_title": "Family Accounting",
+    "login": {
+        "title": "Login",
+        "username": "Username",
+        "password": "Password",
+        "submit": "Login",
+        "setup_and_login": "Create admin & login",
+        "invalid": "Invalid username or password"
+    },
+    "drawer": {
+        "font_size": "Font size",
+        "change_username": "Change username",
+        "theme": "Theme (dark/light)",
+        "backup": "Backup",
+        "restore": "Restore",
+        "last_login": "Last login: {time}",
+        "version": "Version {version}",
+        "about": "About app",
+        "language": "Language",
+        "backup_saved": "Backup file saved",
+        "restore_done": "Restore completed",
+        "restore_error": "Restore error: {error}",
+        "backup_dialog_title": "Save backup file"
+    },
+    "tabs": {
+        "home": "Home",
+        "transactions": "Transactions",
+        "loans": "Loans",
+        "users": "Users",
+        "banks": "Banks"
+    },
+    "users": {
+        "search_hint": "Search first/last name",
+        "not_found": "No user found",
+        "add": "Add user",
+        "edit": "Edit user",
+        "first_name": "First name",
+        "last_name": "Last name",
+        "father_name": "Father's name",
+        "mobile": "Mobile",
+        "save": "Save changes",
+        "create": "Create user",
+        "delete": "Delete",
+        "add_transaction": "Add transaction",
+        "confirm_delete": "Are you sure to delete {name}?",
+        "balance": "Balance"
+    },
+    "banks": {
+        "search_hint": "Search bank/account name/number",
+        "not_found": "No bank found",
+        "add": "Add bank",
+        "edit": "Edit bank",
+        "display_name": "Display name",
+        "account_name": "Account name",
+        "account_number": "Account number",
+        "bank": "Bank",
+        "save": "Save changes",
+        "create": "Create bank",
+        "delete": "Delete",
+        "confirm_delete": "Are you sure to delete {name}?",
+        "rial": "Rial",
+        "delete_cascade_note": "This will also delete all related transactions and data."
+    },
+    "common": {
+        "cancel": "Cancel",
+        "required": "Required",
+        "unknown_user": "Unknown user",
+        "export_pdf": "Export PDF",
+        "ok": "OK"
+    },
+    "home": {
+        "chart_card": "Deposits and withdrawals by bank",
+        "balances_card": "Account balances by bank",
+        "stats_card": "Users and unsettled loans count",
+        "year_title": "Year stats {year}",
+        "stats_users": "Users",
+        "stats_transactions": "Transactions",
+        "year_transactions": "Transactions",
+        "year_loans": "Loans"
+    },
+    "transactions": {
+        "title": "Transactions",
+        "search_user": "Search user",
+        "search_bank": "Search bank",
+        "filters": "Filters",
+        "type": "Type",
+        "deposit": "Deposit",
+        "withdraw": "Withdraw",
+        "deposit_kind": "Deposit kind",
+        "withdraw_kind": "Withdraw kind",
+        "amount": "Amount",
+        "note": "Note",
+        "date": "Date",
+        "create": "Create transaction",
+        "save": "Save changes",
+        "delete": "Delete transaction",
+        "not_found": "No transaction found",
+        "loan_principal": "Loan to user",
+        "loan_installment": "Loan installment",
+        "bank_transfer": "Bank transfer",
+        "errors": {
+            "select_destination_bank": "Select destination bank",
+            "same_source_destination": "Source and destination banks must differ",
+            "withdraw_exceeds_balance": "Withdraw exceeds bank balance"
+        }
+    },
+    "loans": {
+        "title": "Loans",
+        "user": "User",
+        "principal": "Principal",
+        "installments": "Installments",
+        "note": "Note",
+        "remaining": "Remaining",
+        "add": "Add loan",
+        "edit": "Edit loan",
+        "save": "Save changes",
+        "create": "Create loan",
+        "payments": "Payments",
+        "add_payment": "Add installment",
+        "amount": "Amount",
+        "bank": "Bank",
+        "delete": "Delete loan",
+        "confirm_delete": "Delete this loan and related data?",
+        "errors": {
+            "payment_exceeds_remaining": "Payment exceeds remaining",
+            "principal_exceeds_bank_balance": "Requested exceeds bank balance",
+            "select_loan_first": "Select a loan first"
+        },
+        "select": "Select loan",
+        "report": "Loan report",
+        "report_title": "Loan report"
+    },
+    "about": {
+        "title": "About app",
+        "body": "This app is completely free and built to help manage family-based Qarz-al-Hasanah funds.\n\nOur goal is to provide a simple, transparent and reliable experience for recording transactions, loans and reports so families can focus on empathy and support.",
+        "lead": "Lead developer: A. Rajaei Herandi",
+        "email_label": "Email:",
+        "email_copy_fallback": "No email app found. Address copied."
+    },
+    "lang": {
+        "fa": "فارسی",
+        "en": "English"
+    },
+    "users_report": {
+        "menu_user_report": "Show user transactions",
+        "type_label": "Transaction type",
+        "all": "All",
+        "last20": "Last 20 transactions",
+        "pick_from_contacts": "Pick from contacts",
+        "mobile_only": "This feature is available only on mobile",
+        "perm_denied": "Contacts permission denied",
+        "no_phone": "This contact has no phone number",
+        "choose_number": "Choose a phone number",
+        "title_pdf": "User transactions",
+        "share_text": "User transactions"
+    }
+}

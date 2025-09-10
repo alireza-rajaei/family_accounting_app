@@ -42,7 +42,6 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // App icon above username field
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
                   child: Image.asset(
@@ -56,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
                   controller: _usernameController,
                   decoration: InputDecoration(labelText: tr('login.username')),
                   validator: (v) =>
-                      (v == null || v.isEmpty) ? 'نام کاربری الزامی است' : null,
+                      (v == null || v.isEmpty) ? tr('login.invalid') : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -97,11 +96,7 @@ class _LoginPageState extends State<LoginPage> {
                             } else {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'نام کاربری یا رمز عبور نادرست است',
-                                    ),
-                                  ),
+                                  SnackBar(content: Text(tr('login.invalid'))),
                                 );
                               }
                             }

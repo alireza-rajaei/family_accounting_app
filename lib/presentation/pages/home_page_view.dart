@@ -6,8 +6,6 @@ class _HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final repo = locator<TransactionsRepository>();
     final loansRepo = locator<LoansRepository>();
-    // Ensure we have access to bank names map and gradients in this file
-    // ignore: unused_import
     BankIcons;
     return Scaffold(
       body: ListView(
@@ -107,7 +105,9 @@ class _HomeView extends StatelessWidget {
                                 tooltipMargin: 12,
                                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                                   final isDeposit = rodIndex == 0;
-                                  final label = isDeposit ? 'واریز' : 'برداشت';
+                                  final label = isDeposit
+                                      ? tr('transactions.deposit')
+                                      : tr('transactions.withdraw');
                                   return BarTooltipItem(
                                     '$label\n${_formatCurrency(rod.toY.toInt())}',
                                     const TextStyle(color: Colors.white),
@@ -125,9 +125,15 @@ class _HomeView extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: const [
-                          _Legend(color: Color(0xFF10B981), label: 'واریز'),
+                          _Legend(
+                            color: Color(0xFF10B981),
+                            label: 'transactions.deposit',
+                          ),
                           SizedBox(width: 16),
-                          _Legend(color: Color(0xFFEF4444), label: 'برداشت'),
+                          _Legend(
+                            color: Color(0xFFEF4444),
+                            label: 'transactions.withdraw',
+                          ),
                         ],
                       ),
                     ],
@@ -188,7 +194,7 @@ class _HomeView extends StatelessWidget {
                   Expanded(
                     child: BlocBuilder<UsersCubit, UsersState>(
                       builder: (context, state) => _StatTile(
-                        label: 'کاربران',
+                        label: tr('home.stats_users'),
                         value: state.users.length.toString(),
                         icon: Icons.people_alt_outlined,
                       ),
@@ -197,7 +203,7 @@ class _HomeView extends StatelessWidget {
                   Expanded(
                     child: BlocBuilder<TransactionsCubit, TransactionsState>(
                       builder: (context, state) => _StatTile(
-                        label: 'تعداد تراکنش',
+                        label: tr('home.stats_transactions'),
                         value: state.items.length.toString(),
                         icon: Icons.compare_arrows_outlined,
                       ),
@@ -242,7 +248,6 @@ class _YearStats extends StatelessWidget {
     final now = DateTime.now();
     final jNow = now.toJalali();
     final jStart = Jalali(jNow.year, 1, 1);
-    // Approximate end: last day of Esfand; safe upper bound by adding one year and subtracting a day
     final jEnd = Jalali(
       jNow.year + 1,
       1,
@@ -260,7 +265,7 @@ class _YearStats extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'آمار سال ${jNow.year}',
+          tr('home.year_title', namedArgs: {'year': '${jNow.year}'}),
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 12),
@@ -272,7 +277,7 @@ class _YearStats extends StatelessWidget {
               children: [
                 Expanded(
                   child: _StatTile(
-                    label: 'تعداد تراکنش‌های',
+                    label: tr('home.year_transactions'),
                     value: trCount.toString(),
                     icon: Icons.receipt_long_outlined,
                   ),
@@ -290,7 +295,7 @@ class _YearStats extends StatelessWidget {
                           )
                           .length;
                       return _StatTile(
-                        label: 'تعداد وام‌های',
+                        label: tr('home.year_loans'),
                         value: loansCount.toString(),
                         icon: Icons.request_quote_outlined,
                       );

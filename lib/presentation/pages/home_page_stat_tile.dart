@@ -64,7 +64,7 @@ class _Legend extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        Text(tr(label), style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

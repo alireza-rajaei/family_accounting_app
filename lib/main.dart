@@ -9,9 +9,10 @@ void main() async {
   await EasyLocalization.ensureInitialized();
   runApp(
     EasyLocalization(
-      supportedLocales: const [Locale('fa')],
+      supportedLocales: const [Locale('fa'), Locale('en')],
       path: 'assets/translations',
       fallbackLocale: const Locale('fa'),
+      saveLocale: true,
       child: const FamilyAccountingApp(),
     ),
   );

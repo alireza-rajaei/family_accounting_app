@@ -59,10 +59,8 @@ class _ShellScaffoldState extends State<ShellScaffold>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // final settings = context.watch<SettingsCubit>().state;
 
     final location = GoRouterState.of(context).uri.toString();
-    // final settings = context.watch<SettingsCubit>().state;
 
     return Scaffold(
       appBar: AppBar(title: Text(tr('app_title'))),
@@ -195,7 +193,6 @@ class _AppDrawerState extends State<_AppDrawer> {
                         ),
                       );
                       if (result != null && result.isNotEmpty) {
-                        // ignore: use_build_context_synchronously
                         context.read<SettingsCubit>().setUsername(result);
                       }
                     },
@@ -210,6 +207,48 @@ class _AppDrawerState extends State<_AppDrawer> {
                     onChanged: (v) => context
                         .read<SettingsCubit>()
                         .setThemeMode(v ? ThemeMode.dark : ThemeMode.light),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.language),
+                    title: Text(
+                      tr('drawer.language'),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    onTap: () async {
+                      final selected = await showDialog<Locale>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text(tr('drawer.language')),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Text('🇮🇷'),
+                                title: Text(tr('lang.fa')),
+                                onTap: () =>
+                                    Navigator.pop(context, const Locale('fa')),
+                              ),
+                              ListTile(
+                                leading: const Text('🇺🇸'),
+                                title: Text(tr('lang.en')),
+                                onTap: () =>
+                                    Navigator.pop(context, const Locale('en')),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(tr('common.cancel')),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (selected != null) {
+                        await context.setLocale(selected);
+                      }
+                    },
                   ),
                   const Divider(),
                   ListTile(
@@ -236,27 +275,26 @@ class _AppDrawerState extends State<_AppDrawer> {
                   ListTile(
                     leading: const Icon(Icons.info_outline),
                     title: Text(
-                      'درباره ما',
+                      tr('drawer.about'),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     onTap: () {
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('درباره اپ'),
+                          title: Text(tr('about.title')),
                           content: SingleChildScrollView(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'این برنامه کاملاً رایگان و با هدف کمک به مدیریت قرض‌الحسنه‌های خانوادگی ساخته شده است.\n\n'
-                                  'ما تلاش کرده‌ایم تجربه‌ای ساده، شفاف و قابل اعتماد برای ثبت تراکنش‌ها، وام‌ها و گزارش‌ها فراهم کنیم تا تمرکز خانواده‌ها بر همدلی و همراهی بماند.',
+                                Text(
+                                  tr('about.body'),
                                   textAlign: TextAlign.start,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  ' سرپرست توسعه‌دهندگان: ع. رجایی هرندی',
+                                  tr('about.lead'),
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: Theme.of(context)
@@ -271,7 +309,7 @@ class _AppDrawerState extends State<_AppDrawer> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'ایمیل: ',
+                                      tr('about.email_label'),
                                       style: Theme.of(
                                         context,
                                       ).textTheme.bodySmall,
@@ -300,9 +338,11 @@ class _AppDrawerState extends State<_AppDrawer> {
                                             ScaffoldMessenger.of(
                                               context,
                                             ).showSnackBar(
-                                              const SnackBar(
+                                              SnackBar(
                                                 content: Text(
-                                                  'برنامه ایمیل یافت نشد. آدرس کپی شد.',
+                                                  tr(
+                                                    'about.email_copy_fallback',
+                                                  ),
                                                 ),
                                               ),
                                             );
@@ -325,7 +365,7 @@ class _AppDrawerState extends State<_AppDrawer> {
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text('باشه'),
+                              child: Text(tr('common.ok')),
                             ),
                           ],
                         ),
@@ -339,7 +379,7 @@ class _AppDrawerState extends State<_AppDrawer> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Center(
                 child: Text(
-                  'نسخه ${_version ?? '-'}',
+                  tr('drawer.version', args: [_version ?? '-']),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -353,9 +393,9 @@ class _AppDrawerState extends State<_AppDrawer> {
 
 String _formatJalaliFull(DateTime dt) {
   final j = dt.toJalali();
-  final w = j.formatter.wN; // weekday name
+  final w = j.formatter.wN;
   final d = j.day.toString();
-  final m = j.formatter.mN; // month name
+  final m = j.formatter.mN;
   final y = (j.year % 1000).toString();
   return '$w $d $m $y';
 }
@@ -415,7 +455,6 @@ Future<void> _doBackup(BuildContext context) async {
     bytes: bytes,
   );
   if (res != null) {
-    // ignore: use_build_context_synchronously
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('فایل پشتیبان ذخیره شد')));
@@ -441,16 +480,12 @@ Future<void> _doRestore(BuildContext context) async {
   try {
     final map = jsonDecode(content) as Map<String, dynamic>;
     await locator<BackupRepository>().importJson(map);
-    // ignore: use_build_context_synchronously
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('بازیابی با موفقیت انجام شد')));
   } catch (e) {
-    // ignore: use_build_context_synchronously
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('خطا در بازیابی: $e')));
   }
 }
-
-// Version now loaded dynamically via package_info_plus

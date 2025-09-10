@@ -59,7 +59,6 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     _sub?.cancel();
     final next = filter ?? state.filter;
     emit(state.copyWith(loading: true, filter: next, offset: 0, hasMore: true));
-    // Initial page load (non-streaming) to support pagination
     _loadPage(reset: true);
   }
 
@@ -81,7 +80,6 @@ class TransactionsCubit extends Cubit<TransactionsState> {
       note: note,
       createdAt: createdAt,
     );
-    // Optimistic refresh from start to keep order consistent
     await _loadPage(reset: true);
   }
 
@@ -156,7 +154,6 @@ class TransactionsCubit extends Cubit<TransactionsState> {
   }
 
   Future<void> loadMoreIfNeeded(int currentIndex) async {
-    // Prefetch when user passes 80% of current items
     final threshold = (state.items.length * 0.8).floor();
     if (currentIndex >= threshold) {
       await _loadPage();
