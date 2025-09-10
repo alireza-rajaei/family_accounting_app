@@ -26,4 +26,8 @@
 
 # Keep runtime annotations
 -keepattributes *Annotation*
+ 
+ # Keep Google Play Core split install classes
+ -keep class com.google.android.play.core.** { *; }
+ -dontwarn com.google.android.play.core.**
 

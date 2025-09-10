@@ -12,6 +12,7 @@ void main() async {
       supportedLocales: const [Locale('fa'), Locale('en')],
       path: 'assets/translations',
       fallbackLocale: const Locale('fa'),
+      startLocale: const Locale('fa'),
       saveLocale: true,
       child: const FamilyAccountingApp(),
     ),

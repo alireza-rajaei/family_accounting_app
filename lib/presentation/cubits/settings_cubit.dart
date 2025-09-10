@@ -10,7 +10,7 @@ class SettingsState extends Equatable {
   final DateTime? lastLoginAt;
 
   const SettingsState({
-    this.themeMode = ThemeMode.system,
+    this.themeMode = ThemeMode.light,
     this.fontScale = 1.2,
     this.username = 'ادمین',
     this.lastLoginAt,
@@ -52,7 +52,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       state.copyWith(
         themeMode: themeIndex != null
             ? ThemeMode.values[themeIndex]
-            : ThemeMode.system,
+            : ThemeMode.light,
         fontScale: fontScale,
         username: username,
         lastLoginAt: last != null ? DateTime.tryParse(last) : null,

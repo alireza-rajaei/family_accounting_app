@@ -243,6 +243,24 @@ class _TransactionSheetState extends State<TransactionSheet> {
                           );
                           return;
                         }
+                        // Prevent paying an installment amount greater than remaining
+                        final loansState = context.read<LoansCubit>().state;
+                        final matches = loansState.items
+                            .where((e) => e.loan.id == selectedLoanId)
+                            .toList();
+                        if (matches.isNotEmpty) {
+                          final remaining = matches.first.remaining;
+                          if (amount > remaining) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  tr('loans.errors.payment_exceeds_remaining'),
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                        }
                         await context.read<LoansCubit>().addPayment(
                           loanId: selectedLoanId!,
                           bankId: bankId!,

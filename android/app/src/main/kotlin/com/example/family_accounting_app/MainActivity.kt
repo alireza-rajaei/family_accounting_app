@@ -1,4 +1,4 @@
-package com.example.family_accounting_app
+package com.rajaei.sandoghche
 
 import io.flutter.embedding.android.FlutterActivity
 
