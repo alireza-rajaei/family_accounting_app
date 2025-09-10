@@ -81,8 +81,13 @@ class _HomeView extends StatelessWidget {
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 6),
                                       child: Text(
-                                        BankIcons.persianNames[data[idx].$1] ??
-                                            data[idx].$1,
+                                        (context.locale.languageCode == 'fa')
+                                            ? (BankIcons.persianNames[data[idx]
+                                                      .$1] ??
+                                                  data[idx].$1)
+                                            : (BankIcons.englishNames[data[idx]
+                                                      .$1] ??
+                                                  data[idx].$1),
                                         style: Theme.of(
                                           context,
                                         ).textTheme.bodySmall,
@@ -169,7 +174,7 @@ class _HomeView extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  '${BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey} · ${b.bank.accountName}',
+                                  '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey) : (BankIcons.englishNames[b.bank.bankKey] ?? b.bank.bankKey))} · ${b.bank.accountName}',
                                 ),
                               ),
                               Text(

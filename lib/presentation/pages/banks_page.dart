@@ -97,7 +97,7 @@ class _BanksViewState extends State<_BanksView> {
                         child: Stack(
                           children: [
                             Positioned(
-                              left: 8,
+                              right: 8,
                               top: 8,
                               child: PopupMenuButton<String>(
                                 padding: EdgeInsets.zero,
@@ -228,9 +228,16 @@ class _BanksViewState extends State<_BanksView> {
                                             child: BankCircleAvatar(
                                               bankKey: b.bankKey,
                                               name:
-                                                  BankIcons.persianNames[b
-                                                      .bankKey] ??
-                                                  b.bankKey,
+                                                  (context
+                                                          .locale
+                                                          .languageCode ==
+                                                      'fa'
+                                                  ? (BankIcons.persianNames[b
+                                                            .bankKey] ??
+                                                        b.bankKey)
+                                                  : (BankIcons.englishNames[b
+                                                            .bankKey] ??
+                                                        b.bankKey)),
                                             ),
                                           ),
                                         ),
@@ -243,9 +250,14 @@ class _BanksViewState extends State<_BanksView> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              BankIcons.persianNames[b
-                                                      .bankKey] ??
-                                                  b.bankKey,
+                                              (context.locale.languageCode ==
+                                                      'fa'
+                                                  ? (BankIcons.persianNames[b
+                                                            .bankKey] ??
+                                                        b.bankKey)
+                                                  : (BankIcons.englishNames[b
+                                                            .bankKey] ??
+                                                        b.bankKey)),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .titleLarge
@@ -255,9 +267,14 @@ class _BanksViewState extends State<_BanksView> {
                                                   ),
                                             ),
                                             Text(
-                                              BankIcons.englishNames[b
-                                                      .bankKey] ??
-                                                  '',
+                                              (context.locale.languageCode ==
+                                                      'fa'
+                                                  ? (BankIcons.englishNames[b
+                                                            .bankKey] ??
+                                                        '')
+                                                  : (BankIcons.persianNames[b
+                                                            .bankKey] ??
+                                                        '')),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
@@ -408,7 +425,11 @@ class _BankSheetState extends State<_BankSheet> {
                   .map(
                     (e) => DropdownMenuItem(
                       value: e['key']!,
-                      child: Text(e['name']!),
+                      child: Text(
+                        context.locale.languageCode == 'fa'
+                            ? (BankIcons.persianNames[e['key']!] ?? e['key']!)
+                            : (BankIcons.englishNames[e['key']!] ?? e['key']!),
+                      ),
                     ),
                   )
                   .toList(),
@@ -420,7 +441,8 @@ class _BankSheetState extends State<_BankSheet> {
             TextFormField(
               controller: accountName,
               decoration: InputDecoration(labelText: tr('banks.account_name')),
-              validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? tr('common.required') : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -428,7 +450,8 @@ class _BankSheetState extends State<_BankSheet> {
               decoration: InputDecoration(
                 labelText: tr('banks.account_number'),
               ),
-              validator: (v) => (v == null || v.isEmpty) ? 'الزامی' : null,
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? tr('common.required') : null,
             ),
             const SizedBox(height: 16),
             SizedBox(

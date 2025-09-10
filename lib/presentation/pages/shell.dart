@@ -10,6 +10,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
 import '../cubits/settings_cubit.dart';
 import '../../di/locator.dart';
@@ -153,8 +154,19 @@ class _AppDrawerState extends State<_AppDrawer> {
                         const SizedBox(height: 4),
                         Text(
                           settings.lastLoginAt != null
-                              ? 'آخرین ورود: ${_formatJalaliFull(settings.lastLoginAt!)}'
-                              : 'آخرین ورود: -',
+                              ? tr(
+                                  'drawer.last_login',
+                                  namedArgs: {
+                                    'time': _formatLastLogin(
+                                      context,
+                                      settings.lastLoginAt!,
+                                    ),
+                                  },
+                                )
+                              : tr(
+                                  'drawer.last_login',
+                                  namedArgs: {'time': '-'},
+                                ),
                           style: Theme.of(context).textTheme.bodySmall,
                           textAlign: TextAlign.center,
                         ),
@@ -398,6 +410,13 @@ String _formatJalaliFull(DateTime dt) {
   final m = j.formatter.mN;
   final y = (j.year % 1000).toString();
   return '$w $d $m $y';
+}
+
+String _formatLastLogin(BuildContext context, DateTime dt) {
+  if (context.locale.languageCode == 'fa') {
+    return _formatJalaliFull(dt);
+  }
+  return DateFormat('EEE, MMM d, yyyy').format(dt);
 }
 
 class _FontScaleDialog extends StatefulWidget {
