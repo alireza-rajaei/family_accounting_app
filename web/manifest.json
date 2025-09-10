@@ -1,6 +1,6 @@
 {
-    "name": "family_accounting_app",
-    "short_name": "family_accounting_app",
+    "name": "صندقچه",
+    "short_name": "صندقچه",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0F172A",
