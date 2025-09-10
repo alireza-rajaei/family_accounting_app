@@ -8,16 +8,16 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 56,
+      height: 72,
       child: Stack(
         children: [
           if (icon != null)
             Positioned(
               left: 4,
-              top: 2,
+              top: 4,
               child: Icon(
                 icon,
-                size: 56,
+                size: 72,
                 color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
               ),
             ),

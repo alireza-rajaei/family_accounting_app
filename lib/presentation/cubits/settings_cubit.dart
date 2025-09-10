@@ -11,7 +11,7 @@ class SettingsState extends Equatable {
 
   const SettingsState({
     this.themeMode = ThemeMode.system,
-    this.fontScale = 1.0,
+    this.fontScale = 1.2,
     this.username = 'ادمین',
     this.lastLoginAt,
   });
@@ -45,7 +45,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final themeIndex = prefs.getInt(_keyThemeMode);
-    final fontScale = prefs.getDouble(_keyFontScale) ?? 1.0;
+    final fontScale = prefs.getDouble(_keyFontScale) ?? 1.2;
     final username = prefs.getString(_keyUsername) ?? 'ادمین';
     final last = prefs.getString(_keyLastLoginAt);
     emit(

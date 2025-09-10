@@ -6,8 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:shamsi_date/shamsi_date.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:shamsi_date/shamsi_date.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../cubits/settings_cubit.dart';
 import '../../di/locator.dart';
@@ -96,106 +98,251 @@ class _ShellScaffoldState extends State<ShellScaffold>
   }
 }
 
-class _AppDrawer extends StatelessWidget {
+class _AppDrawer extends StatefulWidget {
   const _AppDrawer();
+  @override
+  State<_AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<_AppDrawer> {
+  String? _version;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _version = '${info.version}');
+      }
+    } catch (_) {
+      if (mounted) setState(() => _version = null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsCubit>().state;
     return Drawer(
       child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(0),
+        child: Column(
           children: [
-            UserAccountsDrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-              ),
-              accountName: Center(child: Text(settings.username)),
-              accountEmail: Center(
-                child: Text(
-                  settings.lastLoginAt != null
-                      ? 'آخرین ورود: ' + _formatJalali(settings.lastLoginAt!)
-                      : 'آخرین ورود: -',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.primary.withOpacity(0.12),
-                child: Icon(
-                  Icons.person,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.text_increase),
-              title: Text(tr('drawer.font_size')),
-              subtitle: Text('x${settings.fontScale.toStringAsFixed(2)}'),
-              onTap: () async {
-                final cubit = context.read<SettingsCubit>();
-                final value = await showDialog<double>(
-                  context: context,
-                  builder: (context) =>
-                      _FontScaleDialog(current: settings.fontScale),
-                );
-                if (value != null) cubit.setFontScale(value);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: Text(tr('drawer.change_username')),
-              onTap: () async {
-                final controller = TextEditingController(
-                  text: settings.username,
-                );
-                final result = await showDialog<String>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text(tr('login.username')),
-                    content: TextField(controller: controller),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('انصراف'),
-                      ),
-                      FilledButton(
-                        onPressed: () =>
-                            Navigator.pop(context, controller.text.trim()),
-                        child: const Text('ذخیره'),
-                      ),
-                    ],
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(0),
+                children: [
+                  DrawerHeader(
+                    margin: EdgeInsets.zero,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const CircleAvatar(
+                          radius: 28,
+                          child: Icon(Icons.person, size: 28),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          settings.username,
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          settings.lastLoginAt != null
+                              ? 'آخرین ورود: ${_formatJalaliFull(settings.lastLoginAt!)}'
+                              : 'آخرین ورود: -',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
                   ),
-                );
-                if (result != null && result.isNotEmpty) {
-                  // ignore: use_build_context_synchronously
-                  context.read<SettingsCubit>().setUsername(result);
-                }
-              },
-            ),
-            SwitchListTile(
-              secondary: const Icon(Icons.dark_mode_outlined),
-              title: Text(tr('drawer.theme')),
-              value: settings.themeMode == ThemeMode.dark,
-              onChanged: (v) => context.read<SettingsCubit>().setThemeMode(
-                v ? ThemeMode.dark : ThemeMode.light,
+                  ListTile(
+                    leading: const Icon(Icons.person_outline),
+                    title: Text(
+                      tr('drawer.change_username'),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    onTap: () async {
+                      final controller = TextEditingController(
+                        text: settings.username,
+                      );
+                      final result = await showDialog<String>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text(tr('login.username')),
+                          content: TextField(controller: controller),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('انصراف'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(
+                                context,
+                                controller.text.trim(),
+                              ),
+                              child: const Text('ذخیره'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (result != null && result.isNotEmpty) {
+                        // ignore: use_build_context_synchronously
+                        context.read<SettingsCubit>().setUsername(result);
+                      }
+                    },
+                  ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.dark_mode_outlined),
+                    title: Text(
+                      tr('drawer.theme'),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    value: settings.themeMode == ThemeMode.dark,
+                    onChanged: (v) => context
+                        .read<SettingsCubit>()
+                        .setThemeMode(v ? ThemeMode.dark : ThemeMode.light),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.backup_outlined),
+                    title: Text(
+                      tr('drawer.backup'),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    onTap: () {
+                      _doBackup(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.restore_outlined),
+                    title: Text(
+                      tr('drawer.restore'),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    onTap: () {
+                      _doRestore(context);
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: Text(
+                      'درباره ما',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('درباره اپ'),
+                          content: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'این برنامه کاملاً رایگان و با هدف کمک به مدیریت قرض‌الحسنه‌های خانوادگی ساخته شده است.\n\n'
+                                  'ما تلاش کرده‌ایم تجربه‌ای ساده، شفاف و قابل اعتماد برای ثبت تراکنش‌ها، وام‌ها و گزارش‌ها فراهم کنیم تا تمرکز خانواده‌ها بر همدلی و همراهی بماند.',
+                                  textAlign: TextAlign.start,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  ' سرپرست توسعه‌دهندگان: ع. رجایی هرندی',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge!
+                                            .color!
+                                            .withValues(alpha: 0.2),
+                                      ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'ایمیل: ',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                    InkWell(
+                                      onTap: () async {
+                                        final uri = Uri(
+                                          scheme: 'mailto',
+                                          path: 'arajaei8@gmail.com',
+                                          queryParameters: const {
+                                            'subject':
+                                                'Feedback - Family Accounting App',
+                                          },
+                                        );
+                                        final launched = await launchUrl(
+                                          uri,
+                                          mode: LaunchMode.externalApplication,
+                                        );
+                                        if (!launched) {
+                                          await Clipboard.setData(
+                                            const ClipboardData(
+                                              text: 'arajaei8@gmail.com',
+                                            ),
+                                          );
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'برنامه ایمیل یافت نشد. آدرس کپی شد.',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                      child: const Text(
+                                        'arajaei8@gmail.com',
+                                        style: TextStyle(
+                                          color: Colors.blue,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('باشه'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.backup_outlined),
-              title: Text(tr('drawer.backup')),
-              onTap: () {
-                _doBackup(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.restore_outlined),
-              title: Text(tr('drawer.restore')),
-              onTap: () {
-                _doRestore(context);
-              },
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: Text(
+                  'نسخه ${_version ?? '-'}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
             ),
           ],
         ),
@@ -204,35 +351,13 @@ class _AppDrawer extends StatelessWidget {
   }
 }
 
-String _formatJalali(DateTime dt) {
+String _formatJalaliFull(DateTime dt) {
   final j = dt.toJalali();
-  const weekdays = [
-    'دوشنبه',
-    'سه‌شنبه',
-    'چهارشنبه',
-    'پنجشنبه',
-    'جمعه',
-    'شنبه',
-    'یکشنبه',
-  ];
-  final w = weekdays[j.weekDay % 7];
-  final monthNames = [
-    '',
-    'فروردین',
-    'اردیبهشت',
-    'خرداد',
-    'تیر',
-    'مرداد',
-    'شهریور',
-    'مهر',
-    'آبان',
-    'آذر',
-    'دی',
-    'بهمن',
-    'اسفند',
-  ];
-  final month = monthNames[j.month];
-  return '$w ${j.day} $month ${j.year}';
+  final w = j.formatter.wN; // weekday name
+  final d = j.day.toString();
+  final m = j.formatter.mN; // month name
+  final y = (j.year % 1000).toString();
+  return '$w $d $m $y';
 }
 
 class _FontScaleDialog extends StatefulWidget {
@@ -327,3 +452,5 @@ Future<void> _doRestore(BuildContext context) async {
     ).showSnackBar(SnackBar(content: Text('خطا در بازیابی: $e')));
   }
 }
+
+// Version now loaded dynamically via package_info_plus

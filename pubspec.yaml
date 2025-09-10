@@ -60,6 +60,8 @@ dependencies:
   pdf: ^3.11.0 
   share_plus: ^10.0.2
   flutter_contacts: ^1.1.9+2
+  package_info_plus: ^8.0.2
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
