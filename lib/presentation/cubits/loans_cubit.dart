@@ -3,29 +3,49 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/local/db/app_database.dart';
-import '../../data/repositories/loans_repository.dart';
+import '../../domain/entities/loan.dart';
+import '../../domain/entities/transaction.dart';
+import '../../domain/entities/bank.dart';
+import '../../domain/usecases/loans_usecases.dart';
 
 class LoansState extends Equatable {
-  final List<LoanWithStats> items;
+  final List<LoanWithStatsEntity> items;
   final bool loading;
   const LoansState({this.items = const [], this.loading = false});
 
-  LoansState copyWith({List<LoanWithStats>? items, bool? loading}) =>
+  LoansState copyWith({List<LoanWithStatsEntity>? items, bool? loading}) =>
       LoansState(items: items ?? this.items, loading: loading ?? this.loading);
   @override
   List<Object?> get props => [items, loading];
 }
 
 class LoansCubit extends Cubit<LoansState> {
-  final LoansRepository repository;
-  StreamSubscription<List<LoanWithStats>>? _sub;
-  LoansCubit(this.repository) : super(const LoansState());
+  final WatchLoansUseCase _watchLoans;
+  final AddLoanWithTransactionUseCase _addLoanWithTx;
+  final UpdateLoanUseCase _updateLoan;
+  final DeleteLoanUseCase _deleteLoan;
+  final WatchPaymentsUseCase _watchPayments;
+  final AddPaymentUseCase _addPayment;
+  final GetPrincipalBankIdForLoanUseCase _getPrincipalBank;
+  final WatchLoanTransactionsUseCase _watchLoanTransactions;
+  StreamSubscription<List<LoanWithStatsEntity>>? _sub;
+  LoansCubit(
+    this._watchLoans,
+    this._addLoanWithTx,
+    this._updateLoan,
+    this._deleteLoan,
+    this._watchPayments,
+    this._addPayment,
+    this._getPrincipalBank,
+    this._watchLoanTransactions,
+  ) : super(const LoansState());
+
+  Stream<List<LoanWithStatsEntity>> watchLoans() => _watchLoans();
 
   void watch() {
     _sub?.cancel();
     emit(state.copyWith(loading: true));
-    _sub = repository.watchLoans().listen((data) {
+    _sub = _watchLoans().listen((data) {
       emit(state.copyWith(items: data, loading: false));
     });
   }
@@ -37,7 +57,7 @@ class LoansCubit extends Cubit<LoansState> {
     required int installments,
     String? note,
   }) async {
-    await repository.addLoanWithTransaction(
+    await _addLoanWithTx(
       userId: userId,
       bankId: bankId,
       principalAmount: principalAmount,
@@ -53,7 +73,7 @@ class LoansCubit extends Cubit<LoansState> {
     required int installments,
     String? note,
   }) async {
-    await repository.updateLoan(
+    await _updateLoan(
       id: id,
       userId: userId,
       principalAmount: principalAmount,
@@ -63,23 +83,25 @@ class LoansCubit extends Cubit<LoansState> {
   }
 
   Future<void> deleteLoan(int id) async {
-    await repository.deleteLoan(id);
+    await _deleteLoan(id);
   }
 
-  Stream<List<(LoanPayment, Transaction, Bank)>> watchPayments(int loanId) =>
-      repository.watchPayments(loanId);
+  Stream<List<(LoanPaymentEntity, TransactionEntity, BankEntity)>>
+  watchPayments(int loanId) => _watchPayments(loanId);
 
   Future<void> addPayment({
     required int loanId,
     required int bankId,
     required int amount,
     String? note,
-  }) => repository.addPayment(
-    loanId: loanId,
-    bankId: bankId,
-    amount: amount,
-    note: note,
-  );
+  }) => _addPayment(loanId: loanId, bankId: bankId, amount: amount, note: note);
+
+  Future<int?> getPrincipalBankIdForLoan(int loanId) =>
+      _getPrincipalBank(loanId);
+
+  Stream<List<(TransactionEntity, BankEntity)>> watchLoanTransactions(
+    int loanId,
+  ) => _watchLoanTransactions(loanId);
 
   @override
   Future<void> close() {

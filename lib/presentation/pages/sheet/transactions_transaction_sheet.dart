@@ -1,7 +1,7 @@
 part of '../transactions_page.dart';
 
 class TransactionSheet extends StatefulWidget {
-  final TransactionWithJoins? data;
+  final TransactionAggregate? data;
   final int? initialUserId;
   final String? initialType;
   final int? initialLoanId;
@@ -34,10 +34,10 @@ class _UnsettledLoanField extends StatelessWidget {
           builder: (context, tState) {
             return BlocBuilder<LoansCubit, LoansState>(
               builder: (context, lState) {
-                // We may not have a LoansCubit; fallback to repository stream in UI
-                final repo = locator<LoansRepository>();
-                return StreamBuilder<List<LoanWithStats>>(
-                  stream: repo.watchLoans(),
+                // We may not have a LoansCubit; fallback to use case stream in UI
+                final stream = locator<WatchLoansUseCase>()();
+                return StreamBuilder<List<LoanWithStatsEntity>>(
+                  stream: stream,
                   builder: (context, snapshot) {
                     final loans = (snapshot.data ?? [])
                         .where((l) => (!l.settled))

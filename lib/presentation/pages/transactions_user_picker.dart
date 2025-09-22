@@ -29,7 +29,7 @@ class _UserPicker extends StatelessWidget {
                       onPressed: () {
                         final c = context.read<TransactionsCubit>();
                         c.updateFilter(
-                          TransactionsFilter(
+                          TransactionsFilterEntity(
                             from: c.state.filter.from,
                             to: c.state.filter.to,
                             type: c.state.filter.type,
@@ -44,7 +44,7 @@ class _UserPicker extends StatelessWidget {
             onChanged: (v) {
               final c = context.read<TransactionsCubit>();
               c.updateFilter(
-                TransactionsFilter(
+                TransactionsFilterEntity(
                   from: c.state.filter.from,
                   to: c.state.filter.to,
                   type: c.state.filter.type,

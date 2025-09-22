@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/repositories/auth_repository.dart';
+import '../../domain/repositories/i_auth_repository.dart';
 
 sealed class AuthState extends Equatable {
   const AuthState();
@@ -26,7 +26,7 @@ class AuthLoggedIn extends AuthState {
 }
 
 class AuthCubit extends Cubit<AuthState> {
-  final AuthRepository repository;
+  final IAuthRepository repository;
   AuthCubit(this.repository) : super(const AuthChecking());
 
   Future<void> check() async {

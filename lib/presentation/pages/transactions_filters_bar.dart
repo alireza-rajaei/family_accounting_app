@@ -39,7 +39,7 @@ class _FiltersBar extends StatelessWidget {
                                     tooltip: tr('common.clear'),
                                     onPressed: () {
                                       cubit.updateFilter(
-                                        TransactionsFilter(
+                                        TransactionsFilterEntity(
                                           from: cubit.state.filter.from,
                                           to: cubit.state.filter.to,
                                           type: null,
@@ -77,7 +77,7 @@ class _FiltersBar extends StatelessWidget {
                           ],
                           onChanged: (v) {
                             cubit.updateFilter(
-                              TransactionsFilter(
+                              TransactionsFilterEntity(
                                 from: cubit.state.filter.from,
                                 to: cubit.state.filter.to,
                                 type: v,
@@ -147,7 +147,7 @@ class _FilterBankFieldState extends State<_FilterBankField> {
               : IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => cubit.updateFilter(
-                    TransactionsFilter(
+                    TransactionsFilterEntity(
                       from: filter.from,
                       to: filter.to,
                       type: filter.type,
@@ -161,7 +161,7 @@ class _FilterBankFieldState extends State<_FilterBankField> {
           final picked = await _showBankPicker(context, banksState);
           if (picked != null) {
             cubit.updateFilter(
-              TransactionsFilter(
+              TransactionsFilterEntity(
                 from: filter.from,
                 to: filter.to,
                 type: filter.type,
@@ -210,7 +210,7 @@ class _FilterUserFieldState extends State<_FilterUserField> {
               : IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => cubit.updateFilter(
-                    TransactionsFilter(
+                    TransactionsFilterEntity(
                       from: filter.from,
                       to: filter.to,
                       type: filter.type,
@@ -224,7 +224,7 @@ class _FilterUserFieldState extends State<_FilterUserField> {
           final picked = await _showUserPicker(context, usersState);
           if (picked != null) {
             cubit.updateFilter(
-              TransactionsFilter(
+              TransactionsFilterEntity(
                 from: filter.from,
                 to: filter.to,
                 type: filter.type,

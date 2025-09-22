@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:easy_localization/easy_localization.dart';
 
-import '../../data/local/db/app_database.dart';
+import '../../domain/entities/loan.dart';
 import '../../di/locator.dart';
 import '../cubits/loans_cubit.dart';
 import '../cubits/users_cubit.dart';
@@ -12,8 +12,11 @@ import '../../app/utils/format.dart';
 import '../../app/utils/jalali_utils.dart';
 import '../../app/utils/thousands_input_formatter.dart';
 import 'transactions_page.dart' show showTransactionSheet;
-import '../../data/repositories/loans_repository.dart';
-import '../../data/repositories/transactions_repository.dart';
+import '../../domain/entities/transaction.dart';
+import '../../domain/entities/bank.dart';
+import '../../domain/usecases/transactions_usecases.dart';
+import '../../domain/entities/user.dart';
+ 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 // Using custom TTF fonts from assets instead of google fonts package
@@ -28,16 +31,36 @@ class LoansPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => LoansCubit(locator())..watch()),
-        BlocProvider(create: (_) => UsersCubit(locator())..watch()),
-        BlocProvider(create: (_) => BanksCubit(locator())..watch()),
+        BlocProvider(create: (_) => LoansCubit(
+          locator(),
+          locator(),
+          locator(),
+          locator(),
+          locator(),
+          locator(),
+          locator(),
+          locator(),
+        )..watch()),
+        BlocProvider(create: (_) => UsersCubit(
+          locator(),
+          locator(),
+          locator(),
+          locator(),
+          locator(),
+        )..watch()),
+        BlocProvider(create: (_) => BanksCubit(
+          locator(),
+          locator(),
+          locator(),
+          locator(),
+        )..watch()),
       ],
       child: const _LoansView(),
     );
   }
 }
 
-Future<void> _openLoanReportSheet(BuildContext context, Loan loan) async {
+Future<void> _openLoanReportSheet(BuildContext context, LoanEntity loan) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -53,7 +76,7 @@ Future<void> _openLoanReportSheet(BuildContext context, Loan loan) async {
 }
 
 class _LoanReportSheet extends StatelessWidget {
-  final Loan loan;
+  final LoanEntity loan;
   const _LoanReportSheet({required this.loan});
   @override
   Widget build(BuildContext context) {
@@ -62,7 +85,7 @@ class _LoanReportSheet extends StatelessWidget {
       (u) => u.id == loan.userId,
       orElse: () => usersState.users.isNotEmpty
           ? usersState.users.first
-          : User(
+          : UserEntity(
               id: -1,
               firstName: tr('common.unknown_user'),
               lastName: '',
@@ -74,7 +97,6 @@ class _LoanReportSheet extends StatelessWidget {
     );
 
     final dateFa = JalaliUtils.formatJalali(loan.createdAt);
-    final loansCubit = context.read<LoansCubit>();
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.6,
@@ -109,8 +131,8 @@ class _LoanReportSheet extends StatelessWidget {
                   label: Text(tr('common.export_pdf')),
                 ),
               ),
-              StreamBuilder<List<LoanWithStats>>(
-                stream: loansCubit.repository.watchLoans(),
+              StreamBuilder<List<LoanWithStatsEntity>>(
+                stream: context.read<LoansCubit>().watchLoans(),
                 builder: (context, snap) {
                   final loanStats = (snap.data ?? [])
                       .where((e) => e.loan.id == loan.id)
@@ -133,11 +155,8 @@ class _LoanReportSheet extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: StreamBuilder<List<(Transaction, Bank)>>(
-                  stream: context
-                      .read<LoansCubit>()
-                      .repository
-                      .watchLoanTransactions(loan.id),
+                child: StreamBuilder<List<(TransactionEntity, BankEntity)>>(
+                  stream: context.read<LoansCubit>().watchLoanTransactions(loan.id),
                   builder: (context, snapshot) {
                     final items = snapshot.data ?? [];
                     if (items.isNotEmpty) {
@@ -171,10 +190,7 @@ class _LoanReportSheet extends StatelessWidget {
                     }
                     // Fallback: watch all transactions of the principal bank for this loan (legacy data without loan_id)
                     return FutureBuilder<int?>(
-                      future: context
-                          .read<LoansCubit>()
-                          .repository
-                          .getPrincipalBankIdForLoan(loan.id),
+                      future: context.read<LoansCubit>().getPrincipalBankIdForLoan(loan.id),
                       builder: (context, bankSnap) {
                         final bankId = bankSnap.data;
                         if (bankId == null) {
@@ -182,11 +198,9 @@ class _LoanReportSheet extends StatelessWidget {
                             child: Text(tr('transactions.not_found')),
                           );
                         }
-                        final txRepo = locator<TransactionsRepository>();
-                        return StreamBuilder<List<TransactionWithJoins>>(
-                          stream: txRepo.watchTransactions(
-                            TransactionsFilter(bankId: bankId),
-                          ),
+                        final watchTx = locator<WatchTransactionsUseCase>();
+                        return StreamBuilder<List<TransactionAggregate>>(
+                          stream: watchTx(TransactionsFilterEntity(bankId: bankId)),
                           builder: (context, bankTxSnap) {
                             final txs = bankTxSnap.data ?? [];
                             if (txs.isEmpty) {
@@ -238,9 +252,9 @@ class _LoanReportSheet extends StatelessWidget {
   }
 }
 
-Future<void> _exportLoanReportPdf(BuildContext context, Loan loan) async {
-  final usersState = context.read<UsersCubit>().state;
-  final user = usersState.users.firstWhere(
+Future<void> _exportLoanReportPdf(BuildContext context, LoanEntity loan) async {
+    final usersState = context.read<UsersCubit>().state;
+    final user = usersState.users.firstWhere(
     (u) => u.id == loan.userId,
     orElse: () => usersState.users.first,
   );
@@ -538,7 +552,7 @@ class _LoanActionsMenu extends StatelessWidget {
 }
 
 class _AddPaymentRow extends StatefulWidget {
-  final Loan loan;
+  final LoanEntity loan;
   const _AddPaymentRow({required this.loan});
   @override
   State<_AddPaymentRow> createState() => _AddPaymentRowState();
@@ -667,7 +681,7 @@ class _BankDropdown extends StatelessWidget {
   }
 }
 
-Future<void> _openLoanSheet(BuildContext context, {Loan? loan}) async {
+Future<void> _openLoanSheet(BuildContext context, {LoanEntity? loan}) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -683,7 +697,7 @@ Future<void> _openLoanSheet(BuildContext context, {Loan? loan}) async {
 }
 
 class _LoanSheet extends StatefulWidget {
-  final Loan? loan;
+  final LoanEntity? loan;
   const _LoanSheet({this.loan});
   @override
   State<_LoanSheet> createState() => _LoanSheetState();

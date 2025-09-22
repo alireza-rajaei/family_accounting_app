@@ -4,15 +4,15 @@ class _HomeView extends StatelessWidget {
   const _HomeView();
   @override
   Widget build(BuildContext context) {
-    final repo = locator<TransactionsRepository>();
-    final loansRepo = locator<LoansRepository>();
+    final repo = locator<WatchBankFlowSumsUseCase>();
+    final loansRepo = locator<WatchLoansUseCase>();
     BankIcons;
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           StreamBuilder<List<(String bankKey, int deposit, int withdraw)>>(
-            stream: repo.watchBankFlowSums(),
+            stream: repo(),
             builder: (context, snapshot) {
               final data = snapshot.data ?? [];
               return Card(
@@ -222,7 +222,10 @@ class _HomeView extends StatelessWidget {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: _YearStats(repo: repo, loansRepo: loansRepo),
+              child: _YearStats(
+                repo: locator<WatchTransactionsUseCase>(),
+                loansRepo: loansRepo,
+              ),
             ),
           ),
         ],
@@ -245,8 +248,8 @@ class _HomeView extends StatelessWidget {
 
 class _YearStats extends StatelessWidget {
   const _YearStats({required this.repo, required this.loansRepo});
-  final TransactionsRepository repo;
-  final LoansRepository loansRepo;
+  final WatchTransactionsUseCase repo;
+  final WatchLoansUseCase loansRepo;
 
   @override
   Widget build(BuildContext context) {
@@ -261,10 +264,8 @@ class _YearStats extends StatelessWidget {
     final from = jStart.toDateTime();
     final to = jEnd.add(const Duration(days: 1));
 
-    final trStream = repo.watchTransactions(
-      TransactionsFilter(from: from, to: to),
-    );
-    final loansStream = loansRepo.watchLoans();
+    final trStream = repo(TransactionsFilterEntity(from: from, to: to));
+    final loansStream = loansRepo();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,7 +275,7 @@ class _YearStats extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 12),
-        StreamBuilder<List<TransactionWithJoins>>(
+        StreamBuilder<List<TransactionAggregate>>(
           stream: trStream,
           builder: (context, snapshot) {
             final trCount = snapshot.data?.length ?? 0;
@@ -288,10 +289,11 @@ class _YearStats extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: StreamBuilder<List<LoanWithStats>>(
+                  child: StreamBuilder<List<LoanWithStatsEntity>>(
                     stream: loansStream,
                     builder: (context, snap) {
-                      final allLoans = snap.data ?? const <LoanWithStats>[];
+                      final allLoans =
+                          snap.data ?? const <LoanWithStatsEntity>[];
                       final loansCount = allLoans
                           .where(
                             (l) =>

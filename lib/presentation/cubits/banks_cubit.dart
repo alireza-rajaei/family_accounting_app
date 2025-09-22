@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/repositories/banks_repository.dart';
+import '../../domain/entities/bank.dart';
+import '../../domain/usecases/banks_usecases.dart';
 
 class BanksState extends Equatable {
-  final List<BankWithBalance> banks;
+  final List<BankWithBalanceEntity> banks;
   final String query;
   final bool loading;
   const BanksState({
@@ -16,7 +17,7 @@ class BanksState extends Equatable {
   });
 
   BanksState copyWith({
-    List<BankWithBalance>? banks,
+    List<BankWithBalanceEntity>? banks,
     String? query,
     bool? loading,
   }) {
@@ -32,14 +33,18 @@ class BanksState extends Equatable {
 }
 
 class BanksCubit extends Cubit<BanksState> {
-  final BanksRepository repository;
-  StreamSubscription<List<BankWithBalance>>? _sub;
-  BanksCubit(this.repository) : super(const BanksState());
+  final WatchBanksWithBalanceUseCase _watch;
+  final AddBankUseCase _add;
+  final UpdateBankUseCase _update;
+  final DeleteBankUseCase _delete;
+  StreamSubscription<List<BankWithBalanceEntity>>? _sub;
+  BanksCubit(this._watch, this._add, this._update, this._delete)
+    : super(const BanksState());
 
   void watch([String q = '']) {
     _sub?.cancel();
     emit(state.copyWith(loading: true, query: q));
-    _sub = repository.watchBanksWithBalance(query: q).listen((data) {
+    _sub = _watch(query: q).listen((data) {
       emit(state.copyWith(banks: data, loading: false));
     });
   }
@@ -49,7 +54,7 @@ class BanksCubit extends Cubit<BanksState> {
     required String accountName,
     required String accountNumber,
   }) async {
-    await repository.addBank(
+    await _add(
       bankKey: bankKey,
       accountName: accountName,
       accountNumber: accountNumber,
@@ -62,7 +67,7 @@ class BanksCubit extends Cubit<BanksState> {
     required String accountName,
     required String accountNumber,
   }) async {
-    await repository.updateBank(
+    await _update(
       id: id,
       bankKey: bankKey,
       accountName: accountName,
@@ -71,7 +76,7 @@ class BanksCubit extends Cubit<BanksState> {
   }
 
   Future<void> deleteBank(int id) async {
-    await repository.deleteBank(id);
+    await _delete(id);
   }
 
   @override

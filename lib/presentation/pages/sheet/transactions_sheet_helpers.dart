@@ -2,7 +2,7 @@ part of '../transactions_page.dart';
 
 Future<void> _openTransactionSheet(
   BuildContext context, {
-  TransactionWithJoins? data,
+  TransactionAggregate? data,
   int? initialUserId,
   String? initialType,
   int? initialLoanId,
@@ -12,10 +12,36 @@ Future<void> _openTransactionSheet(
     isScrollControlled: true,
     builder: (sheetContext) => MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => TransactionsCubit(locator())..watch()),
-        BlocProvider(create: (_) => BanksCubit(locator())..watch()),
-        BlocProvider(create: (_) => UsersCubit(locator())..watch()),
-        BlocProvider(create: (_) => LoansCubit(locator())..watch()),
+        BlocProvider(
+          create: (_) => TransactionsCubit(
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+          )..watch(),
+        ),
+        BlocProvider(
+          create: (_) =>
+              BanksCubit(locator(), locator(), locator(), locator())..watch(),
+        ),
+        BlocProvider(
+          create: (_) =>
+              UsersCubit(locator(), locator(), locator(), locator(), locator())
+                ..watch(),
+        ),
+        BlocProvider(
+          create: (_) => LoansCubit(
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+          )..watch(),
+        ),
       ],
       child: TransactionSheet(
         data: data,
@@ -29,7 +55,7 @@ Future<void> _openTransactionSheet(
 
 Future<void> showTransactionSheet(
   BuildContext context, {
-  TransactionWithJoins? data,
+  TransactionAggregate? data,
   int? initialUserId,
   String? initialType,
   int? initialLoanId,

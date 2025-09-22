@@ -23,7 +23,7 @@ class _DateRangePicker extends StatelessWidget {
               if (range != null) {
                 final c = context.read<TransactionsCubit>();
                 c.updateFilter(
-                  TransactionsFilter(
+                  TransactionsFilterEntity(
                     from: range.$1,
                     to: range.$2,
                     type: c.state.filter.type,
@@ -45,7 +45,7 @@ class _DateRangePicker extends StatelessWidget {
               onPressed: () {
                 final c = context.read<TransactionsCubit>();
                 c.updateFilter(
-                  TransactionsFilter(
+                  TransactionsFilterEntity(
                     from: null,
                     to: null,
                     type: c.state.filter.type,

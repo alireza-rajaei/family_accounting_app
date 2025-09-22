@@ -5,12 +5,15 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../di/locator.dart';
-import '../../data/local/db/app_database.dart';
+import '../../domain/entities/user.dart';
 import '../cubits/users_cubit.dart';
 import '../../app/utils/format.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/jalali_utils.dart';
-import '../../data/repositories/transactions_repository.dart';
+import '../../domain/usecases/transactions_usecases.dart';
+import '../../domain/usecases/loans_usecases.dart';
+import '../../domain/entities/loan.dart';
+import '../../domain/entities/transaction.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart' show rootBundle;
@@ -25,8 +28,92 @@ class UsersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => UsersCubit(locator())..watch(),
+      create: (_) =>
+          UsersCubit(locator(), locator(), locator(), locator(), locator())
+            ..watch(),
       child: const _UsersView(),
+    );
+  }
+}
+
+extension on _UserReportSheetState {
+  Future<
+    ({
+      List<int> userRunning,
+      Map<int, int> principalByLoanId,
+      Map<int, Map<int, int>> loanRemainingByTxId,
+    })
+  >
+  _computeRunningData(List<TransactionAggregate> items) async {
+    // Build running balance for the user (descending list from repo)
+    // Rule: balance = sum(deposits) - sum(withdrawals). Other types are ignored.
+    final String depositLabel = tr('transactions.deposit');
+    final String withdrawLabel = tr('transactions.withdraw');
+    final List<int> running = List<int>.filled(items.length, 0);
+    int cumulative = 0;
+    for (int i = 0; i < items.length; i++) {
+      final trn = items[i].transaction;
+      if (trn.type == depositLabel) {
+        cumulative += trn.amount.abs();
+      } else if (trn.type == withdrawLabel) {
+        cumulative -= trn.amount.abs();
+      }
+      running[i] = cumulative;
+    }
+
+    // Gather loans referenced in these transactions
+    final Set<int> loanIds = items
+        .map((e) => e.transaction.loanId)
+        .whereType<int>()
+        .toSet();
+
+    final Map<int, int> principalByLoanId = <int, int>{};
+    final Map<int, Map<int, int>> loanRemainingByTxId = <int, Map<int, int>>{};
+
+    if (loanIds.isNotEmpty) {
+      // We have only watch APIs for loans/payments; take a single snapshot per loan
+      // and compute remaining amounts per payment transactionId in DESC order
+      final loansStream = _watchLoans();
+      final loansSnapshot = await loansStream.first;
+
+      for (final loanId in loanIds) {
+        final stats = loansSnapshot.firstWhere(
+          (e) => e.loan.id == loanId,
+          orElse: () => LoanWithStatsEntity(
+            loan: LoanEntity(
+              id: loanId,
+              userId: widget.user.id,
+              principalAmount: 0,
+              installments: 0,
+              note: null,
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+              updatedAt: null,
+            ),
+            paidAmount: 0,
+          ),
+        );
+        principalByLoanId[loanId] = stats.loan.principalAmount;
+
+        final paymentsStream = _watchPayments(loanId);
+        final payments = await paymentsStream.first;
+
+        int remaining = stats.loan.principalAmount;
+
+        // Build mapping transactionId -> remaining after applying that installment
+        final Map<int, int> mapForLoan = <int, int>{};
+        for (final (lp, trn, _) in payments) {
+          // payments ordered DESC; after this payment, remaining decreases
+          remaining = (remaining - lp.amount);
+          mapForLoan[trn.id] = remaining;
+        }
+        loanRemainingByTxId[loanId] = mapForLoan;
+      }
+    }
+
+    return (
+      userRunning: running,
+      principalByLoanId: principalByLoanId,
+      loanRemainingByTxId: loanRemainingByTxId,
     );
   }
 }
@@ -103,10 +190,10 @@ class _UsersViewState extends State<_UsersView> {
     );
   }
 
-  List<Widget> _buildGroupedUserSlivers(List<User> users) {
+  List<Widget> _buildGroupedUserSlivers(List<UserEntity> users) {
     final List<Widget> slivers = [];
     String? currentHeader;
-    final List<User> buffer = [];
+    final List<UserEntity> buffer = [];
 
     void flushBuffer() {
       if (currentHeader == null || buffer.isEmpty) return;
@@ -128,7 +215,7 @@ class _UsersViewState extends State<_UsersView> {
           ),
         ),
       );
-      final List<User> sectionItems = List<User>.from(buffer);
+      final List<UserEntity> sectionItems = List<UserEntity>.from(buffer);
       slivers.add(
         SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
@@ -198,13 +285,13 @@ class _UsersViewState extends State<_UsersView> {
     await showTransactionSheet(context, initialUserId: userId);
   }
 
-  String _initialOf(User u) {
+  String _initialOf(UserEntity u) {
     final source = (u.firstName.isNotEmpty ? u.firstName : u.lastName).trim();
     if (source.isEmpty) return '#';
     return source.substring(0, 1).toUpperCase();
   }
 
-  Future<void> _openUserSheet(BuildContext context, {User? user}) async {
+  Future<void> _openUserSheet(BuildContext context, {UserEntity? user}) async {
     final usersCubit = context.read<UsersCubit>();
     await showModalBottomSheet(
       context: context,
@@ -216,7 +303,10 @@ class _UsersViewState extends State<_UsersView> {
     );
   }
 
-  Future<void> _openUserReportSheet(BuildContext context, User user) async {
+  Future<void> _openUserReportSheet(
+    BuildContext context,
+    UserEntity user,
+  ) async {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -244,22 +334,26 @@ class _UserBalanceText extends StatelessWidget {
 }
 
 class _UserReportSheet extends StatefulWidget {
-  final User user;
+  final UserEntity user;
   const _UserReportSheet({required this.user});
   @override
   State<_UserReportSheet> createState() => _UserReportSheetState();
 }
 
 class _UserReportSheetState extends State<_UserReportSheet> {
-  late Future<List<TransactionWithJoins>> _future;
+  late Future<List<TransactionAggregate>> _future;
   String? _typeFilter; // null = all
-  late final TransactionsRepository _repo;
+  late final FetchTransactionsUseCase _fetchTx;
+  late final WatchLoansUseCase _watchLoans;
+  late final WatchPaymentsUseCase _watchPayments;
   @override
   void initState() {
     super.initState();
-    _repo = TransactionsRepository(locator());
-    _future = _repo.fetchTransactions(
-      TransactionsFilter(userId: widget.user.id, type: _typeFilter),
+    _fetchTx = locator<FetchTransactionsUseCase>();
+    _watchLoans = locator<WatchLoansUseCase>();
+    _watchPayments = locator<WatchPaymentsUseCase>();
+    _future = _fetchTx(
+      TransactionsFilterEntity(userId: widget.user.id, type: _typeFilter),
       limit: 20,
       offset: 0,
     );
@@ -349,8 +443,8 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                           onChanged: (v) {
                             setState(() {
                               _typeFilter = v;
-                              _future = _repo.fetchTransactions(
-                                TransactionsFilter(
+                              _future = _fetchTx(
+                                TransactionsFilterEntity(
                                   userId: widget.user.id,
                                   type: _typeFilter,
                                 ),
@@ -372,7 +466,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                   ),
                 ),
                 Expanded(
-                  child: FutureBuilder<List<TransactionWithJoins>>(
+                  child: FutureBuilder<List<TransactionAggregate>>(
                     future: _future,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
@@ -384,32 +478,92 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                           child: Text(tr('transactions.not_found')),
                         );
                       }
-                      return ListView.builder(
-                        controller: controller,
-                        itemCount: items.length,
-                        itemBuilder: (context, index) {
-                          final it = items[index];
-                          final trn = it.transaction;
-                          final isIncome = trn.amount >= 0;
-                          return ListTile(
-                            leading: BankCircleAvatar(
-                              bankKey: it.bank.bankKey,
-                              name:
-                                  BankIcons.persianNames[it.bank.bankKey] ??
-                                  it.bank.bankKey,
-                            ),
-                            title: Text(
-                              JalaliUtils.formatJalali(trn.createdAt),
-                            ),
-                            subtitle: Text(
-                              '${BankIcons.persianNames[it.bank.bankKey] ?? it.bank.bankKey} · ${it.bank.accountName}',
-                            ),
-                            trailing: Text(
-                              '${formatThousands(trn.amount.abs())} ${tr('banks.rial')}',
-                              style: TextStyle(
-                                color: isIncome ? Colors.green : Colors.red,
-                              ),
-                            ),
+                      return FutureBuilder<
+                        ({
+                          List<int> userRunning,
+                          Map<int, int> principalByLoanId,
+                          Map<int, Map<int, int>> loanRemainingByTxId,
+                        })
+                      >(
+                        future: _computeRunningData(items),
+                        builder: (context, snap2) {
+                          if (!snap2.hasData) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          final computed = snap2.data!;
+                          final loanInstallment = tr(
+                            'transactions.loan_installment',
+                          );
+                          final loanPrincipal = tr(
+                            'transactions.loan_principal',
+                          );
+                          return ListView.builder(
+                            controller: controller,
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              final it = items[index];
+                              final trn = it.transaction;
+                              final isIncome = trn.amount >= 0;
+
+                              String? loanRemainingLine;
+                              String? walletRemainingLine;
+                              if (trn.type == loanInstallment ||
+                                  trn.type == loanPrincipal) {
+                                final loanId = trn.loanId;
+                                final principal = loanId != null
+                                    ? (computed.principalByLoanId[loanId] ?? 0)
+                                    : 0;
+                                int? remaining;
+                                if (trn.type == loanPrincipal) {
+                                  remaining = principal;
+                                } else if (loanId != null) {
+                                  remaining = computed
+                                      .loanRemainingByTxId[loanId]?[trn.id];
+                                }
+                                loanRemainingLine =
+                                    '${tr('transactions.loan_remaining')}: ${formatThousands(remaining ?? 0)} ${tr('banks.rial')}';
+                              } else {
+                                final bal = computed.userRunning[index];
+                                walletRemainingLine =
+                                    '${tr('users.balance')}: ${formatThousands(bal)} ${tr('banks.rial')}';
+                              }
+
+                              return ListTile(
+                                leading: BankCircleAvatar(
+                                  bankKey: it.bank.bankKey,
+                                  name:
+                                      BankIcons.persianNames[it.bank.bankKey] ??
+                                      it.bank.bankKey,
+                                ),
+                                title: Text(
+                                  JalaliUtils.formatJalali(trn.createdAt),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${BankIcons.persianNames[it.bank.bankKey] ?? it.bank.bankKey} · ${it.bank.accountName}',
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${tr('transactions.type')}: ${trn.type}',
+                                    ),
+                                    if (loanRemainingLine != null)
+                                      Text(loanRemainingLine),
+                                    if (walletRemainingLine != null)
+                                      Text(walletRemainingLine),
+                                  ],
+                                ),
+                                trailing: Text(
+                                  '${formatThousands(trn.amount.abs())} ${tr('banks.rial')}',
+                                  style: TextStyle(
+                                    color: isIncome ? Colors.green : Colors.red,
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       );
@@ -435,12 +589,15 @@ class _UserReportSheetState extends State<_UserReportSheet> {
     final baseFont = pw.Font.ttf(baseFontData.buffer.asByteData());
     final boldFont = pw.Font.ttf(boldFontData.buffer.asByteData());
 
-    final repo = TransactionsRepository(locator());
-    final rows = await repo.fetchTransactions(
-      TransactionsFilter(userId: widget.user.id),
+    final repo = locator<FetchTransactionsUseCase>();
+    final rows = await repo(
+      TransactionsFilterEntity(userId: widget.user.id),
       limit: 20,
       offset: 0,
     );
+    final computed = await _computeRunningData(rows);
+    final loanInstallment = tr('transactions.loan_installment');
+    final loanPrincipal = tr('transactions.loan_principal');
 
     final doc = pw.Document();
     doc.addPage(
@@ -473,24 +630,45 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                       tr('transactions.date'),
                       tr('transactions.type'),
                       tr('transactions.amount'),
-                      tr('banks.bank'),
+                      tr('transactions.remaining'),
+                      tr('transactions.row'),
                     ],
                     cellAlignments: {
                       0: pw.Alignment.centerRight,
                       1: pw.Alignment.centerRight,
                       2: pw.Alignment.centerRight,
                       3: pw.Alignment.centerRight,
+                      4: pw.Alignment.centerRight,
                     },
-                    data: rows
-                        .map(
-                          (it) => [
-                            JalaliUtils.formatJalali(it.transaction.createdAt),
-                            it.transaction.type,
-                            formatThousands(it.transaction.amount.abs()),
-                            it.bank.accountName,
-                          ],
-                        )
-                        .toList(),
+                    data: rows.asMap().entries.map((entry) {
+                      final idx = entry.key + 1;
+                      final it = entry.value;
+                      final trn = it.transaction;
+                      int? remaining;
+                      if (trn.type == loanInstallment ||
+                          trn.type == loanPrincipal) {
+                        final loanId = trn.loanId;
+                        final principal = loanId != null
+                            ? (computed.principalByLoanId[loanId] ?? 0)
+                            : 0;
+                        if (trn.type == loanPrincipal) {
+                          remaining = principal;
+                        } else if (loanId != null) {
+                          remaining =
+                              computed.loanRemainingByTxId[loanId]?[trn.id];
+                        }
+                      } else {
+                        remaining = computed.userRunning[entry.key];
+                      }
+
+                      return [
+                        JalaliUtils.formatJalali(trn.createdAt),
+                        trn.type,
+                        formatThousands(trn.amount.abs()),
+                        formatThousands(remaining ?? 0),
+                        idx.toString(),
+                      ];
+                    }).toList(),
                   ),
               ],
             ),
@@ -510,7 +688,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
 }
 
 class _UserSheet extends StatefulWidget {
-  final User? user;
+  final UserEntity? user;
   const _UserSheet({this.user});
   @override
   State<_UserSheet> createState() => _UserSheetState();
@@ -706,7 +884,7 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
 }
 
 class _UserTile extends StatelessWidget {
-  final User user;
+  final UserEntity user;
   final VoidCallback onTap;
   final ValueChanged<String> onSelectedAction;
 

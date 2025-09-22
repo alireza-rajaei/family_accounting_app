@@ -14,7 +14,7 @@ import 'package:intl/intl.dart';
 
 import '../cubits/settings_cubit.dart';
 import '../../di/locator.dart';
-import '../../data/repositories/backup_repository.dart';
+import '../../domain/repositories/i_backup_repository.dart';
 
 class ShellScaffold extends StatefulWidget {
   final Widget child;
@@ -463,7 +463,7 @@ class _FontScaleDialogState extends State<_FontScaleDialog> {
 }
 
 Future<void> _doBackup(BuildContext context) async {
-  final backupRepo = locator<BackupRepository>();
+  final backupRepo = locator<IBackupRepository>();
   try {
     final json = await backupRepo.exportJson();
     final now = DateTime.now();
@@ -521,7 +521,7 @@ Future<void> _doRestore(BuildContext context) async {
   }
   try {
     final map = jsonDecode(content) as Map<String, dynamic>;
-    await locator<BackupRepository>().importJson(map);
+    await locator<IBackupRepository>().importJson(map);
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('بازیابی با موفقیت انجام شد')));

@@ -3,18 +3,19 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/repositories/transactions_repository.dart';
+import '../../domain/entities/transaction.dart';
+import '../../domain/usecases/transactions_usecases.dart';
 
 class TransactionsState extends Equatable {
-  final List<TransactionWithJoins> items;
-  final TransactionsFilter filter;
+  final List<TransactionAggregate> items;
+  final TransactionsFilterEntity filter;
   final bool loading;
   final bool loadingMore;
   final bool hasMore;
   final int offset;
   const TransactionsState({
     this.items = const [],
-    this.filter = const TransactionsFilter(),
+    this.filter = const TransactionsFilterEntity(),
     this.loading = false,
     this.loadingMore = false,
     this.hasMore = true,
@@ -22,8 +23,8 @@ class TransactionsState extends Equatable {
   });
 
   TransactionsState copyWith({
-    List<TransactionWithJoins>? items,
-    TransactionsFilter? filter,
+    List<TransactionAggregate>? items,
+    TransactionsFilterEntity? filter,
     bool? loading,
     bool? loadingMore,
     bool? hasMore,
@@ -51,18 +52,28 @@ class TransactionsState extends Equatable {
 }
 
 class TransactionsCubit extends Cubit<TransactionsState> {
-  final TransactionsRepository repository;
-  StreamSubscription<List<TransactionWithJoins>>? _sub;
-  TransactionsCubit(this.repository) : super(const TransactionsState());
+  final FetchTransactionsUseCase _fetch;
+  final AddTransactionUseCase _add;
+  final UpdateTransactionUseCase _update;
+  final DeleteTransactionUseCase _delete;
+  final TransferBetweenBanksUseCase _transfer;
+  StreamSubscription<List<TransactionAggregate>>? _sub;
+  TransactionsCubit(
+    this._fetch,
+    this._add,
+    this._update,
+    this._delete,
+    this._transfer,
+  ) : super(const TransactionsState());
 
-  void watch([TransactionsFilter? filter]) {
+  void watch([TransactionsFilterEntity? filter]) {
     _sub?.cancel();
     final next = filter ?? state.filter;
     emit(state.copyWith(loading: true, filter: next, offset: 0, hasMore: true));
     _loadPage(reset: true);
   }
 
-  void updateFilter(TransactionsFilter filter) => watch(filter);
+  void updateFilter(TransactionsFilterEntity filter) => watch(filter);
 
   Future<void> add({
     required int bankId,
@@ -72,7 +83,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     String? note,
     DateTime? createdAt,
   }) async {
-    await repository.addTransaction(
+    await _add(
       bankId: bankId,
       userId: userId,
       amount: amount,
@@ -91,7 +102,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     required String type,
     String? note,
   }) async {
-    await repository.updateTransaction(
+    await _update(
       id: id,
       bankId: bankId,
       userId: userId,
@@ -103,7 +114,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
   }
 
   Future<void> delete(int id) async {
-    await repository.deleteTransaction(id);
+    await _delete(id);
     await _loadPage(reset: true);
   }
 
@@ -113,7 +124,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     required int amount,
     String? note,
   }) async {
-    await repository.transferBetweenBanks(
+    await _transfer(
       fromBankId: fromBankId,
       toBankId: toBankId,
       amount: amount,
@@ -134,12 +145,12 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     final int nextOffset = reset ? 0 : state.offset;
     if (!reset && !state.hasMore) return;
     emit(state.copyWith(loadingMore: true));
-    final data = await repository.fetchTransactions(
+    final data = await _fetch(
       state.filter,
       limit: _pageSize,
       offset: nextOffset,
     );
-    final List<TransactionWithJoins> combined = reset
+    final List<TransactionAggregate> combined = reset
         ? data
         : [...state.items, ...data];
     emit(

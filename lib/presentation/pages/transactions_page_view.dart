@@ -135,7 +135,7 @@ class _TransactionsView extends StatelessWidget {
 
 class _FiltersButton extends StatelessWidget {
   const _FiltersButton();
-  int _activeFiltersCount(TransactionsFilter f) {
+  int _activeFiltersCount(TransactionsFilterEntity f) {
     int c = 0;
     if (f.type != null) c++;
     if (f.bankId != null) c++;

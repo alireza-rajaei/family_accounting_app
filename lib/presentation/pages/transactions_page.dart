@@ -7,8 +7,9 @@ import '../cubits/transactions_cubit.dart';
 import '../cubits/banks_cubit.dart';
 import '../cubits/users_cubit.dart';
 import '../cubits/loans_cubit.dart';
-import '../../data/repositories/transactions_repository.dart';
-import '../../data/repositories/loans_repository.dart';
+import '../../domain/entities/transaction.dart';
+import '../../domain/entities/loan.dart';
+import '../../domain/usecases/loans_usecases.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/jalali_utils.dart';
 import '../../app/utils/thousands_input_formatter.dart';
@@ -33,11 +34,35 @@ class TransactionsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => TransactionsCubit(locator())..watch()),
-        BlocProvider(create: (_) => BanksCubit(locator())..watch()),
-        BlocProvider(create: (_) => UsersCubit(locator())..watch()),
         BlocProvider(
-          create: (_) => LoansCubit(LoansRepository(locator()))..watch(),
+          create: (_) => TransactionsCubit(
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+          )..watch(),
+        ),
+        BlocProvider(
+          create: (_) =>
+              BanksCubit(locator(), locator(), locator(), locator())..watch(),
+        ),
+        BlocProvider(
+          create: (_) =>
+              UsersCubit(locator(), locator(), locator(), locator(), locator())
+                ..watch(),
+        ),
+        BlocProvider(
+          create: (_) => LoansCubit(
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+          )..watch(),
         ),
       ],
       child: const _TransactionsView(),
