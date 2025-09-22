@@ -12,6 +12,7 @@ import '../../app/utils/bank_icons.dart';
 import '../../app/utils/jalali_utils.dart';
 import '../../domain/usecases/transactions_usecases.dart';
 import '../../domain/usecases/loans_usecases.dart';
+import '../../domain/usecases/users_usecases.dart';
 import '../../domain/entities/loan.dart';
 import '../../domain/entities/transaction.dart';
 import 'package:pdf/pdf.dart';
@@ -283,6 +284,9 @@ class _UsersViewState extends State<_UsersView> {
     int? userId,
   }) async {
     await showTransactionSheet(context, initialUserId: userId);
+    if (!mounted) return;
+    // Rebuild to refresh per-user balance FutureBuilders after adding a tx
+    setState(() {});
   }
 
   String _initialOf(UserEntity u) {
@@ -596,10 +600,35 @@ class _UserReportSheetState extends State<_UserReportSheet> {
       offset: 0,
     );
     final computed = await _computeRunningData(rows);
+    // Current total user balance (deposits - withdrawals), excluding loan rows
+    final getUserBalance = locator<GetUserBalanceUseCase>();
+    final int totalUserBalance = await getUserBalance(widget.user.id);
     final loanInstallment = tr('transactions.loan_installment');
     final loanPrincipal = tr('transactions.loan_principal');
 
     final doc = pw.Document();
+    // Resolve headers with safe fallbacks if a key is missing at runtime
+    String _safeTr(String key, String fallback) {
+      final val = tr(key);
+      return (val == key || val.trim().isEmpty) ? fallback : val;
+    }
+
+    final String hDate = _safeTr('transactions.date', 'تاریخ');
+    final String hType = _safeTr('transactions.type', 'نوع');
+    final String hAmount = _safeTr('transactions.amount', 'مبلغ');
+    final String hUserBal = _safeTr('users.balance', 'موجودی');
+    // Prefer specific loan remaining; fallback to generic remaining
+    final String hLoanRem = () {
+      final v = tr('transactions.loan_remaining');
+      if (v == 'transactions.loan_remaining' || v.trim().isEmpty) {
+        final v2 = tr('loans.remaining');
+        return (v2 == 'loans.remaining' || v2.trim().isEmpty)
+            ? 'باقیمانده وام'
+            : v2;
+      }
+      return v;
+    }();
+    final String hRow = _safeTr('transactions.row', 'ردیف');
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -626,25 +655,27 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                   pw.Text(tr('transactions.not_found'))
                 else
                   pw.Table.fromTextArray(
-                    headers: [
-                      tr('transactions.date'),
-                      tr('transactions.type'),
-                      tr('transactions.amount'),
-                      tr('transactions.remaining'),
-                      tr('transactions.row'),
-                    ],
+                    headers: [hDate, hType, hAmount, hUserBal, hLoanRem, hRow],
                     cellAlignments: {
                       0: pw.Alignment.centerRight,
                       1: pw.Alignment.centerRight,
                       2: pw.Alignment.centerRight,
                       3: pw.Alignment.centerRight,
                       4: pw.Alignment.centerRight,
+                      5: pw.Alignment.centerRight,
                     },
                     data: rows.asMap().entries.map((entry) {
                       final idx = entry.key + 1;
                       final it = entry.value;
                       final trn = it.transaction;
-                      int? remaining;
+                      // Show user balance as of after this transaction time.
+                      // Using newest-first order: balance(i) = total - sum(changes of rows 0..i-1)
+                      final int userBal = (entry.key == 0)
+                          ? totalUserBalance
+                          : (totalUserBalance -
+                                computed.userRunning[entry.key - 1]);
+
+                      int? loanRem;
                       if (trn.type == loanInstallment ||
                           trn.type == loanPrincipal) {
                         final loanId = trn.loanId;
@@ -652,20 +683,19 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                             ? (computed.principalByLoanId[loanId] ?? 0)
                             : 0;
                         if (trn.type == loanPrincipal) {
-                          remaining = principal;
+                          loanRem = principal;
                         } else if (loanId != null) {
-                          remaining =
+                          loanRem =
                               computed.loanRemainingByTxId[loanId]?[trn.id];
                         }
-                      } else {
-                        remaining = computed.userRunning[entry.key];
                       }
 
                       return [
                         JalaliUtils.formatJalali(trn.createdAt),
                         trn.type,
                         formatThousands(trn.amount.abs()),
-                        formatThousands(remaining ?? 0),
+                        formatThousands(userBal),
+                        loanRem == null ? '' : formatThousands(loanRem),
                         idx.toString(),
                       ];
                     }).toList(),
@@ -980,9 +1010,10 @@ extension on _UserSheetState {
         return;
       }
 
-      // Using the external contact picker may cause a transient overlay/layout
-      // glitch on return; we handle dialog with root navigator below.
-      final Contact? picked = await FlutterContacts.openExternalPick();
+      // Prefer an in-app picker to include contacts from SIM/phone accounts
+      // Some OEM pickers may hide SIM contacts. Our picker lists all visible
+      // contacts with at least one phone number via Contacts provider.
+      final Contact? picked = await _pickContactInApp();
       if (picked == null) return;
 
       final Contact? full = await FlutterContacts.getContact(
@@ -1112,6 +1143,98 @@ extension on _UserSheetState {
           context,
         ).showSnackBar(SnackBar(content: Text('خطا در دسترسی به مخاطبین: $e')));
       }
+    }
+  }
+
+  Future<Contact?> _pickContactInApp() async {
+    try {
+      // Fetch visible contacts with their phone numbers
+      final List<Contact> contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+      );
+      final List<Contact> contactsWithPhone = contacts
+          .where((c) => c.phones.isNotEmpty)
+          .toList();
+      if (contactsWithPhone.isEmpty) return null;
+
+      // Show a simple bottom sheet list to pick a contact
+      if (!mounted) return null;
+      FocusScope.of(context).unfocus();
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+      return await showModalBottomSheet<Contact>(
+        context: context,
+        useRootNavigator: true,
+        isScrollControlled: true,
+        builder: (sheetCtx) {
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.8,
+            minChildSize: 0.4,
+            maxChildSize: 0.95,
+            builder: (ctx, scrollController) {
+              return SafeArea(
+                top: false,
+                child: Material(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          tr('users_report.pick_from_contacts'),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.separated(
+                          controller: scrollController,
+                          itemCount: contactsWithPhone.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final c = contactsWithPhone[index];
+                            final display = (c.displayName).trim();
+                            final numPreview = c.phones.isNotEmpty
+                                ? c.phones.first.number
+                                : '';
+                            return ListTile(
+                              title: Text(
+                                display.isEmpty
+                                    ? tr('common.unknown_user')
+                                    : display,
+                              ),
+                              subtitle: Text(numPreview),
+                              onTap: () => Navigator.of(sheetCtx).pop(c),
+                            );
+                          },
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                          child: Text(tr('common.cancel')),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } catch (_) {
+      return null;
     }
   }
 

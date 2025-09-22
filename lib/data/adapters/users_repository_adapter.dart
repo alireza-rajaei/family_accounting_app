@@ -119,7 +119,9 @@ class UsersRepositoryAdapter implements IUsersRepository {
   @override
   Future<int> getUserBalance(int userId) async {
     const sql =
-        'SELECT COALESCE(SUM(t.amount), 0) AS balance FROM transactions t WHERE t.user_id = ?';
+        'SELECT COALESCE(SUM(t.amount), 0) AS balance '
+        'FROM transactions t '
+        'WHERE t.user_id = ? AND t.loan_id IS NULL';
     final row = await db
         .customSelect(
           sql,
