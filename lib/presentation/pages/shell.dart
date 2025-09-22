@@ -464,19 +464,34 @@ class _FontScaleDialogState extends State<_FontScaleDialog> {
 
 Future<void> _doBackup(BuildContext context) async {
   final backupRepo = locator<BackupRepository>();
-  final json = await backupRepo.exportJson();
-  final bytes = Uint8List.fromList(utf8.encode(json));
-  final res = await FilePicker.platform.saveFile(
-    dialogTitle: 'ذخیره فایل پشتیبان',
-    fileName: 'backup.json',
-    type: FileType.custom,
-    allowedExtensions: ['json'],
-    bytes: bytes,
-  );
-  if (res != null) {
+  try {
+    final json = await backupRepo.exportJson();
+    final now = DateTime.now();
+    final j = now.toJalali();
+    final dateStr =
+        '${j.year.toString().padLeft(4, '0')}-${j.month.toString().padLeft(2, '0')}-${j.day.toString().padLeft(2, '0')}';
+    final defaultName = 'backup_$dateStr.json';
+    final bytes = Uint8List.fromList(utf8.encode(json));
+    final res = await FilePicker.platform.saveFile(
+      dialogTitle: 'ذخیره فایل پشتیبان',
+      fileName: defaultName,
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      bytes: bytes,
+    );
+    if (res != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('فایل پشتیبان ذخیره شد')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('عملیات ذخیره پشتیبان‌گیری لغو شد')),
+      );
+    }
+  } catch (e) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('فایل پشتیبان ذخیره شد')));
+    ).showSnackBar(SnackBar(content: Text('خطا در پشتیبان‌گیری: $e')));
   }
 }
 
@@ -485,7 +500,12 @@ Future<void> _doRestore(BuildContext context) async {
     type: FileType.custom,
     allowedExtensions: ['json'],
   );
-  if (result == null || result.files.isEmpty) return;
+  if (result == null || result.files.isEmpty) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('انتخاب فایل لغو شد')));
+    return;
+  }
   final bytes = result.files.single.bytes;
   final path = result.files.single.path;
   String content;
@@ -494,6 +514,9 @@ Future<void> _doRestore(BuildContext context) async {
   } else if (path != null) {
     content = await io.File(path).readAsString();
   } else {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('خطا در خواندن فایل پشتیبان')));
     return;
   }
   try {
