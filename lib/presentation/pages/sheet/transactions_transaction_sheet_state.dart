@@ -78,6 +78,7 @@ class _TransactionSheetState extends State<TransactionSheet> {
                     child: DropdownButtonFormField<String>(
                       value: type,
                       items: typeOptions
+                          .where((e) => e != tr('transactions.loan_principal'))
                           .map(
                             (opt) =>
                                 DropdownMenuItem(value: opt, child: Text(opt)),
