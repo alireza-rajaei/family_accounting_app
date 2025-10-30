@@ -75,24 +75,34 @@ class _TransactionsView extends StatelessWidget {
                             leading: BankCircleAvatar(
                               bankKey: it.bank.bankKey,
                               name:
-                                  BankIcons.persianNames[it.bank.bankKey] ??
+                                  (context.locale.languageCode == 'fa'
+                                      ? BankIcons.persianNames[it.bank.bankKey]
+                                      : BankIcons.englishNames[it
+                                            .bank
+                                            .bankKey]) ??
                                   it.bank.bankKey,
                             ),
                             title: Text(
                               it.user != null
                                   ? '${it.user!.firstName} ${it.user!.lastName}'
-                                  : (BankIcons.persianNames[it.bank.bankKey] ??
+                                  : ((context.locale.languageCode == 'fa'
+                                            ? BankIcons.persianNames[it
+                                                  .bank
+                                                  .bankKey]
+                                            : BankIcons.englishNames[it
+                                                  .bank
+                                                  .bankKey]) ??
                                         it.bank.bankKey),
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${it.bank.accountName} · ${JalaliUtils.formatJalali(trn.createdAt)}',
+                                  '${it.bank.accountName} · ${(context.locale.languageCode == 'fa' ? JalaliUtils.formatJalali(trn.createdAt) : JalaliUtils.formatGregorian(trn.createdAt))}',
                                 ),
                                 if ((trn.type).isNotEmpty)
                                   Text(
-                                    '${tr('transactions.type')}: ${trn.type}',
+                                    '${tr('transactions.type')}: ${_localizedType(context, trn.type)}',
                                   ),
                                 if (loanRemainingLine != null)
                                   Text(loanRemainingLine),
@@ -176,6 +186,19 @@ class _TransactionsView extends StatelessWidget {
     return (v < 0 ? '-' : '') + str;
   }
 
+  String _localizedType(BuildContext context, String storedType) {
+    // Types are stored unified in Persian in DB; map to current locale for UI
+    if (storedType == 'واریز') return tr('transactions.deposit');
+    if (storedType == 'برداشت') return tr('transactions.withdraw');
+    if (storedType == 'پرداخت وام به کاربر')
+      return tr('transactions.loan_principal');
+    if (storedType == 'پرداخت قسط وام')
+      return tr('transactions.loan_installment');
+    if (storedType == 'جابجایی بین بانکی')
+      return tr('transactions.bank_transfer');
+    return storedType;
+  }
+
   Future<
     ({
       List<int> userRunningAfter,
@@ -187,27 +210,43 @@ class _TransactionsView extends StatelessWidget {
     BuildContext context,
     List<TransactionAggregate> items,
   ) async {
-    // Build user balances after each item (running per user in current list)
+    // Build user balance "after this transaction" for each list item.
+    // List is newest-first, so after(i) = totalUserBalance - sum(delta of newer items for that user).
     final String depositLabel = tr('transactions.deposit');
     final String withdrawLabel = tr('transactions.withdraw');
     final List<int> userRunningAfter = List<int>.filled(items.length, 0);
-    final Map<int, int> cumulativeByUserId = <int, int>{};
+
+    // Fetch total balance per user (excludes loan-linked transactions per repo rule)
+    final Set<int> userIds = items
+        .map((e) => e.transaction.userId)
+        .whereType<int>()
+        .toSet();
+    final Map<int, int> totalByUserId = <int, int>{};
+    for (final uid in userIds) {
+      totalByUserId[uid] = await context.read<UsersCubit>().getUserBalance(uid);
+    }
+
+    // Track cumulative delta of items that are NEWER than current per user
+    final Map<int, int> newerDeltaByUserId = <int, int>{};
     for (int i = 0; i < items.length; i++) {
       final trn = items[i].transaction;
-      final int? userId = trn.userId;
-      if (userId == null) {
+      final int? uid = trn.userId;
+      if (uid == null) {
         userRunningAfter[i] = 0;
         continue;
       }
-      final prev = cumulativeByUserId[userId] ?? 0;
-      int next = prev;
+
+      final int total = totalByUserId[uid] ?? 0;
+      final int newerDelta = newerDeltaByUserId[uid] ?? 0;
+      // Balance immediately after this transaction happened
+      userRunningAfter[i] = total - newerDelta;
+
+      // Update delta for subsequent (older) rows only for cash deposit/withdraw
       if (trn.type == depositLabel) {
-        next = prev + trn.amount.abs();
+        newerDeltaByUserId[uid] = newerDelta + trn.amount.abs();
       } else if (trn.type == withdrawLabel) {
-        next = prev - trn.amount.abs();
+        newerDeltaByUserId[uid] = newerDelta - trn.amount.abs();
       }
-      userRunningAfter[i] = next;
-      cumulativeByUserId[userId] = next;
     }
 
     // Compute loan stats for only loans referenced in this list

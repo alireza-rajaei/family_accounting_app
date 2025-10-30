@@ -43,6 +43,12 @@ class JalaliUtils {
     return '${_toFa(j.year)}/${_two(_toFa(j.month))}/${_two(_toFa(j.day))}';
   }
 
+  // Simple ISO-like Gregorian date for non-Persian locales
+  static String formatGregorian(DateTime date) {
+    String two(int x) => x < 10 ? '0$x' : '$x';
+    return '${date.year}-${two(date.month)}-${two(date.day)}';
+  }
+
   // Ensure leading zero uses Persian numeral to avoid mixed scripts
   static String _two(String x) => x.length == 1 ? '۰$x' : x;
 

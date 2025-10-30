@@ -10,7 +10,7 @@ class _BankPicker extends StatelessWidget {
               (e) => DropdownMenuItem(
                 value: e.bank.id,
                 child: Text(
-                  '${BankIcons.persianNames[e.bank.bankKey] ?? e.bank.bankKey} · ${e.bank.accountName}',
+                  '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[e.bank.bankKey] ?? e.bank.bankKey) : (BankIcons.englishNames[e.bank.bankKey] ?? e.bank.bankKey))} · ${e.bank.accountName}',
                 ),
               ),
             )

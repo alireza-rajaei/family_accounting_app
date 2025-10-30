@@ -115,7 +115,7 @@ class _BanksViewState extends State<_BanksView> {
                                       builder: (ctx) => AlertDialog(
                                         title: Text(tr('banks.delete')),
                                         content: Text(
-                                          '${tr('banks.confirm_delete', namedArgs: {'name': '${BankIcons.persianNames[b.bankKey] ?? b.bankKey} - ${b.accountName}'})}\n${tr('banks.delete_cascade_note')}',
+                                          '${tr('banks.confirm_delete', namedArgs: {'name': '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bankKey] ?? b.bankKey) : (BankIcons.englishNames[b.bankKey] ?? b.bankKey))} - ${b.accountName}'})}\n${tr('banks.delete_cascade_note')}',
                                         ),
                                         actions: [
                                           TextButton(
@@ -363,7 +363,6 @@ class _BankSheet extends StatefulWidget {
 
 class _BankSheetState extends State<_BankSheet> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController bankName;
   late final TextEditingController accountName;
   late final TextEditingController accountNumber;
   String bankKey = 'melli';
@@ -385,9 +384,6 @@ class _BankSheetState extends State<_BankSheet> {
   @override
   void initState() {
     super.initState();
-    bankName = TextEditingController(
-      text: BankIcons.persianNames[widget.bank?.bankKey ?? ''] ?? '',
-    );
     accountName = TextEditingController(text: widget.bank?.accountName ?? '');
     accountNumber = TextEditingController(
       text: widget.bank?.accountNumber ?? '',
@@ -397,7 +393,6 @@ class _BankSheetState extends State<_BankSheet> {
 
   @override
   void dispose() {
-    bankName.dispose();
     accountName.dispose();
     accountNumber.dispose();
     super.dispose();

@@ -53,26 +53,26 @@ class _FiltersBar extends StatelessWidget {
                                     },
                                   ),
                           ),
-                          items: const [
+                          items: [
                             DropdownMenuItem(
-                              value: 'واریز',
-                              child: Text('واریز'),
+                              value: tr('transactions.deposit'),
+                              child: Text(tr('transactions.deposit')),
                             ),
                             DropdownMenuItem(
-                              value: 'برداشت',
-                              child: Text('برداشت'),
+                              value: tr('transactions.withdraw'),
+                              child: Text(tr('transactions.withdraw')),
                             ),
                             DropdownMenuItem(
-                              value: 'پرداخت وام به کاربر',
-                              child: Text('پرداخت وام به کاربر'),
+                              value: tr('transactions.loan_principal'),
+                              child: Text(tr('transactions.loan_principal')),
                             ),
                             DropdownMenuItem(
-                              value: 'پرداخت قسط وام',
-                              child: Text('پرداخت قسط وام'),
+                              value: tr('transactions.loan_installment'),
+                              child: Text(tr('transactions.loan_installment')),
                             ),
                             DropdownMenuItem(
-                              value: 'جابجایی بین بانکی',
-                              child: Text('جابجایی بین بانکی'),
+                              value: tr('transactions.bank_transfer'),
+                              child: Text(tr('transactions.bank_transfer')),
                             ),
                           ],
                           onChanged: (v) {
@@ -125,7 +125,7 @@ class _FilterBankFieldState extends State<_FilterBankField> {
       if (match.isNotEmpty) {
         bankKey = match.first.bank.bankKey;
         label =
-            '${BankIcons.persianNames[match.first.bank.bankKey] ?? match.first.bank.bankKey} · ${match.first.bank.accountName}';
+            '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[match.first.bank.bankKey] ?? match.first.bank.bankKey) : (BankIcons.englishNames[match.first.bank.bankKey] ?? match.first.bank.bankKey))} · ${match.first.bank.accountName}';
       }
     }
     _controller.text = label;

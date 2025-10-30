@@ -16,7 +16,7 @@ import '../../domain/entities/transaction.dart';
 import '../../domain/entities/bank.dart';
 import '../../domain/usecases/transactions_usecases.dart';
 import '../../domain/entities/user.dart';
- 
+
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 // Using custom TTF fonts from assets instead of google fonts package
@@ -31,29 +31,27 @@ class LoansPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => LoansCubit(
-          locator(),
-          locator(),
-          locator(),
-          locator(),
-          locator(),
-          locator(),
-          locator(),
-          locator(),
-        )..watch()),
-        BlocProvider(create: (_) => UsersCubit(
-          locator(),
-          locator(),
-          locator(),
-          locator(),
-          locator(),
-        )..watch()),
-        BlocProvider(create: (_) => BanksCubit(
-          locator(),
-          locator(),
-          locator(),
-          locator(),
-        )..watch()),
+        BlocProvider(
+          create: (_) => LoansCubit(
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+            locator(),
+          )..watch(),
+        ),
+        BlocProvider(
+          create: (_) =>
+              UsersCubit(locator(), locator(), locator(), locator(), locator())
+                ..watch(),
+        ),
+        BlocProvider(
+          create: (_) =>
+              BanksCubit(locator(), locator(), locator(), locator())..watch(),
+        ),
       ],
       child: const _LoansView(),
     );
@@ -96,7 +94,10 @@ class _LoanReportSheet extends StatelessWidget {
             ),
     );
 
-    final dateFa = JalaliUtils.formatJalali(loan.createdAt);
+    final isFa = context.locale.languageCode == 'fa';
+    final dateStr = isFa
+        ? JalaliUtils.formatJalali(loan.createdAt)
+        : JalaliUtils.formatGregorian(loan.createdAt);
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.6,
@@ -120,7 +121,7 @@ class _LoanReportSheet extends StatelessWidget {
                 subtitle: Text(
                   '${tr('loans.principal')}: ${formatThousands(loan.principalAmount)} · ${tr('loans.installments')}: ${loan.installments}',
                 ),
-                trailing: Text(dateFa),
+                trailing: Text(dateStr),
               ),
               const SizedBox(height: 8),
               Align(
@@ -156,7 +157,9 @@ class _LoanReportSheet extends StatelessWidget {
               const SizedBox(height: 8),
               Expanded(
                 child: StreamBuilder<List<(TransactionEntity, BankEntity)>>(
-                  stream: context.read<LoansCubit>().watchLoanTransactions(loan.id),
+                  stream: context.read<LoansCubit>().watchLoanTransactions(
+                    loan.id,
+                  ),
                   builder: (context, snapshot) {
                     final items = snapshot.data ?? [];
                     if (items.isNotEmpty) {
@@ -176,12 +179,14 @@ class _LoanReportSheet extends StatelessWidget {
                             leading: BankCircleAvatar(
                               bankKey: bank.bankKey,
                               name:
-                                  BankIcons.persianNames[bank.bankKey] ??
+                                  (context.locale.languageCode == 'fa'
+                                      ? BankIcons.persianNames[bank.bankKey]
+                                      : BankIcons.englishNames[bank.bankKey]) ??
                                   bank.bankKey,
                             ),
                             title: Text(payer),
                             subtitle: Text(
-                              '${JalaliUtils.formatJalali(trn.createdAt)} · ${trn.type}',
+                              '${(isFa ? JalaliUtils.formatJalali(trn.createdAt) : JalaliUtils.formatGregorian(trn.createdAt))} · ${trn.type}',
                             ),
                             trailing: Text(formatThousands(trn.amount.abs())),
                           );
@@ -190,7 +195,9 @@ class _LoanReportSheet extends StatelessWidget {
                     }
                     // Fallback: watch all transactions of the principal bank for this loan (legacy data without loan_id)
                     return FutureBuilder<int?>(
-                      future: context.read<LoansCubit>().getPrincipalBankIdForLoan(loan.id),
+                      future: context
+                          .read<LoansCubit>()
+                          .getPrincipalBankIdForLoan(loan.id),
                       builder: (context, bankSnap) {
                         final bankId = bankSnap.data;
                         if (bankId == null) {
@@ -200,7 +207,9 @@ class _LoanReportSheet extends StatelessWidget {
                         }
                         final watchTx = locator<WatchTransactionsUseCase>();
                         return StreamBuilder<List<TransactionAggregate>>(
-                          stream: watchTx(TransactionsFilterEntity(bankId: bankId)),
+                          stream: watchTx(
+                            TransactionsFilterEntity(bankId: bankId),
+                          ),
                           builder: (context, bankTxSnap) {
                             final txs = bankTxSnap.data ?? [];
                             if (txs.isEmpty) {
@@ -224,12 +233,16 @@ class _LoanReportSheet extends StatelessWidget {
                                   leading: BankCircleAvatar(
                                     bankKey: bank.bankKey,
                                     name:
-                                        BankIcons.persianNames[bank.bankKey] ??
+                                        (context.locale.languageCode == 'fa'
+                                            ? BankIcons.persianNames[bank
+                                                  .bankKey]
+                                            : BankIcons.englishNames[bank
+                                                  .bankKey]) ??
                                         bank.bankKey,
                                   ),
                                   title: Text(payer),
                                   subtitle: Text(
-                                    '${JalaliUtils.formatJalali(trn.createdAt)} · ${trn.type}',
+                                    '${(isFa ? JalaliUtils.formatJalali(trn.createdAt) : JalaliUtils.formatGregorian(trn.createdAt))} · ${trn.type}',
                                   ),
                                   trailing: Text(
                                     formatThousands(trn.amount.abs()),
@@ -253,8 +266,8 @@ class _LoanReportSheet extends StatelessWidget {
 }
 
 Future<void> _exportLoanReportPdf(BuildContext context, LoanEntity loan) async {
-    final usersState = context.read<UsersCubit>().state;
-    final user = usersState.users.firstWhere(
+  final usersState = context.read<UsersCubit>().state;
+  final user = usersState.users.firstWhere(
     (u) => u.id == loan.userId,
     orElse: () => usersState.users.first,
   );
@@ -415,6 +428,7 @@ class _LoansViewState extends State<_LoansView> {
                     itemCount: filteredItems.length,
                     separatorBuilder: (_, __) => const Divider(height: 0),
                     itemBuilder: (context, index) {
+                      final isFa = context.locale.languageCode == 'fa';
                       final it = filteredItems[index];
                       final us = usersState.users
                           .where((x) => x.id == it.loan.userId)
@@ -422,16 +436,16 @@ class _LoansViewState extends State<_LoansView> {
                       final userName = us.isNotEmpty
                           ? '${us.first.firstName} ${us.first.lastName}'
                           : tr('common.unknown_user');
-                      final dateFa = JalaliUtils.formatJalali(
-                        it.loan.createdAt,
-                      );
+                      final dateStr = isFa
+                          ? JalaliUtils.formatJalali(it.loan.createdAt)
+                          : JalaliUtils.formatGregorian(it.loan.createdAt);
                       return ListTile(
                         leading: _LoanAvatar(),
                         title: Text(
                           '$userName · ${formatThousands(it.loan.principalAmount)}',
                         ),
                         subtitle: Text(
-                          '${dateFa} · ${tr('loans.remaining')}: ${formatThousands(it.remaining)} ${tr('banks.rial')}',
+                          '$dateStr · ${tr('loans.remaining')}: ${formatThousands(it.remaining)} ${tr('banks.rial')}',
                         ),
                         trailing: _LoanActionsMenu(
                           settled: it.settled,
@@ -667,7 +681,7 @@ class _BankDropdown extends StatelessWidget {
                 (e) => DropdownMenuItem(
                   value: e.bank.id,
                   child: Text(
-                    '${BankIcons.persianNames[e.bank.bankKey] ?? e.bank.bankKey} · ${e.bank.accountName}',
+                    '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[e.bank.bankKey] ?? e.bank.bankKey) : (BankIcons.englishNames[e.bank.bankKey] ?? e.bank.bankKey))} · ${e.bank.accountName}',
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

@@ -41,7 +41,7 @@ class _SearchableDestinationBankFieldState
       final match = state.banks.where((b) => b.bank.id == widget.value);
       if (match.isNotEmpty) {
         label =
-            '${BankIcons.persianNames[match.first.bank.bankKey] ?? match.first.bank.bankKey} · ${match.first.bank.accountName}';
+            '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[match.first.bank.bankKey] ?? match.first.bank.bankKey) : (BankIcons.englishNames[match.first.bank.bankKey] ?? match.first.bank.bankKey))} · ${match.first.bank.accountName}';
       }
     }
     _controller.text = label;

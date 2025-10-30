@@ -176,7 +176,7 @@ class _TransactionSheetState extends State<TransactionSheet> {
                     if (_formKey.currentState!.validate() && bankId != null) {
                       final c = context.read<TransactionsCubit>();
                       final amount = _parseInt(amountCtrl.text)!;
-                      if (type == 'جابجایی بین بانکی') {
+                      if (type == tr('transactions.bank_transfer')) {
                         if (toBankId == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -273,7 +273,8 @@ class _TransactionSheetState extends State<TransactionSheet> {
                         if (context.mounted) Navigator.pop(context);
                         return;
                       }
-                      if (type == 'برداشت' || type == 'پرداخت وام به کاربر') {
+                      if (type == tr('transactions.withdraw') ||
+                          type == tr('transactions.loan_principal')) {
                         final banksState = context.read<BanksCubit>().state;
                         final srcMatch = banksState.banks.where(
                           (b) => b.bank.id == bankId,
@@ -311,7 +312,8 @@ class _TransactionSheetState extends State<TransactionSheet> {
                         }
                       }
                       final signedAmount =
-                          (type == 'برداشت' || type == 'پرداخت وام به کاربر')
+                          (type == tr('transactions.withdraw') ||
+                              type == tr('transactions.loan_principal'))
                           ? -amount
                           : amount;
                       if (isEdit) {

@@ -538,21 +538,31 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                                 leading: BankCircleAvatar(
                                   bankKey: it.bank.bankKey,
                                   name:
-                                      BankIcons.persianNames[it.bank.bankKey] ??
+                                      (context.locale.languageCode == 'fa'
+                                          ? BankIcons.persianNames[it
+                                                .bank
+                                                .bankKey]
+                                          : BankIcons.englishNames[it
+                                                .bank
+                                                .bankKey]) ??
                                       it.bank.bankKey,
                                 ),
                                 title: Text(
-                                  JalaliUtils.formatJalali(trn.createdAt),
+                                  (context.locale.languageCode == 'fa'
+                                      ? JalaliUtils.formatJalali(trn.createdAt)
+                                      : JalaliUtils.formatGregorian(
+                                          trn.createdAt,
+                                        )),
                                 ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '${BankIcons.persianNames[it.bank.bankKey] ?? it.bank.bankKey} · ${it.bank.accountName}',
+                                      '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[it.bank.bankKey] ?? it.bank.bankKey) : (BankIcons.englishNames[it.bank.bankKey] ?? it.bank.bankKey))} · ${it.bank.accountName}',
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${tr('transactions.type')}: ${trn.type}',
+                                      '${tr('transactions.type')}: ${_localizedType(context, trn.type)}',
                                     ),
                                     if (loanRemainingLine != null)
                                       Text(loanRemainingLine),
@@ -967,9 +977,9 @@ class _UserTile extends StatelessWidget {
                 ),
                 PopupMenuItem(value: 'edit', child: Text(tr('users.edit'))),
                 PopupMenuItem(value: 'delete', child: Text(tr('users.delete'))),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'user_report',
-                  child: Text('نمایش ریز تراکنش‌ها'),
+                  child: Text(tr('users_report.menu_user_report')),
                 ),
               ],
             ),
@@ -1281,3 +1291,15 @@ extension on _UserSheetState {
 }
 
 // removed _NumberPickerPage; replaced with root bottom sheet selection
+
+String _localizedType(BuildContext context, String storedType) {
+  if (storedType == 'واریز') return tr('transactions.deposit');
+  if (storedType == 'برداشت') return tr('transactions.withdraw');
+  if (storedType == 'پرداخت وام به کاربر')
+    return tr('transactions.loan_principal');
+  if (storedType == 'پرداخت قسط وام')
+    return tr('transactions.loan_installment');
+  if (storedType == 'جابجایی بین بانکی')
+    return tr('transactions.bank_transfer');
+  return storedType;
+}

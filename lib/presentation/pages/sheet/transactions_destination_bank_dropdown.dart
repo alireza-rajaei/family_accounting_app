@@ -28,7 +28,7 @@ class _DestinationBankDropdown extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        '${BankIcons.persianNames[e.bank.bankKey] ?? e.bank.bankKey} · ${e.bank.accountName}',
+                        '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[e.bank.bankKey] ?? e.bank.bankKey) : (BankIcons.englishNames[e.bank.bankKey] ?? e.bank.bankKey))} · ${e.bank.accountName}',
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

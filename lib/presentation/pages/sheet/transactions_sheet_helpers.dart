@@ -105,7 +105,7 @@ Future<int?> _showBankPicker(
                     .where((b) => b.bank.id != excludeBankId)
                     .where(
                       (b) =>
-                          '${BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey} ${b.bank.accountName}'
+                          '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey) : (BankIcons.englishNames[b.bank.bankKey] ?? b.bank.bankKey))} ${b.bank.accountName}'
                               .contains(pat),
                     )
                     .map((e) => e.bank.id)
@@ -134,11 +134,13 @@ Future<int?> _showBankPicker(
                       return ListTile(
                         leading: BankIcons.avatar(
                           b.bank.bankKey,
-                          BankIcons.persianNames[b.bank.bankKey] ??
+                          (context.locale.languageCode == 'fa'
+                                  ? BankIcons.persianNames[b.bank.bankKey]
+                                  : BankIcons.englishNames[b.bank.bankKey]) ??
                               b.bank.bankKey,
                         ),
                         title: Text(
-                          '${BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey} · ${b.bank.accountName}',
+                          '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey) : (BankIcons.englishNames[b.bank.bankKey] ?? b.bank.bankKey))} · ${b.bank.accountName}',
                         ),
                         onTap: () => Navigator.pop(context, id),
                       );

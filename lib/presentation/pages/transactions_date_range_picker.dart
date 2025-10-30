@@ -6,8 +6,14 @@ class _DateRangePicker extends StatelessWidget {
     final f = context.watch<TransactionsCubit>().state.filter;
     String label;
     if (f.from != null && f.to != null) {
-      label =
-          '${JalaliUtils.formatJalali(f.from!)} تا ${JalaliUtils.formatJalali(f.to!)}';
+      final isFa = context.locale.languageCode == 'fa';
+      final fromStr = isFa
+          ? JalaliUtils.formatJalali(f.from!)
+          : JalaliUtils.formatGregorian(f.from!);
+      final toStr = isFa
+          ? JalaliUtils.formatJalali(f.to!)
+          : JalaliUtils.formatGregorian(f.to!);
+      label = '$fromStr تا $toStr';
     } else {
       label = 'تاریخ';
     }
