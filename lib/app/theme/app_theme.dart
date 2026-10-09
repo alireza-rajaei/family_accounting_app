@@ -10,6 +10,7 @@ class AppTheme {
     final colorScheme = AppColors.lightScheme();
     return ThemeData(
       useMaterial3: true,
+      fontFamily: AppTypography.fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.lightBackground,
       appBarTheme: AppBarTheme(
@@ -136,6 +137,7 @@ class AppTheme {
     final colorScheme = AppColors.darkScheme();
     return ThemeData(
       useMaterial3: true,
+      fontFamily: AppTypography.fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.darkBackground,
       appBarTheme: AppBarTheme(

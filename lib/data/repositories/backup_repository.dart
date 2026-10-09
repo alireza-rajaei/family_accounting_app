@@ -49,11 +49,13 @@ class BackupRepository {
       final loans = (json['loans'] as List?)?.cast<Map<String, dynamic>>();
       final payments = (json['loan_payments'] as List?)?.cast<Map<String, dynamic>>();
 
+      // Insert order must respect FKs: loans before transactions (loan_id),
+      // then loan_payments (loan_id + transaction_id).
       await insertMany(admins, (m) async => await db.into(db.admins).insert(Admin.fromJson(m).toCompanion(true)));
       await insertMany(users, (m) async => await db.into(db.users).insert(User.fromJson(m).toCompanion(true)));
       await insertMany(banks, (m) async => await db.into(db.banks).insert(Bank.fromJson(m).toCompanion(true)));
-      await insertMany(transactions, (m) async => await db.into(db.transactions).insert(Transaction.fromJson(m).toCompanion(true)));
       await insertMany(loans, (m) async => await db.into(db.loans).insert(Loan.fromJson(m).toCompanion(true)));
+      await insertMany(transactions, (m) async => await db.into(db.transactions).insert(Transaction.fromJson(m).toCompanion(true)));
       await insertMany(payments, (m) async => await db.into(db.loanPayments).insert(LoanPayment.fromJson(m).toCompanion(true)));
     });
   }

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-// import 'package:google_fonts/google_fonts.dart';
 
 class AppTypography {
   AppTypography._();
+
+  static const String fontFamily = 'IRANYekanX';
 
   static TextTheme textTheme(Brightness brightness, {double scale = 1.0}) {
     final base = brightness == Brightness.dark
         ? ThemeData.dark().textTheme
         : ThemeData.light().textTheme;
-    final themed = GoogleFonts.vazirmatnTextTheme(base);
+    final themed = base.apply(fontFamily: fontFamily);
     if (scale == 1.0) return themed;
     return _scaleTextTheme(themed, scale);
   }

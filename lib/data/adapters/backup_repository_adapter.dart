@@ -55,6 +55,8 @@ class BackupRepositoryAdapter implements IBackupRepository {
       final payments = (json['loan_payments'] as List?)
           ?.cast<Map<String, dynamic>>();
 
+      // Insert order must respect FKs: loans before transactions (loan_id),
+      // then loan_payments (loan_id + transaction_id).
       await insertMany(
         admins,
         (m) async => await db
@@ -72,15 +74,15 @@ class BackupRepositoryAdapter implements IBackupRepository {
             await db.into(db.banks).insert(Bank.fromJson(m).toCompanion(true)),
       );
       await insertMany(
+        loans,
+        (m) async =>
+            await db.into(db.loans).insert(Loan.fromJson(m).toCompanion(true)),
+      );
+      await insertMany(
         transactions,
         (m) async => await db
             .into(db.transactions)
             .insert(Transaction.fromJson(m).toCompanion(true)),
-      );
-      await insertMany(
-        loans,
-        (m) async =>
-            await db.into(db.loans).insert(Loan.fromJson(m).toCompanion(true)),
       );
       await insertMany(
         payments,

@@ -595,10 +595,10 @@ class _UserReportSheetState extends State<_UserReportSheet> {
   Future<void> _exportUserPdf() async {
     // Load fonts used earlier for Farsi support
     final baseFontData = await rootBundle.load(
-      'assets/fonts/Vazirmatn-Regular.ttf',
+      'assets/fonts/IRANYekanXFaNum-Regular.ttf',
     );
     final boldFontData = await rootBundle.load(
-      'assets/fonts/Vazirmatn-Bold.ttf',
+      'assets/fonts/IRANYekanXFaNum-Bold.ttf',
     );
     final baseFont = pw.Font.ttf(baseFontData.buffer.asByteData());
     final boldFont = pw.Font.ttf(boldFontData.buffer.asByteData());

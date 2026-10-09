@@ -277,9 +277,11 @@ Future<void> _exportLoanReportPdf(BuildContext context, LoanEntity loan) async {
 
   // Load local Persian-capable fonts from assets/fonts/
   final baseFontData = await rootBundle.load(
-    'assets/fonts/Vazirmatn-Regular.ttf',
+    'assets/fonts/IRANYekanXFaNum-Regular.ttf',
   );
-  final boldFontData = await rootBundle.load('assets/fonts/Vazirmatn-Bold.ttf');
+  final boldFontData = await rootBundle.load(
+    'assets/fonts/IRANYekanXFaNum-Bold.ttf',
+  );
   final baseFont = pw.Font.ttf(baseFontData.buffer.asByteData());
   final boldFont = pw.Font.ttf(boldFontData.buffer.asByteData());
   final doc = pw.Document();
