@@ -10,6 +10,7 @@ import '../cubits/banks_cubit.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/format.dart';
 import '../../app/utils/jalali_utils.dart';
+import '../../app/utils/pdf_report_utils.dart';
 import '../../app/utils/thousands_input_formatter.dart';
 import 'transactions_page.dart' show showTransactionSheet;
 import '../../domain/entities/transaction.dart';
@@ -286,6 +287,25 @@ Future<void> _exportLoanReportPdf(BuildContext context, LoanEntity loan) async {
   final boldFont = pw.Font.ttf(boldFontData.buffer.asByteData());
   final doc = pw.Document();
   final dateFa = JalaliUtils.formatJalali(loan.createdAt);
+
+  // payments may not be chronological; compute remaining oldest→newest
+  final sortedPayments = [...payments]..sort((a, b) {
+    final byDate = a.$2.createdAt.compareTo(b.$2.createdAt);
+    return byDate != 0 ? byDate : a.$2.id.compareTo(b.$2.id);
+  });
+  int remaining = loan.principalAmount;
+  final Map<int, int> remainingByTxId = {};
+  for (final e in sortedPayments) {
+    remaining -= e.$1.amount.abs();
+    remainingByTxId[e.$2.id] = remaining;
+  }
+
+  final hAmount = tr('transactions.amount');
+  final hType = tr('transactions.type');
+  final hLoanRem = tr('loans.remaining');
+  final hDate = tr('transactions.date');
+  final hUser = tr('loans.user');
+
   doc.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
@@ -321,34 +341,62 @@ Future<void> _exportLoanReportPdf(BuildContext context, LoanEntity loan) async {
               if (payments.isEmpty)
                 pw.Text(tr('transactions.not_found'))
               else
-                pw.Table.fromTextArray(
-                  headers: [
-                    tr('transactions.date'),
-                    tr('transactions.type'),
-                    tr('transactions.amount'),
-                    tr('loans.user'),
-                  ],
-                  cellAlignments: {
-                    0: pw.Alignment.centerRight,
-                    1: pw.Alignment.centerRight,
-                    2: pw.Alignment.centerRight,
-                    3: pw.Alignment.centerRight,
+                // Table columns paint LTR; last child is on the RIGHT.
+                // Desired RTL visual: ردیف | مبلغ | نوع | باقیمانده وام | تاریخ | کاربر
+                pw.Table(
+                  border: pw.TableBorder.all(width: 0.5),
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(1.4),
+                    1: const pw.FlexColumnWidth(1.2),
+                    2: const pw.FlexColumnWidth(1.3),
+                    3: const pw.FlexColumnWidth(1.6),
+                    4: const pw.FlexColumnWidth(1.2),
+                    5: const pw.FlexColumnWidth(0.6),
                   },
-                  data: payments.map((e) {
-                    final (lp, trn, bank) = e;
-                    final matches = usersState.users
-                        .where((u) => u.id == trn.userId)
-                        .toList();
-                    final userName = matches.isNotEmpty
-                        ? '${matches.first.firstName} ${matches.first.lastName}'
-                        : tr('common.unknown_user');
-                    return [
-                      JalaliUtils.formatJalali(trn.createdAt),
-                      trn.type,
-                      formatThousands(lp.amount),
-                      userName,
-                    ];
-                  }).toList(),
+                  children: [
+                    pw.TableRow(
+                      decoration: const pw.BoxDecoration(
+                        color: PdfColors.grey300,
+                      ),
+                      children: [
+                        pdfCellText(hUser, bold: true),
+                        pdfCellText(hDate, bold: true),
+                        pdfCellText(hLoanRem, bold: true),
+                        pdfCellText(hType, bold: true),
+                        pdfCellText(hAmount, bold: true),
+                        pdfCellText(tr('transactions.row'), bold: true),
+                      ],
+                    ),
+                    ...payments.asMap().entries.map((entry) {
+                      final idx = entry.key + 1;
+                      final (lp, trn, _) = entry.value;
+                      final matches = usersState.users
+                          .where((u) => u.id == trn.userId)
+                          .toList();
+                      final userName = matches.isNotEmpty
+                          ? '${matches.first.firstName} ${matches.first.lastName}'
+                          : tr('common.unknown_user');
+                      final loanRem = remainingByTxId[trn.id] ?? 0;
+                      return pw.TableRow(
+                        children: [
+                          pdfCellText(userName),
+                          pdfCellText(
+                            JalaliUtils.formatJalali(trn.createdAt),
+                          ),
+                          pdfCellText(
+                            formatThousands(loanRem),
+                            underline: isLoanRelatedType(trn.type),
+                          ),
+                          pdfCellText(trn.type),
+                          pdfCellText(
+                            formatThousands(lp.amount.abs()),
+                            color: pdfAmountColor(trn.type),
+                          ),
+                          pdfCellText(idx.toString()),
+                        ],
+                      );
+                    }),
+                  ],
                 ),
             ],
           ),

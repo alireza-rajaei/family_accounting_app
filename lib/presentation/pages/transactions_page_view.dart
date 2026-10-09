@@ -25,8 +25,7 @@ class _TransactionsView extends StatelessWidget {
                   return FutureBuilder<
                     ({
                       List<int> userRunningAfter,
-                      Map<int, int> principalByLoanId,
-                      Map<int, Map<int, int>> loanRemainingByTxId,
+                      Map<int, int> cumulativeLoanRemainingByTxId,
                     })
                   >(
                     future: _computeExtraData(context, state.items),
@@ -55,13 +54,11 @@ class _TransactionsView extends StatelessWidget {
                           final isIncome = trn.amount >= 0;
 
                           String? loanRemainingLine;
-                          final loanId = trn.loanId;
-                          if (loanId != null) {
-                            final bool isPrincipal = trn.amount < 0;
-                            final int remaining = isPrincipal
-                                ? (extra.principalByLoanId[loanId] ?? 0)
-                                : (extra.loanRemainingByTxId[loanId]?[trn.id] ??
-                                      0);
+                          if (trn.loanId != null ||
+                              isLoanRelatedType(trn.type)) {
+                            final int remaining =
+                                extra.cumulativeLoanRemainingByTxId[trn.id] ??
+                                0;
                             loanRemainingLine =
                                 '${tr('transactions.loan_remaining')}: ${_formatCurrency(remaining)} ${tr('banks.rial')}';
                           }
@@ -202,8 +199,7 @@ class _TransactionsView extends StatelessWidget {
   Future<
     ({
       List<int> userRunningAfter,
-      Map<int, int> principalByLoanId,
-      Map<int, Map<int, int>> loanRemainingByTxId,
+      Map<int, int> cumulativeLoanRemainingByTxId,
     })
   >
   _computeExtraData(
@@ -249,51 +245,39 @@ class _TransactionsView extends StatelessWidget {
       }
     }
 
-    // Compute loan stats for only loans referenced in this list
-    final Set<int> loanIds = items
-        .map((e) => e.transaction.loanId)
-        .whereType<int>()
-        .toSet();
-    final Map<int, int> principalByLoanId = <int, int>{};
-    final Map<int, Map<int, int>> loanRemainingByTxId = <int, Map<int, int>>{};
-    if (loanIds.isNotEmpty) {
-      final loansSnapshot = await context.read<LoansCubit>().watchLoans().first;
-      for (final loanId in loanIds) {
-        final stats = loansSnapshot.firstWhere(
-          (e) => e.loan.id == loanId,
-          orElse: () => LoanWithStatsEntity(
-            loan: LoanEntity(
-              id: loanId,
-              userId: 0,
-              principalAmount: 0,
-              installments: 0,
-              note: null,
-              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-              updatedAt: null,
-            ),
-            paidAmount: 0,
-          ),
-        );
-        principalByLoanId[loanId] = stats.loan.principalAmount;
+    // Cumulative remaining across ALL of each user's loans (oldest → newest).
+    // e.g. 80M then 45M principal ⇒ second row shows 125M, not 45M.
+    final Map<int, int> cumulativeLoanRemainingByTxId = <int, int>{};
+    final fetchTx = locator<FetchTransactionsUseCase>();
+    for (final uid in userIds) {
+      final allTx = await fetchTx(
+        TransactionsFilterEntity(userId: uid),
+        limit: 100000,
+        offset: 0,
+      );
+      final chronological = allTx
+          .map((e) => e.transaction)
+          .where((t) => isLoanRelatedType(t.type))
+          .toList()
+        ..sort((a, b) {
+          final byDate = a.createdAt.compareTo(b.createdAt);
+          return byDate != 0 ? byDate : a.id.compareTo(b.id);
+        });
 
-        final payments = await context
-            .read<LoansCubit>()
-            .watchPayments(loanId)
-            .first;
-        int remaining = stats.loan.principalAmount;
-        final Map<int, int> mapForLoan = <int, int>{};
-        for (final (lp, trn, _) in payments) {
-          remaining = remaining - lp.amount;
-          mapForLoan[trn.id] = remaining;
+      int remaining = 0;
+      for (final trn in chronological) {
+        if (isLoanPrincipalType(trn.type)) {
+          remaining += trn.amount.abs();
+        } else if (isLoanInstallmentType(trn.type)) {
+          remaining -= trn.amount.abs();
         }
-        loanRemainingByTxId[loanId] = mapForLoan;
+        cumulativeLoanRemainingByTxId[trn.id] = remaining;
       }
     }
 
     return (
       userRunningAfter: userRunningAfter,
-      principalByLoanId: principalByLoanId,
-      loanRemainingByTxId: loanRemainingByTxId,
+      cumulativeLoanRemainingByTxId: cumulativeLoanRemainingByTxId,
     );
   }
 }

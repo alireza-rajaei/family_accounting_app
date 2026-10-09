@@ -10,8 +10,10 @@ import '../cubits/loans_cubit.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/entities/loan.dart';
 import '../../domain/usecases/loans_usecases.dart';
+import '../../domain/usecases/transactions_usecases.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/jalali_utils.dart';
+import '../../app/utils/pdf_report_utils.dart';
 import '../../app/utils/thousands_input_formatter.dart';
 import 'package:shamsi_date/shamsi_date.dart' as shamsi;
 

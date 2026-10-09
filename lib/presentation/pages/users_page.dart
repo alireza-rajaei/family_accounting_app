@@ -10,6 +10,7 @@ import '../cubits/users_cubit.dart';
 import '../../app/utils/format.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/jalali_utils.dart';
+import '../../app/utils/pdf_report_utils.dart';
 import '../../domain/usecases/transactions_usecases.dart';
 import '../../domain/usecases/users_usecases.dart';
 import '../../domain/entities/transaction.dart';
@@ -35,15 +36,6 @@ class UsersPage extends StatelessWidget {
   }
 }
 
-bool _isLoanPrincipalType(String type) =>
-    type == 'پرداخت وام به کاربر' || type == tr('transactions.loan_principal');
-
-bool _isLoanInstallmentType(String type) =>
-    type == 'پرداخت قسط وام' || type == tr('transactions.loan_installment');
-
-bool _isLoanRelatedType(String type) =>
-    _isLoanPrincipalType(type) || _isLoanInstallmentType(type);
-
 extension on _UserReportSheetState {
   Future<
     ({
@@ -54,31 +46,26 @@ extension on _UserReportSheetState {
   _computeRunningData(List<TransactionAggregate> items) async {
     // Build running balance for the user (descending list from repo)
     // Rule: balance = sum(deposits) - sum(withdrawals). Other types are ignored.
-    final String depositLabel = tr('transactions.deposit');
-    final String withdrawLabel = tr('transactions.withdraw');
     final List<int> running = List<int>.filled(items.length, 0);
     int cumulative = 0;
     for (int i = 0; i < items.length; i++) {
       final trn = items[i].transaction;
-      if (trn.type == depositLabel || trn.type == 'واریز') {
+      if (isDepositType(trn.type)) {
         cumulative += trn.amount.abs();
-      } else if (trn.type == withdrawLabel || trn.type == 'برداشت') {
+      } else if (isWithdrawType(trn.type)) {
         cumulative -= trn.amount.abs();
       }
       running[i] = cumulative;
     }
 
-    // Cumulative remaining across ALL of this user's loans, from full history
-    // (not just the visible last-20), oldest → newest.
+    // Loan remaining after every transaction (oldest → newest), carried forward
+    // onto non-loan rows (deposits/withdrawals) so the PDF column is never blank.
     final allTx = await _fetchTx(
       TransactionsFilterEntity(userId: widget.user.id),
       limit: 100000,
       offset: 0,
     );
-    final loanTx = allTx
-        .map((e) => e.transaction)
-        .where((t) => _isLoanRelatedType(t.type))
-        .toList()
+    final chronological = allTx.map((e) => e.transaction).toList()
       ..sort((a, b) {
         final byDate = a.createdAt.compareTo(b.createdAt);
         return byDate != 0 ? byDate : a.id.compareTo(b.id);
@@ -86,10 +73,10 @@ extension on _UserReportSheetState {
 
     int remaining = 0;
     final Map<int, int> loanRemainingByTxId = <int, int>{};
-    for (final trn in loanTx) {
-      if (_isLoanPrincipalType(trn.type)) {
+    for (final trn in chronological) {
+      if (isLoanPrincipalType(trn.type)) {
         remaining += trn.amount.abs();
-      } else {
+      } else if (isLoanInstallmentType(trn.type)) {
         remaining -= trn.amount.abs();
       }
       loanRemainingByTxId[trn.id] = remaining;
@@ -485,7 +472,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
 
                               String? loanRemainingLine;
                               String? walletRemainingLine;
-                              if (_isLoanRelatedType(trn.type)) {
+                              if (isLoanRelatedType(trn.type)) {
                                 final remaining =
                                     computed.loanRemainingByTxId[trn.id] ?? 0;
                                 loanRemainingLine =
@@ -624,41 +611,66 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                 if (rows.isEmpty)
                   pw.Text(tr('transactions.not_found'))
                 else
-                  pw.Table.fromTextArray(
-                    headers: [hDate, hType, hAmount, hUserBal, hLoanRem, hRow],
-                    cellAlignments: {
-                      0: pw.Alignment.centerRight,
-                      1: pw.Alignment.centerRight,
-                      2: pw.Alignment.centerRight,
-                      3: pw.Alignment.centerRight,
-                      4: pw.Alignment.centerRight,
-                      5: pw.Alignment.centerRight,
+                  // Table columns paint LTR; last child is on the RIGHT.
+                  // Desired RTL visual: ردیف | مبلغ | نوع | موجودی | باقیمانده وام | تاریخ
+                  pw.Table(
+                    border: pw.TableBorder.all(width: 0.5),
+                    columnWidths: {
+                      0: const pw.FlexColumnWidth(1.2),
+                      1: const pw.FlexColumnWidth(1.3),
+                      2: const pw.FlexColumnWidth(1.2),
+                      3: const pw.FlexColumnWidth(1.6),
+                      4: const pw.FlexColumnWidth(1.2),
+                      5: const pw.FlexColumnWidth(0.6),
                     },
-                    data: rows.asMap().entries.map((entry) {
-                      final idx = entry.key + 1;
-                      final it = entry.value;
-                      final trn = it.transaction;
-                      // Show user balance as of after this transaction time.
-                      // Using newest-first order: balance(i) = total - sum(changes of rows 0..i-1)
-                      final int userBal = (entry.key == 0)
-                          ? totalUserBalance
-                          : (totalUserBalance -
-                                computed.userRunning[entry.key - 1]);
+                    children: [
+                      pw.TableRow(
+                        decoration: const pw.BoxDecoration(
+                          color: PdfColors.grey300,
+                        ),
+                        children: [
+                          pdfCellText(hDate, bold: true),
+                          pdfCellText(hLoanRem, bold: true),
+                          pdfCellText(hUserBal, bold: true),
+                          pdfCellText(hType, bold: true),
+                          pdfCellText(hAmount, bold: true),
+                          pdfCellText(hRow, bold: true),
+                        ],
+                      ),
+                      ...rows.asMap().entries.map((entry) {
+                        final idx = entry.key + 1;
+                        final trn = entry.value.transaction;
+                        // Newest-first: balance(i) = total - sum(changes of rows 0..i-1)
+                        final int userBal = (entry.key == 0)
+                            ? totalUserBalance
+                            : (totalUserBalance -
+                                  computed.userRunning[entry.key - 1]);
+                        final int loanRem =
+                            computed.loanRemainingByTxId[trn.id] ?? 0;
 
-                      int? loanRem;
-                      if (_isLoanRelatedType(trn.type)) {
-                        loanRem = computed.loanRemainingByTxId[trn.id];
-                      }
-
-                      return [
-                        JalaliUtils.formatJalali(trn.createdAt),
-                        trn.type,
-                        formatThousands(trn.amount.abs()),
-                        formatThousands(userBal),
-                        loanRem == null ? '' : formatThousands(loanRem),
-                        idx.toString(),
-                      ];
-                    }).toList(),
+                        return pw.TableRow(
+                          children: [
+                            pdfCellText(
+                              JalaliUtils.formatJalali(trn.createdAt),
+                            ),
+                            pdfCellText(
+                              formatThousands(loanRem),
+                              underline: isLoanRelatedType(trn.type),
+                            ),
+                            pdfCellText(
+                              formatThousands(userBal),
+                              underline: isWalletType(trn.type),
+                            ),
+                            pdfCellText(trn.type),
+                            pdfCellText(
+                              formatThousands(trn.amount.abs()),
+                              color: pdfAmountColor(trn.type),
+                            ),
+                            pdfCellText(idx.toString()),
+                          ],
+                        );
+                      }),
+                    ],
                   ),
               ],
             ),
