@@ -11,9 +11,7 @@ import '../../app/utils/format.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/jalali_utils.dart';
 import '../../domain/usecases/transactions_usecases.dart';
-import '../../domain/usecases/loans_usecases.dart';
 import '../../domain/usecases/users_usecases.dart';
-import '../../domain/entities/loan.dart';
 import '../../domain/entities/transaction.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -37,12 +35,20 @@ class UsersPage extends StatelessWidget {
   }
 }
 
+bool _isLoanPrincipalType(String type) =>
+    type == 'پرداخت وام به کاربر' || type == tr('transactions.loan_principal');
+
+bool _isLoanInstallmentType(String type) =>
+    type == 'پرداخت قسط وام' || type == tr('transactions.loan_installment');
+
+bool _isLoanRelatedType(String type) =>
+    _isLoanPrincipalType(type) || _isLoanInstallmentType(type);
+
 extension on _UserReportSheetState {
   Future<
     ({
       List<int> userRunning,
-      Map<int, int> principalByLoanId,
-      Map<int, Map<int, int>> loanRemainingByTxId,
+      Map<int, int> loanRemainingByTxId,
     })
   >
   _computeRunningData(List<TransactionAggregate> items) async {
@@ -54,66 +60,43 @@ extension on _UserReportSheetState {
     int cumulative = 0;
     for (int i = 0; i < items.length; i++) {
       final trn = items[i].transaction;
-      if (trn.type == depositLabel) {
+      if (trn.type == depositLabel || trn.type == 'واریز') {
         cumulative += trn.amount.abs();
-      } else if (trn.type == withdrawLabel) {
+      } else if (trn.type == withdrawLabel || trn.type == 'برداشت') {
         cumulative -= trn.amount.abs();
       }
       running[i] = cumulative;
     }
 
-    // Gather loans referenced in these transactions
-    final Set<int> loanIds = items
-        .map((e) => e.transaction.loanId)
-        .whereType<int>()
-        .toSet();
+    // Cumulative remaining across ALL of this user's loans, from full history
+    // (not just the visible last-20), oldest → newest.
+    final allTx = await _fetchTx(
+      TransactionsFilterEntity(userId: widget.user.id),
+      limit: 100000,
+      offset: 0,
+    );
+    final loanTx = allTx
+        .map((e) => e.transaction)
+        .where((t) => _isLoanRelatedType(t.type))
+        .toList()
+      ..sort((a, b) {
+        final byDate = a.createdAt.compareTo(b.createdAt);
+        return byDate != 0 ? byDate : a.id.compareTo(b.id);
+      });
 
-    final Map<int, int> principalByLoanId = <int, int>{};
-    final Map<int, Map<int, int>> loanRemainingByTxId = <int, Map<int, int>>{};
-
-    if (loanIds.isNotEmpty) {
-      // We have only watch APIs for loans/payments; take a single snapshot per loan
-      // and compute remaining amounts per payment transactionId in DESC order
-      final loansStream = _watchLoans();
-      final loansSnapshot = await loansStream.first;
-
-      for (final loanId in loanIds) {
-        final stats = loansSnapshot.firstWhere(
-          (e) => e.loan.id == loanId,
-          orElse: () => LoanWithStatsEntity(
-            loan: LoanEntity(
-              id: loanId,
-              userId: widget.user.id,
-              principalAmount: 0,
-              installments: 0,
-              note: null,
-              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-              updatedAt: null,
-            ),
-            paidAmount: 0,
-          ),
-        );
-        principalByLoanId[loanId] = stats.loan.principalAmount;
-
-        final paymentsStream = _watchPayments(loanId);
-        final payments = await paymentsStream.first;
-
-        int remaining = stats.loan.principalAmount;
-
-        // Build mapping transactionId -> remaining after applying that installment
-        final Map<int, int> mapForLoan = <int, int>{};
-        for (final (lp, trn, _) in payments) {
-          // payments ordered DESC; after this payment, remaining decreases
-          remaining = (remaining - lp.amount);
-          mapForLoan[trn.id] = remaining;
-        }
-        loanRemainingByTxId[loanId] = mapForLoan;
+    int remaining = 0;
+    final Map<int, int> loanRemainingByTxId = <int, int>{};
+    for (final trn in loanTx) {
+      if (_isLoanPrincipalType(trn.type)) {
+        remaining += trn.amount.abs();
+      } else {
+        remaining -= trn.amount.abs();
       }
+      loanRemainingByTxId[trn.id] = remaining;
     }
 
     return (
       userRunning: running,
-      principalByLoanId: principalByLoanId,
       loanRemainingByTxId: loanRemainingByTxId,
     );
   }
@@ -348,14 +331,10 @@ class _UserReportSheetState extends State<_UserReportSheet> {
   late Future<List<TransactionAggregate>> _future;
   String? _typeFilter; // null = all
   late final FetchTransactionsUseCase _fetchTx;
-  late final WatchLoansUseCase _watchLoans;
-  late final WatchPaymentsUseCase _watchPayments;
   @override
   void initState() {
     super.initState();
     _fetchTx = locator<FetchTransactionsUseCase>();
-    _watchLoans = locator<WatchLoansUseCase>();
-    _watchPayments = locator<WatchPaymentsUseCase>();
     _future = _fetchTx(
       TransactionsFilterEntity(userId: widget.user.id, type: _typeFilter),
       limit: 20,
@@ -485,8 +464,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                       return FutureBuilder<
                         ({
                           List<int> userRunning,
-                          Map<int, int> principalByLoanId,
-                          Map<int, Map<int, int>> loanRemainingByTxId,
+                          Map<int, int> loanRemainingByTxId,
                         })
                       >(
                         future: _computeRunningData(items),
@@ -497,12 +475,6 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                             );
                           }
                           final computed = snap2.data!;
-                          final loanInstallment = tr(
-                            'transactions.loan_installment',
-                          );
-                          final loanPrincipal = tr(
-                            'transactions.loan_principal',
-                          );
                           return ListView.builder(
                             controller: controller,
                             itemCount: items.length,
@@ -513,21 +485,11 @@ class _UserReportSheetState extends State<_UserReportSheet> {
 
                               String? loanRemainingLine;
                               String? walletRemainingLine;
-                              if (trn.type == loanInstallment ||
-                                  trn.type == loanPrincipal) {
-                                final loanId = trn.loanId;
-                                final principal = loanId != null
-                                    ? (computed.principalByLoanId[loanId] ?? 0)
-                                    : 0;
-                                int? remaining;
-                                if (trn.type == loanPrincipal) {
-                                  remaining = principal;
-                                } else if (loanId != null) {
-                                  remaining = computed
-                                      .loanRemainingByTxId[loanId]?[trn.id];
-                                }
+                              if (_isLoanRelatedType(trn.type)) {
+                                final remaining =
+                                    computed.loanRemainingByTxId[trn.id] ?? 0;
                                 loanRemainingLine =
-                                    '${tr('transactions.loan_remaining')}: ${formatThousands(remaining ?? 0)} ${tr('banks.rial')}';
+                                    '${tr('transactions.loan_remaining')}: ${formatThousands(remaining)} ${tr('banks.rial')}';
                               } else {
                                 final bal = computed.userRunning[index];
                                 walletRemainingLine =
@@ -613,8 +575,6 @@ class _UserReportSheetState extends State<_UserReportSheet> {
     // Current total user balance (deposits - withdrawals), excluding loan rows
     final getUserBalance = locator<GetUserBalanceUseCase>();
     final int totalUserBalance = await getUserBalance(widget.user.id);
-    final loanInstallment = tr('transactions.loan_installment');
-    final loanPrincipal = tr('transactions.loan_principal');
 
     final doc = pw.Document();
     // Resolve headers with safe fallbacks if a key is missing at runtime
@@ -686,18 +646,8 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                                 computed.userRunning[entry.key - 1]);
 
                       int? loanRem;
-                      if (trn.type == loanInstallment ||
-                          trn.type == loanPrincipal) {
-                        final loanId = trn.loanId;
-                        final principal = loanId != null
-                            ? (computed.principalByLoanId[loanId] ?? 0)
-                            : 0;
-                        if (trn.type == loanPrincipal) {
-                          loanRem = principal;
-                        } else if (loanId != null) {
-                          loanRem =
-                              computed.loanRemainingByTxId[loanId]?[trn.id];
-                        }
+                      if (_isLoanRelatedType(trn.type)) {
+                        loanRem = computed.loanRemainingByTxId[trn.id];
                       }
 
                       return [

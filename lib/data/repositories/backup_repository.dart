@@ -7,15 +7,15 @@ class BackupRepository {
   BackupRepository(this.db);
 
   Future<String> exportJson() async {
-    final admins = await db.select(db.admins).get();
     final users = await db.select(db.users).get();
     final banks = await db.select(db.banks).get();
     final transactions = await db.select(db.transactions).get();
     final loans = await db.select(db.loans).get();
     final payments = await db.select(db.loanPayments).get();
 
+    // admins (login credentials) are intentionally excluded from backups
+    // so restore never overwrites the current username/password.
     final map = {
-      'admins': admins.map((e) => e.toJson()).toList(),
       'users': users.map((e) => e.toJson()).toList(),
       'banks': banks.map((e) => e.toJson()).toList(),
       'transactions': transactions.map((e) => e.toJson()).toList(),
@@ -33,7 +33,7 @@ class BackupRepository {
       await db.delete(db.loans).go();
       await db.delete(db.banks).go();
       await db.delete(db.users).go();
-      await db.delete(db.admins).go();
+      // Keep current admin credentials; never restore login from backup.
 
       Future<void> insertMany<T>(List<dynamic>? list, Future<void> Function(Map<String, dynamic>) insert) async {
         if (list == null) return;
@@ -42,7 +42,6 @@ class BackupRepository {
         }
       }
 
-      final admins = (json['admins'] as List?)?.cast<Map<String, dynamic>>();
       final users = (json['users'] as List?)?.cast<Map<String, dynamic>>();
       final banks = (json['banks'] as List?)?.cast<Map<String, dynamic>>();
       final transactions = (json['transactions'] as List?)?.cast<Map<String, dynamic>>();
@@ -51,7 +50,6 @@ class BackupRepository {
 
       // Insert order must respect FKs: loans before transactions (loan_id),
       // then loan_payments (loan_id + transaction_id).
-      await insertMany(admins, (m) async => await db.into(db.admins).insert(Admin.fromJson(m).toCompanion(true)));
       await insertMany(users, (m) async => await db.into(db.users).insert(User.fromJson(m).toCompanion(true)));
       await insertMany(banks, (m) async => await db.into(db.banks).insert(Bank.fromJson(m).toCompanion(true)));
       await insertMany(loans, (m) async => await db.into(db.loans).insert(Loan.fromJson(m).toCompanion(true)));
