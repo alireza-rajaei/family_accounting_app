@@ -178,8 +178,7 @@ class _HomeView extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                _formatCurrency(b.balance) +
-                                    ' ${tr('banks.rial')}',
+                                '${_formatCurrency(b.balance)} ${tr('banks.rial')}',
                               ),
                             ],
                           ),
@@ -228,6 +227,8 @@ class _HomeView extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          _FundOverviewCard(loansRepo: loansRepo),
         ],
       ),
     );

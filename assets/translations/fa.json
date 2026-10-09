@@ -45,7 +45,15 @@
     "stats_users": "کاربران",
     "stats_transactions": "تعداد تراکنش",
     "year_transactions": "تعداد تراکنش‌های",
-    "year_loans": "تعداد وام‌های"
+    "year_loans": "تعداد وام‌های",
+    "overview_title": "خلاصه وضعیت صندوق",
+    "overview_total_balance": "مانده کل حساب‌ها",
+    "overview_loans_disbursed": "کل وام پرداخت‌شده به کاربران",
+    "overview_loans_remaining": "مانده کل وام‌ها",
+    "overview_loans_repaid": "کل اقساط وصول‌شده",
+    "overview_active_loans": "وام‌های تسویه‌نشده",
+    "overview_banks_count": "تعداد حساب‌های بانکی",
+    "overview_users_count": "تعداد کاربران"
   },
   "lang": {
     "fa": "فارسی",

@@ -77,7 +77,15 @@
         "stats_users": "Users",
         "stats_transactions": "Transactions",
         "year_transactions": "Transactions",
-        "year_loans": "Loans"
+        "year_loans": "Loans",
+        "overview_title": "Fund overview",
+        "overview_total_balance": "Total account balance",
+        "overview_loans_disbursed": "Total loans disbursed",
+        "overview_loans_remaining": "Total loans remaining",
+        "overview_loans_repaid": "Total installments repaid",
+        "overview_active_loans": "Active loans",
+        "overview_banks_count": "Bank accounts",
+        "overview_users_count": "Users"
     },
     "transactions": {
         "title": "Transactions",
