@@ -6,6 +6,8 @@ class _FundOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final transactionsRepo = locator<WatchTransactionsUseCase>();
+    final bankFlowRepo = locator<WatchBankFlowSumsUseCase>();
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -23,85 +25,137 @@ class _FundOverviewCard extends StatelessWidget {
                   0,
                   (sum, b) => sum + b.balance,
                 );
-                return StreamBuilder<List<LoanWithStatsEntity>>(
-                  stream: loansRepo(),
-                  builder: (context, loansSnap) {
-                    final loans =
-                        loansSnap.data ?? const <LoanWithStatsEntity>[];
-                    final disbursed = loans.fold<int>(
-                      0,
-                      (sum, l) => sum + l.loan.principalAmount,
-                    );
-                    final remaining = loans.fold<int>(
-                      0,
-                      (sum, l) => sum + l.remaining,
-                    );
-                    final repaid = loans.fold<int>(
-                      0,
-                      (sum, l) => sum + l.paidAmount,
-                    );
-                    final activeLoans = loans.where((l) => !l.settled).length;
+                return StreamBuilder<List<TransactionAggregate>>(
+                  stream: transactionsRepo(const TransactionsFilterEntity()),
+                  builder: (context, txSnap) {
+                    final fundCapital = (txSnap.data ?? [])
+                        .where((a) => isDepositType(a.transaction.type))
+                        .fold<int>(
+                          0,
+                          (sum, a) => sum + a.transaction.amount.abs(),
+                        );
+                    return StreamBuilder<
+                        List<(String bankKey, int deposit, int withdraw)>>(
+                      stream: bankFlowRepo(),
+                      builder: (context, flowSnap) {
+                        final flows = flowSnap.data ?? const [];
+                        final totalDeposits = flows.fold<int>(
+                          0,
+                          (sum, e) => sum + e.$2,
+                        );
+                        final totalWithdrawals = flows.fold<int>(
+                          0,
+                          (sum, e) => sum + e.$3,
+                        );
+                        return StreamBuilder<List<LoanWithStatsEntity>>(
+                          stream: loansRepo(),
+                          builder: (context, loansSnap) {
+                            final loans =
+                                loansSnap.data ?? const <LoanWithStatsEntity>[];
+                            final disbursed = loans.fold<int>(
+                              0,
+                              (sum, l) => sum + l.loan.principalAmount,
+                            );
+                            final remaining = loans.fold<int>(
+                              0,
+                              (sum, l) => sum + l.remaining,
+                            );
+                            final repaid = loans.fold<int>(
+                              0,
+                              (sum, l) => sum + l.paidAmount,
+                            );
+                            final activeLoans =
+                                loans.where((l) => !l.settled).length;
 
-                    return Column(
-                      children: [
-                        _OverviewMoneyRow(
-                          icon: Icons.account_balance_wallet_outlined,
-                          label: tr('home.overview_total_balance'),
-                          amount: totalBalance,
-                          color: const Color(0xFF2563EB),
-                        ),
-                        const Divider(height: 20),
-                        _OverviewMoneyRow(
-                          icon: Icons.payments_outlined,
-                          label: tr('home.overview_loans_disbursed'),
-                          amount: disbursed,
-                          color: const Color(0xFFEF4444),
-                        ),
-                        const SizedBox(height: 10),
-                        _OverviewMoneyRow(
-                          icon: Icons.pending_actions_outlined,
-                          label: tr('home.overview_loans_remaining'),
-                          amount: remaining,
-                          color: const Color(0xFFF59E0B),
-                        ),
-                        const SizedBox(height: 10),
-                        _OverviewMoneyRow(
-                          icon: Icons.task_alt_outlined,
-                          label: tr('home.overview_loans_repaid'),
-                          amount: repaid,
-                          color: const Color(0xFF10B981),
-                        ),
-                        const Divider(height: 20),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: BlocBuilder<UsersCubit, UsersState>(
-                                builder: (context, usersState) =>
-                                    _OverviewCountTile(
-                                      label: tr('home.overview_users_count'),
-                                      value: usersState.users.length.toString(),
-                                      icon: Icons.people_alt_outlined,
+                            return Column(
+                              children: [
+                                _OverviewMoneyRow(
+                                  icon: Icons.account_balance_wallet_outlined,
+                                  label: tr('home.overview_total_balance'),
+                                  amount: totalBalance,
+                                  color: const Color(0xFF2563EB),
+                                ),
+                                const SizedBox(height: 10),
+                                _OverviewMoneyRow(
+                                  icon: Icons.savings_outlined,
+                                  label: tr('home.overview_fund_capital'),
+                                  amount: fundCapital,
+                                  color: const Color(0xFF0D9488),
+                                ),
+                                const SizedBox(height: 10),
+                                _OverviewMoneyRow(
+                                  icon: Icons.south_west_rounded,
+                                  label: tr('home.overview_total_deposits'),
+                                  amount: totalDeposits,
+                                  color: const Color(0xFF10B981),
+                                ),
+                                const SizedBox(height: 10),
+                                _OverviewMoneyRow(
+                                  icon: Icons.north_east_rounded,
+                                  label: tr('home.overview_total_withdrawals'),
+                                  amount: totalWithdrawals,
+                                  color: const Color(0xFFEF4444),
+                                ),
+                                const Divider(height: 20),
+                                _OverviewMoneyRow(
+                                  icon: Icons.payments_outlined,
+                                  label: tr('home.overview_loans_disbursed'),
+                                  amount: disbursed,
+                                  color: const Color(0xFFEF4444),
+                                ),
+                                const SizedBox(height: 10),
+                                _OverviewMoneyRow(
+                                  icon: Icons.pending_actions_outlined,
+                                  label: tr('home.overview_loans_remaining'),
+                                  amount: remaining,
+                                  color: const Color(0xFFF59E0B),
+                                ),
+                                const SizedBox(height: 10),
+                                _OverviewMoneyRow(
+                                  icon: Icons.task_alt_outlined,
+                                  label: tr('home.overview_loans_repaid'),
+                                  amount: repaid,
+                                  color: const Color(0xFF10B981),
+                                ),
+                                const Divider(height: 20),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: BlocBuilder<UsersCubit, UsersState>(
+                                        builder: (context, usersState) =>
+                                            _OverviewCountTile(
+                                              label: tr(
+                                                'home.overview_users_count',
+                                              ),
+                                              value: usersState.users.length
+                                                  .toString(),
+                                              icon: Icons.people_alt_outlined,
+                                            ),
+                                      ),
                                     ),
-                              ),
-                            ),
-                            Expanded(
-                              child: _OverviewCountTile(
-                                label: tr('home.overview_banks_count'),
-                                value: banksState.banks.length.toString(),
-                                icon: Icons.account_balance_outlined,
-                              ),
-                            ),
-                            Expanded(
-                              child: _OverviewCountTile(
-                                label: tr('home.overview_active_loans'),
-                                value: activeLoans.toString(),
-                                icon: Icons.request_quote_outlined,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                                    Expanded(
+                                      child: _OverviewCountTile(
+                                        label: tr('home.overview_banks_count'),
+                                        value: banksState.banks.length
+                                            .toString(),
+                                        icon: Icons.account_balance_outlined,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _OverviewCountTile(
+                                        label: tr('home.overview_active_loans'),
+                                        value: activeLoans.toString(),
+                                        icon: Icons.request_quote_outlined,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
                     );
                   },
                 );

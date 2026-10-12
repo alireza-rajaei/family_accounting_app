@@ -40,9 +40,14 @@ class _FamilyAccountingAppState extends State<FamilyAccountingApp> {
             localizationsDelegates: context.localizationDelegates,
             builder: (context, child) {
               final isFa = context.locale.languageCode == 'fa';
-              return Directionality(
-                textDirection: isFa ? TextDirection.rtl : TextDirection.ltr,
-                child: child ?? const SizedBox(),
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.noScaling,
+                ),
+                child: Directionality(
+                  textDirection: isFa ? TextDirection.rtl : TextDirection.ltr,
+                  child: child ?? const SizedBox(),
+                ),
               );
             },
           );

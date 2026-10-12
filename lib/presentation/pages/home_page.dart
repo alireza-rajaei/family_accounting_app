@@ -7,6 +7,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import '../../di/locator.dart';
 import '../cubits/banks_cubit.dart';
 import '../../app/utils/bank_icons.dart';
+import '../../app/utils/pdf_report_utils.dart';
 import '../cubits/users_cubit.dart';
 import '../cubits/transactions_cubit.dart';
 import '../../domain/entities/transaction.dart';

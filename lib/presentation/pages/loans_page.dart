@@ -1,30 +1,30 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'dart:io';
 
-import '../../domain/entities/loan.dart';
-import '../../di/locator.dart';
-import '../cubits/loans_cubit.dart';
-import '../cubits/users_cubit.dart';
-import '../cubits/banks_cubit.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+// Using custom TTF fonts from assets instead of google fonts package
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:share_plus/share_plus.dart';
+
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/format.dart';
 import '../../app/utils/jalali_utils.dart';
 import '../../app/utils/pdf_report_utils.dart';
 import '../../app/utils/thousands_input_formatter.dart';
-import 'transactions_page.dart' show showTransactionSheet;
-import '../../domain/entities/transaction.dart';
+import '../../di/locator.dart';
 import '../../domain/entities/bank.dart';
-import '../../domain/usecases/transactions_usecases.dart';
+import '../../domain/entities/loan.dart';
+import '../../domain/entities/transaction.dart';
 import '../../domain/entities/user.dart';
-
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-// Using custom TTF fonts from assets instead of google fonts package
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import '../../domain/usecases/transactions_usecases.dart';
+import '../cubits/banks_cubit.dart';
+import '../cubits/loans_cubit.dart';
+import '../cubits/users_cubit.dart';
+import 'transactions_page.dart' show showTransactionSheet;
 
 class LoansPage extends StatelessWidget {
   const LoansPage({super.key});
@@ -289,10 +289,11 @@ Future<void> _exportLoanReportPdf(BuildContext context, LoanEntity loan) async {
   final dateFa = JalaliUtils.formatJalali(loan.createdAt);
 
   // payments may not be chronological; compute remaining oldest→newest
-  final sortedPayments = [...payments]..sort((a, b) {
-    final byDate = a.$2.createdAt.compareTo(b.$2.createdAt);
-    return byDate != 0 ? byDate : a.$2.id.compareTo(b.$2.id);
-  });
+  final sortedPayments = [...payments]
+    ..sort((a, b) {
+      final byDate = a.$2.createdAt.compareTo(b.$2.createdAt);
+      return byDate != 0 ? byDate : a.$2.id.compareTo(b.$2.id);
+    });
   int remaining = loan.principalAmount;
   final Map<int, int> remainingByTxId = {};
   for (final e in sortedPayments) {
@@ -380,9 +381,7 @@ Future<void> _exportLoanReportPdf(BuildContext context, LoanEntity loan) async {
                       return pw.TableRow(
                         children: [
                           pdfCellText(userName),
-                          pdfCellText(
-                            JalaliUtils.formatJalali(trn.createdAt),
-                          ),
+                          pdfCellText(JalaliUtils.formatJalali(trn.createdAt)),
                           pdfCellText(
                             formatThousands(loanRem),
                             underline: isLoanRelatedType(trn.type),
@@ -438,11 +437,17 @@ class _LoansViewState extends State<_LoansView> {
             if (state.loading)
               return const Center(child: CircularProgressIndicator());
 
-            final filteredItems = _filterUserId == null
-                ? state.items
-                : state.items
-                      .where((e) => e.loan.userId == _filterUserId)
-                      .toList();
+            final filteredItems =
+                (_filterUserId == null
+                        ? state.items
+                        : state.items
+                              .where((e) => e.loan.userId == _filterUserId)
+                              .toList())
+                    .toList()
+                  ..sort((a, b) {
+                    if (a.settled == b.settled) return 0;
+                    return a.settled ? 1 : -1;
+                  });
 
             final usersState = context.watch<UsersCubit>().state;
 
@@ -475,6 +480,7 @@ class _LoansViewState extends State<_LoansView> {
                 ),
                 Expanded(
                   child: ListView.separated(
+                    padding: const EdgeInsets.only(bottom: 80),
                     itemCount: filteredItems.length,
                     separatorBuilder: (_, __) => const Divider(height: 0),
                     itemBuilder: (context, index) {
@@ -517,7 +523,7 @@ class _LoansViewState extends State<_LoansView> {
                               context: context,
                               builder: (ctx) => AlertDialog(
                                 title: Text(tr('loans.delete')),
-                                content: Text('${tr('loans.confirm_delete')}'),
+                                content: Text(tr('loans.confirm_delete')),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, false),
@@ -540,8 +546,9 @@ class _LoansViewState extends State<_LoansView> {
                               _openLoanReportSheet(context, it.loan),
                         ),
                         // Click on loan disabled per request
-                        onLongPress: () =>
-                            _openLoanSheet(context, loan: it.loan),
+                        onLongPress: it.settled
+                            ? null
+                            : () => _openLoanSheet(context, loan: it.loan),
                       );
                     },
                   ),
@@ -568,7 +575,7 @@ class _LoanAvatar extends StatelessWidget {
       height: 44,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: scheme.primary.withOpacity(0.12),
+        color: scheme.primary.withValues(alpha: 0.12),
       ),
       alignment: Alignment.center,
       child: Icon(Icons.request_quote_rounded, color: scheme.primary, size: 22),
@@ -591,11 +598,14 @@ class _LoanActionsMenu extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    if (settled) {
+      return const IconButton(
+        icon: Icon(Icons.check_circle, color: Colors.green),
+        onPressed: null,
+      );
+    }
     return PopupMenuButton<String>(
-      icon: Icon(
-        settled ? Icons.check_circle : Icons.more_vert,
-        color: settled ? Colors.green : null,
-      ),
+      icon: const Icon(Icons.more_vert),
       onSelected: (value) {
         if (value == 'pay') onPayInstallment();
         if (value == 'edit') onEdit();
@@ -725,7 +735,7 @@ class _BankDropdown extends StatelessWidget {
       builder: (context, state) {
         return DropdownButtonFormField<int>(
           isExpanded: true,
-          value: value,
+          initialValue: value,
           items: state.banks
               .map(
                 (e) => DropdownMenuItem(

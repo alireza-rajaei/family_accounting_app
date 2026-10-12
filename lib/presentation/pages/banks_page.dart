@@ -1,11 +1,11 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:easy_localization/easy_localization.dart';
 
+import '../../app/utils/bank_icons.dart';
 import '../../di/locator.dart';
 import '../../domain/entities/bank.dart';
 import '../cubits/banks_cubit.dart';
-import '../../app/utils/bank_icons.dart';
 
 class BanksPage extends StatelessWidget {
   const BanksPage({super.key});
@@ -74,7 +74,7 @@ class _BanksViewState extends State<_BanksView> {
                     return Center(child: Text(tr('banks.not_found')));
                   }
                   return ListView.separated(
-                    padding: const EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.only(top: 12, bottom: 80),
                     itemCount: state.banks.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 24),
                     itemBuilder: (context, index) {
@@ -158,9 +158,9 @@ class _BanksViewState extends State<_BanksView> {
                                       center: Alignment.center,
                                       radius: 0.72,
                                       colors: [
-                                        Colors.white.withOpacity(0.32),
-                                        Colors.white.withOpacity(0.10),
-                                        Colors.white.withOpacity(0.0),
+                                        Colors.white.withValues(alpha: 0.32),
+                                        Colors.white.withValues(alpha: 0.10),
+                                        Colors.white.withValues(alpha: 0.0),
                                       ],
                                       stops: const [0.0, 0.55, 1.0],
                                     ),
@@ -219,7 +219,9 @@ class _BanksViewState extends State<_BanksView> {
                                         width: 56,
                                         height: 56,
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.5),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.5,
+                                          ),
                                           shape: BoxShape.circle,
                                         ),
                                         child: Center(
@@ -281,7 +283,7 @@ class _BanksViewState extends State<_BanksView> {
                                                   .bodySmall
                                                   ?.copyWith(
                                                     color: Colors.white
-                                                        .withOpacity(0.9),
+                                                        .withValues(alpha: 0.9),
                                                   ),
                                             ),
                                           ],
@@ -416,7 +418,7 @@ class _BankSheetState extends State<_BankSheet> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: bankKey,
+              initialValue: bankKey,
               items: iranianBanks
                   .map(
                     (e) => DropdownMenuItem(

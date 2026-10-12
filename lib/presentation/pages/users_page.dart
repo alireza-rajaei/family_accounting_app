@@ -246,6 +246,12 @@ class _UsersViewState extends State<_UsersView> {
     }
     flushBuffer();
 
+    slivers.add(
+      const SliverToBoxAdapter(
+        child: SizedBox(height: 80),
+      ),
+    );
+
     return slivers;
   }
 

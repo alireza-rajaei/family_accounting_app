@@ -35,6 +35,7 @@ class _TransactionsView extends StatelessWidget {
                       }
                       final extra = snap.data!;
                       return ListView.separated(
+                        padding: const EdgeInsets.only(bottom: 80),
                         itemCount:
                             state.items.length + (state.loadingMore ? 1 : 0),
                         separatorBuilder: (_, __) => const Divider(height: 0),
