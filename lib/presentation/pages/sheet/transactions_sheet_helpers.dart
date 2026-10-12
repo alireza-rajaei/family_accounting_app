@@ -7,9 +7,8 @@ Future<void> _openTransactionSheet(
   String? initialType,
   int? initialLoanId,
 }) async {
-  await showModalBottomSheet(
+  await showAppModalSheet(
     context: context,
-    isScrollControlled: true,
     builder: (sheetContext) => MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -85,72 +84,78 @@ Future<int?> _showBankPicker(
       .where((b) => b.bank.id != excludeBankId)
       .map((e) => e.bank.id)
       .toList();
-  return showModalBottomSheet<int>(
+  return showAppModalSheet<int>(
     context: context,
-    isScrollControlled: true,
     builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: StatefulBuilder(
-          builder: (context, setStateSB) {
-            void apply(String q) {
-              setStateSB(() {
-                final pat = q.trim();
-                filtered = state.banks
-                    .where((b) => b.bank.id != excludeBankId)
-                    .where(
-                      (b) =>
-                          '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey) : (BankIcons.englishNames[b.bank.bankKey] ?? b.bank.bankKey))} ${b.bank.accountName}'
-                              .contains(pat),
-                    )
-                    .map((e) => e.bank.id)
-                    .toList();
-              });
-            }
+      return StatefulBuilder(
+        builder: (context, setStateSB) {
+          void apply(String q) {
+            setStateSB(() {
+              final pat = q.trim();
+              filtered = state.banks
+                  .where((b) => b.bank.id != excludeBankId)
+                  .where(
+                    (b) =>
+                        '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey) : (BankIcons.englishNames[b.bank.bankKey] ?? b.bank.bankKey))} ${b.bank.accountName}'
+                            .contains(pat),
+                  )
+                  .map((e) => e.bank.id)
+                  .toList();
+            });
+          }
 
-            return Column(
+          return AppSheetBody(
+            title: tr('transactions.search_bank'),
+            icon: Icons.account_balance_outlined,
+            scrollable: false,
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: controller,
                   decoration: InputDecoration(
                     hintText: tr('transactions.search_bank'),
+                    prefixIcon: const Icon(Icons.search_rounded),
                   ),
                   onChanged: apply,
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 320,
-                  child: ListView.builder(
+                  child: ListView.separated(
                     itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 4),
                     itemBuilder: (context, index) {
                       final id = filtered[index];
                       final b = state.banks.firstWhere((e) => e.bank.id == id);
-                      return ListTile(
-                        leading: BankIcons.avatar(
-                          b.bank.bankKey,
-                          (context.locale.languageCode == 'fa'
-                                  ? BankIcons.persianNames[b.bank.bankKey]
-                                  : BankIcons.englishNames[b.bank.bankKey]) ??
-                              b.bank.bankKey,
+                      return AppSurface(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                        title: Text(
-                          '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey) : (BankIcons.englishNames[b.bank.bankKey] ?? b.bank.bankKey))} · ${b.bank.accountName}',
-                        ),
+                        radius: 14,
                         onTap: () => Navigator.pop(context, id),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: BankIcons.avatar(
+                            b.bank.bankKey,
+                            (context.locale.languageCode == 'fa'
+                                    ? BankIcons.persianNames[b.bank.bankKey]
+                                    : BankIcons.englishNames[b.bank.bankKey]) ??
+                                b.bank.bankKey,
+                          ),
+                          title: Text(
+                            '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey) : (BankIcons.englishNames[b.bank.bankKey] ?? b.bank.bankKey))} · ${b.bank.accountName}',
+                          ),
+                        ),
                       );
                     },
                   ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       );
     },
   );
@@ -159,63 +164,74 @@ Future<int?> _showBankPicker(
 Future<int?> _showUserPicker(BuildContext context, UsersState state) async {
   final controller = TextEditingController();
   List<int> filtered = state.users.map((e) => e.id).toList();
-  return showModalBottomSheet<int>(
+  return showAppModalSheet<int>(
     context: context,
-    isScrollControlled: true,
     builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: StatefulBuilder(
-          builder: (context, setStateSB) {
-            void apply(String q) {
-              setStateSB(() {
-                final pat = q.trim();
-                filtered = state.users
-                    .where((u) => '${u.firstName} ${u.lastName}'.contains(pat))
-                    .map((e) => e.id)
-                    .toList();
-              });
-            }
+      return StatefulBuilder(
+        builder: (context, setStateSB) {
+          void apply(String q) {
+            setStateSB(() {
+              final pat = q.trim();
+              filtered = state.users
+                  .where((u) => '${u.firstName} ${u.lastName}'.contains(pat))
+                  .map((e) => e.id)
+                  .toList();
+            });
+          }
 
-            return Column(
+          return AppSheetBody(
+            title: tr('transactions.search_user'),
+            icon: Icons.person_search_rounded,
+            scrollable: false,
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: controller,
                   decoration: InputDecoration(
                     hintText: tr('transactions.search_user'),
+                    prefixIcon: const Icon(Icons.search_rounded),
                   ),
                   onChanged: apply,
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 320,
-                  child: ListView.builder(
+                  child: ListView.separated(
                     itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 4),
                     itemBuilder: (context, index) {
                       final id = filtered[index];
                       final u = state.users.firstWhere((e) => e.id == id);
-                      return ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            '${u.firstName.characters.first}${u.lastName.characters.first}',
-                          ),
+                      return AppSurface(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                        title: Text('${u.firstName} ${u.lastName}'),
+                        radius: 14,
                         onTap: () => Navigator.pop(context, id),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.12,
+                            ),
+                            foregroundColor: AppColors.primary,
+                            child: Text(
+                              '${u.firstName.characters.first}${u.lastName.characters.first}',
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          title: Text('${u.firstName} ${u.lastName}'),
+                        ),
                       );
                     },
                   ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       );
     },
   );

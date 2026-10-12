@@ -1,7 +1,7 @@
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 
 import '../di/locator.dart';
 import '../presentation/cubits/auth_cubit.dart';
@@ -41,9 +41,9 @@ class _FamilyAccountingAppState extends State<FamilyAccountingApp> {
             builder: (context, child) {
               final isFa = context.locale.languageCode == 'fa';
               return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.noScaling,
-                ),
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: TextScaler.noScaling),
                 child: Directionality(
                   textDirection: isFa ? TextDirection.rtl : TextDirection.ltr,
                   child: child ?? const SizedBox(),

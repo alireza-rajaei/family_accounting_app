@@ -277,4 +277,39 @@ class TransactionsRepositoryAdapter implements ITransactionsRepository {
               .toList(),
         );
   }
+
+  @override
+  Stream<List<(DateTime day, int deposit, int withdraw)>> watchDailyFlowSums({
+    required DateTime from,
+    required DateTime to,
+  }) {
+    const sql = '''
+SELECT strftime('%Y-%m-%d', t.created_at, 'unixepoch') AS day,
+       COALESCE(SUM(CASE WHEN t.amount > 0 THEN t.amount END), 0) AS deposit,
+       COALESCE(SUM(CASE WHEN t.amount < 0 THEN -t.amount END), 0) AS withdraw
+FROM transactions t
+WHERE t.created_at >= ? AND t.created_at < ?
+GROUP BY strftime('%Y-%m-%d', t.created_at, 'unixepoch')
+ORDER BY day
+''';
+    return db
+        .customSelect(
+          sql,
+          variables: [d.Variable<DateTime>(from), d.Variable<DateTime>(to)],
+          readsFrom: {db.transactions},
+        )
+        .watch()
+        .map(
+          (rows) => rows.map((r) {
+            final dayStr = r.read<String>('day');
+            final parts = dayStr.split('-');
+            final day = DateTime(
+              int.parse(parts[0]),
+              int.parse(parts[1]),
+              int.parse(parts[2]),
+            );
+            return (day, r.read<int>('deposit'), r.read<int>('withdraw'));
+          }).toList(),
+        );
+  }
 }

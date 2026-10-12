@@ -60,6 +60,7 @@ Future<void> setupLocator() async {
   locator.registerLazySingleton(() => DeleteTransactionUseCase(locator()));
   locator.registerLazySingleton(() => TransferBetweenBanksUseCase(locator()));
   locator.registerLazySingleton(() => WatchBankFlowSumsUseCase(locator()));
+  locator.registerLazySingleton(() => WatchDailyFlowSumsUseCase(locator()));
 
   locator.registerLazySingleton(() => WatchLoansUseCase(locator()));
   locator.registerLazySingleton(() => AddLoanWithTransactionUseCase(locator()));

@@ -8,118 +8,137 @@ class _FundOverviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final transactionsRepo = locator<WatchTransactionsUseCase>();
     final bankFlowRepo = locator<WatchBankFlowSumsUseCase>();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              tr('home.overview_title'),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            BlocBuilder<BanksCubit, BanksState>(
-              builder: (context, banksState) {
-                final totalBalance = banksState.banks.fold<int>(
-                  0,
-                  (sum, b) => sum + b.balance,
-                );
-                return StreamBuilder<List<TransactionAggregate>>(
-                  stream: transactionsRepo(const TransactionsFilterEntity()),
-                  builder: (context, txSnap) {
-                    final fundCapital = (txSnap.data ?? [])
-                        .where((a) => isDepositType(a.transaction.type))
-                        .fold<int>(
-                          0,
-                          (sum, a) => sum + a.transaction.amount.abs(),
-                        );
-                    return StreamBuilder<
-                        List<(String bankKey, int deposit, int withdraw)>>(
-                      stream: bankFlowRepo(),
-                      builder: (context, flowSnap) {
-                        final flows = flowSnap.data ?? const [];
-                        final totalDeposits = flows.fold<int>(
-                          0,
-                          (sum, e) => sum + e.$2,
-                        );
-                        final totalWithdrawals = flows.fold<int>(
-                          0,
-                          (sum, e) => sum + e.$3,
-                        );
-                        return StreamBuilder<List<LoanWithStatsEntity>>(
-                          stream: loansRepo(),
-                          builder: (context, loansSnap) {
-                            final loans =
-                                loansSnap.data ?? const <LoanWithStatsEntity>[];
-                            final disbursed = loans.fold<int>(
-                              0,
-                              (sum, l) => sum + l.loan.principalAmount,
-                            );
-                            final remaining = loans.fold<int>(
-                              0,
-                              (sum, l) => sum + l.remaining,
-                            );
-                            final repaid = loans.fold<int>(
-                              0,
-                              (sum, l) => sum + l.paidAmount,
-                            );
-                            final activeLoans =
-                                loans.where((l) => !l.settled).length;
 
-                            return Column(
+    return BlocBuilder<BanksCubit, BanksState>(
+      builder: (context, banksState) {
+        final totalBalance = banksState.banks.fold<int>(
+          0,
+          (sum, b) => sum + b.balance,
+        );
+        return StreamBuilder<List<TransactionAggregate>>(
+          stream: transactionsRepo(const TransactionsFilterEntity()),
+          builder: (context, txSnap) {
+            final fundCapital = (txSnap.data ?? [])
+                .where((a) => isDepositType(a.transaction.type))
+                .fold<int>(0, (sum, a) => sum + a.transaction.amount.abs());
+            return StreamBuilder<
+              List<(String bankKey, int deposit, int withdraw)>
+            >(
+              stream: bankFlowRepo(),
+              builder: (context, flowSnap) {
+                final flows = flowSnap.data ?? const [];
+                final totalDeposits = flows.fold<int>(
+                  0,
+                  (sum, e) => sum + e.$2,
+                );
+                final totalWithdrawals = flows.fold<int>(
+                  0,
+                  (sum, e) => sum + e.$3,
+                );
+                return StreamBuilder<List<LoanWithStatsEntity>>(
+                  stream: loansRepo(),
+                  builder: (context, loansSnap) {
+                    final loans =
+                        loansSnap.data ?? const <LoanWithStatsEntity>[];
+                    final disbursed = loans.fold<int>(
+                      0,
+                      (sum, l) => sum + l.loan.principalAmount,
+                    );
+                    final remaining = loans.fold<int>(
+                      0,
+                      (sum, l) => sum + l.remaining,
+                    );
+                    final repaid = loans.fold<int>(
+                      0,
+                      (sum, l) => sum + l.paidAmount,
+                    );
+                    final activeLoans = loans.where((l) => !l.settled).length;
+
+                    return _HomeSurface(
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _BalanceHero(
+                            label: tr('home.overview_total_balance'),
+                            amount: totalBalance,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _OverviewMoneyRow(
-                                  icon: Icons.account_balance_wallet_outlined,
-                                  label: tr('home.overview_total_balance'),
-                                  amount: totalBalance,
-                                  color: const Color(0xFF2563EB),
+                                Text(
+                                  tr('home.overview_title'),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _MetricChip(
+                                        icon: Icons.savings_outlined,
+                                        label: tr('home.overview_fund_capital'),
+                                        amount: fundCapital,
+                                        color: const Color(0xFF0D9488),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: _MetricChip(
+                                        icon: Icons.south_west_rounded,
+                                        label: tr(
+                                          'home.overview_total_deposits',
+                                        ),
+                                        amount: totalDeposits,
+                                        color: AppColors.success,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 10),
-                                _OverviewMoneyRow(
-                                  icon: Icons.savings_outlined,
-                                  label: tr('home.overview_fund_capital'),
-                                  amount: fundCapital,
-                                  color: const Color(0xFF0D9488),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _MetricChip(
+                                        icon: Icons.north_east_rounded,
+                                        label: tr(
+                                          'home.overview_total_withdrawals',
+                                        ),
+                                        amount: totalWithdrawals,
+                                        color: AppColors.danger,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: _MetricChip(
+                                        icon: Icons.pending_actions_outlined,
+                                        label: tr(
+                                          'home.overview_loans_remaining',
+                                        ),
+                                        amount: remaining,
+                                        color: AppColors.warning,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 10),
-                                _OverviewMoneyRow(
-                                  icon: Icons.south_west_rounded,
-                                  label: tr('home.overview_total_deposits'),
-                                  amount: totalDeposits,
-                                  color: const Color(0xFF10B981),
-                                ),
-                                const SizedBox(height: 10),
-                                _OverviewMoneyRow(
-                                  icon: Icons.north_east_rounded,
-                                  label: tr('home.overview_total_withdrawals'),
-                                  amount: totalWithdrawals,
-                                  color: const Color(0xFFEF4444),
-                                ),
-                                const Divider(height: 20),
+                                const SizedBox(height: 16),
                                 _OverviewMoneyRow(
                                   icon: Icons.payments_outlined,
                                   label: tr('home.overview_loans_disbursed'),
                                   amount: disbursed,
-                                  color: const Color(0xFFEF4444),
-                                ),
-                                const SizedBox(height: 10),
-                                _OverviewMoneyRow(
-                                  icon: Icons.pending_actions_outlined,
-                                  label: tr('home.overview_loans_remaining'),
-                                  amount: remaining,
-                                  color: const Color(0xFFF59E0B),
+                                  color: AppColors.danger,
                                 ),
                                 const SizedBox(height: 10),
                                 _OverviewMoneyRow(
                                   icon: Icons.task_alt_outlined,
                                   label: tr('home.overview_loans_repaid'),
                                   amount: repaid,
-                                  color: const Color(0xFF10B981),
+                                  color: AppColors.success,
                                 ),
-                                const Divider(height: 20),
+                                const SizedBox(height: 16),
                                 Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
                                       child: BlocBuilder<UsersCubit, UsersState>(
@@ -152,17 +171,153 @@ class _FundOverviewCard extends StatelessWidget {
                                   ],
                                 ),
                               ],
-                            );
-                          },
-                        );
-                      },
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   },
                 );
               },
-            ),
-          ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _BalanceHero extends StatelessWidget {
+  const _BalanceHero({required this.label, required this.amount});
+
+  final String label;
+  final int amount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: isDark
+              ? [
+                  AppColors.primary.withValues(alpha: 0.35),
+                  AppColors.secondary.withValues(alpha: 0.18),
+                ]
+              : [
+                  AppColors.primary,
+                  AppColors.primary.withValues(alpha: 0.85),
+                  AppColors.secondary.withValues(alpha: 0.95),
+                ],
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            formatThousands(amount),
+            style: theme.textTheme.headlineMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            tr('banks.rial'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricChip extends StatelessWidget {
+  const _MetricChip({
+    required this.icon,
+    required this.label,
+    required this.amount,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final int amount;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+              height: 1.25,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            formatThousands(amount),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -181,18 +336,6 @@ class _OverviewMoneyRow extends StatelessWidget {
   final int amount;
   final Color color;
 
-  String _formatCurrency(int v) {
-    final s = v.abs().toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      final idx = s.length - i - 1;
-      buf.write(s[idx]);
-      if (i % 3 == 2 && idx != 0) buf.write(',');
-    }
-    final str = buf.toString().split('').reversed.join();
-    return (v < 0 ? '-' : '') + str;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -210,7 +353,7 @@ class _OverviewMoneyRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
         Text(
-          '${_formatCurrency(amount)} ${tr('banks.rial')}',
+          '${formatThousands(amount)} ${tr('banks.rial')}',
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
             color: color,
@@ -235,16 +378,23 @@ class _OverviewCountTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 22, color: theme.colorScheme.primary),
+          Icon(icon, size: 20, color: theme.colorScheme.primary),
           const SizedBox(height: 6),
           Text(
             label,
-            style: theme.textTheme.bodySmall,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+            ),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -253,7 +403,7 @@ class _OverviewCountTile extends StatelessWidget {
           Text(
             value,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
             ),
             textAlign: TextAlign.center,
           ),
@@ -267,46 +417,58 @@ class _StatTile extends StatelessWidget {
   final String label;
   final String value;
   final IconData? icon;
-  const _StatTile({required this.label, required this.value, this.icon});
+  final Color accent;
+
+  const _StatTile({
+    required this.label,
+    required this.value,
+    this.icon,
+    this.accent = AppColors.primary,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 88,
+    final theme = Theme.of(context);
+    return Container(
+      height: 96,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.12)),
+      ),
       child: Stack(
-        clipBehavior: Clip.none,
         children: [
           if (icon != null)
             Positioned(
-              left: 4,
-              top: 4,
+              left: 0,
+              bottom: 0,
               child: Icon(
                 icon,
-                size: 72,
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.08),
+                size: 40,
+                color: accent.withValues(alpha: 0.18),
               ),
             ),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  value,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Spacer(),
+              Text(
+                value,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: accent,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -318,22 +480,34 @@ class _Legend extends StatelessWidget {
   const _Legend({required this.color, required this.label});
   final Color color;
   final String label;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-        ),
-        const SizedBox(width: 6),
-        Text(tr(label), style: Theme.of(context).textTheme.bodySmall),
-      ],
+          const SizedBox(width: 6),
+          Text(
+            tr(label),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

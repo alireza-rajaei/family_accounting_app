@@ -11,12 +11,10 @@ class _FiltersBar extends StatelessWidget {
         width: MediaQuery.of(context).size.width,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                tr('transactions.filters'),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+            const AppSheetHandle(),
+            AppSheetTitle(
+              tr('transactions.filters'),
+              icon: Icons.tune_rounded,
             ),
             Wrap(
               spacing: 8,

@@ -42,8 +42,6 @@ class _TransactionSheetState extends State<TransactionSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.data != null;
-    final padding =
-        MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
     final typeOptions = <String>[
       tr('transactions.deposit'),
       tr('transactions.withdraw'),
@@ -51,19 +49,14 @@ class _TransactionSheetState extends State<TransactionSheet> {
       tr('transactions.loan_installment'),
       tr('transactions.bank_transfer'),
     ];
-    return Padding(
-      padding: padding,
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                isEdit ? tr('transactions.save') : tr('transactions.create'),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
+    return AppSheetBody(
+      title: isEdit ? tr('transactions.save') : tr('transactions.create'),
+      icon: isEdit ? Icons.edit_rounded : Icons.add_card_rounded,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
               Row(
                 children: [
                   Expanded(
@@ -348,9 +341,7 @@ class _TransactionSheetState extends State<TransactionSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-            ],
-          ),
+          ],
         ),
       ),
     );

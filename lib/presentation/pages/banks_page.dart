@@ -2,7 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../app/theme/app_ui.dart';
 import '../../app/utils/bank_icons.dart';
+import '../../app/utils/format.dart';
 import '../../di/locator.dart';
 import '../../domain/entities/bank.dart';
 import '../cubits/banks_cubit.dart';
@@ -41,25 +43,16 @@ class _BanksViewState extends State<_BanksView> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: TextField(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: AppSearchField(
                 controller: _search,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
-                  hintText: tr('banks.search_hint'),
-                  suffixIcon: _search.text.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _search.clear();
-                            cubit.watch('');
-                            setState(() {});
-                          },
-                        ),
-                ),
+                hintText: tr('banks.search_hint'),
                 onChanged: (v) {
                   cubit.watch(v);
+                  setState(() {});
+                },
+                onClear: () {
+                  cubit.watch('');
                   setState(() {});
                 },
               ),
@@ -71,24 +64,46 @@ class _BanksViewState extends State<_BanksView> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (state.banks.isEmpty) {
-                    return Center(child: Text(tr('banks.not_found')));
+                    return AppEmptyState(
+                      message: tr('banks.not_found'),
+                      icon: Icons.account_balance_outlined,
+                    );
                   }
                   return ListView.separated(
-                    padding: const EdgeInsets.only(top: 12, bottom: 80),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
                     itemCount: state.banks.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 24),
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
                     itemBuilder: (context, index) {
                       final item = state.banks[index];
                       final b = item.bank;
                       final colors = BankIcons.gradients[b.bankKey];
+                      final isFa = context.locale.languageCode == 'fa';
+                      final bankName = isFa
+                          ? (BankIcons.persianNames[b.bankKey] ?? b.bankKey)
+                          : (BankIcons.englishNames[b.bankKey] ?? b.bankKey);
+                      final bankSub = isFa
+                          ? (BankIcons.englishNames[b.bankKey] ?? '')
+                          : (BankIcons.persianNames[b.bankKey] ?? '');
                       return Container(
-                        height: 200,
-                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        height: 196,
                         clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (colors?.first ?? Colors.black)
+                                  .withValues(alpha: 0.22),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                           gradient: colors == null
-                              ? null
+                              ? LinearGradient(
+                                  colors: [
+                                    Theme.of(context).colorScheme.primary,
+                                    Theme.of(context).colorScheme.secondary,
+                                  ],
+                                )
                               : LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -98,13 +113,22 @@ class _BanksViewState extends State<_BanksView> {
                         child: Stack(
                           children: [
                             Positioned(
-                              right: 8,
-                              top: 8,
+                              right: 4,
+                              top: 4,
                               child: PopupMenuButton<String>(
                                 padding: EdgeInsets.zero,
-                                icon: const Icon(
-                                  Icons.more_vert,
-                                  color: Colors.white,
+                                icon: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.18),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.more_horiz_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                                 onSelected: (action) async {
                                   if (action == 'edit') {
@@ -115,7 +139,7 @@ class _BanksViewState extends State<_BanksView> {
                                       builder: (ctx) => AlertDialog(
                                         title: Text(tr('banks.delete')),
                                         content: Text(
-                                          '${tr('banks.confirm_delete', namedArgs: {'name': '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bankKey] ?? b.bankKey) : (BankIcons.englishNames[b.bankKey] ?? b.bankKey))} - ${b.accountName}'})}\n${tr('banks.delete_cascade_note')}',
+                                          '${tr('banks.confirm_delete', namedArgs: {'name': '$bankName - ${b.accountName}'})}\n${tr('banks.delete_cascade_note')}',
                                         ),
                                         actions: [
                                           TextButton(
@@ -158,8 +182,8 @@ class _BanksViewState extends State<_BanksView> {
                                       center: Alignment.center,
                                       radius: 0.72,
                                       colors: [
-                                        Colors.white.withValues(alpha: 0.32),
-                                        Colors.white.withValues(alpha: 0.10),
+                                        Colors.white.withValues(alpha: 0.28),
+                                        Colors.white.withValues(alpha: 0.08),
                                         Colors.white.withValues(alpha: 0.0),
                                       ],
                                       stops: const [0.0, 0.55, 1.0],
@@ -195,9 +219,9 @@ class _BanksViewState extends State<_BanksView> {
                                   style: Theme.of(context).textTheme.titleLarge
                                       ?.copyWith(
                                         color: Colors.white,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w800,
                                         letterSpacing: 1.8,
-                                        fontSize: 28,
+                                        fontSize: 26,
                                         fontFeatures: const [
                                           FontFeature.tabularFigures(),
                                         ],
@@ -211,73 +235,47 @@ class _BanksViewState extends State<_BanksView> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
                                     children: [
-                                      // Bank logo (left) with white translucent circle behind
                                       Container(
-                                        width: 56,
-                                        height: 56,
+                                        width: 52,
+                                        height: 52,
                                         decoration: BoxDecoration(
                                           color: Colors.white.withValues(
-                                            alpha: 0.5,
+                                            alpha: 0.55,
                                           ),
                                           shape: BoxShape.circle,
                                         ),
                                         child: Center(
                                           child: SizedBox(
-                                            width: 40,
-                                            height: 40,
+                                            width: 36,
+                                            height: 36,
                                             child: BankCircleAvatar(
                                               bankKey: b.bankKey,
-                                              name:
-                                                  (context
-                                                          .locale
-                                                          .languageCode ==
-                                                      'fa'
-                                                  ? (BankIcons.persianNames[b
-                                                            .bankKey] ??
-                                                        b.bankKey)
-                                                  : (BankIcons.englishNames[b
-                                                            .bankKey] ??
-                                                        b.bankKey)),
+                                              name: bankName,
                                             ),
                                           ),
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      // Bank title + english subtitle (similar to sample)
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              (context.locale.languageCode ==
-                                                      'fa'
-                                                  ? (BankIcons.persianNames[b
-                                                            .bankKey] ??
-                                                        b.bankKey)
-                                                  : (BankIcons.englishNames[b
-                                                            .bankKey] ??
-                                                        b.bankKey)),
+                                              bankName,
                                               style: Theme.of(context)
                                                   .textTheme
-                                                  .titleLarge
+                                                  .titleMedium
                                                   ?.copyWith(
                                                     color: Colors.white,
-                                                    fontWeight: FontWeight.w700,
+                                                    fontWeight: FontWeight.w800,
                                                   ),
                                             ),
                                             Text(
-                                              (context.locale.languageCode ==
-                                                      'fa'
-                                                  ? (BankIcons.englishNames[b
-                                                            .bankKey] ??
-                                                        '')
-                                                  : (BankIcons.persianNames[b
-                                                            .bankKey] ??
-                                                        '')),
+                                              b.accountName.isNotEmpty
+                                                  ? b.accountName
+                                                  : bankSub,
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodySmall
@@ -292,23 +290,18 @@ class _BanksViewState extends State<_BanksView> {
                                     ],
                                   ),
                                   const Spacer(),
-                                  // Card number and balance footer
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      const Expanded(child: SizedBox()),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        '${_formatCurrency(item.balance)} ${tr('banks.rial')}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.white,
-                                            ),
-                                      ),
-                                    ],
+                                  Align(
+                                    alignment: AlignmentDirectional.bottomEnd,
+                                    child: Text(
+                                      '${formatThousands(item.balance)} ${tr('banks.rial')}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                          ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -324,30 +317,18 @@ class _BanksViewState extends State<_BanksView> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openBankSheet(context),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(tr('banks.add')),
       ),
     );
   }
 
-  String _formatCurrency(int v) {
-    final s = v.abs().toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      final idx = s.length - i - 1;
-      buf.write(s[idx]);
-      if (i % 3 == 2 && idx != 0) buf.write(',');
-    }
-    final str = buf.toString().split('').reversed.join();
-    return (v < 0 ? '-' : '') + str;
-  }
-
   Future<void> _openBankSheet(BuildContext context, {BankEntity? bank}) async {
     final banksCubit = context.read<BanksCubit>();
-    await showModalBottomSheet(
+    await showAppModalSheet(
       context: context,
-      isScrollControlled: true,
       builder: (context) => BlocProvider.value(
         value: banksCubit,
         child: _BankSheet(bank: bank),
@@ -403,20 +384,14 @@ class _BankSheetState extends State<_BankSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.bank != null;
-    final padding =
-        MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
-    return Padding(
-      padding: padding,
+    return AppSheetBody(
+      title: isEdit ? tr('banks.edit') : tr('banks.add'),
+      icon: Icons.account_balance_rounded,
       child: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              isEdit ? tr('banks.edit') : tr('banks.add'),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: bankKey,
               items: iranianBanks
@@ -435,7 +410,6 @@ class _BankSheetState extends State<_BankSheet> {
               decoration: InputDecoration(labelText: tr('banks.bank')),
             ),
             const SizedBox(height: 12),
-
             TextFormField(
               controller: accountName,
               decoration: InputDecoration(labelText: tr('banks.account_name')),
@@ -454,7 +428,7 @@ class _BankSheetState extends State<_BankSheet> {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
+              child: FilledButton.icon(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     final cubit = context.read<BanksCubit>();
@@ -475,10 +449,10 @@ class _BankSheetState extends State<_BankSheet> {
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
-                child: Text(isEdit ? tr('banks.save') : tr('banks.create')),
+                icon: Icon(isEdit ? Icons.save_rounded : Icons.add_rounded),
+                label: Text(isEdit ? tr('banks.save') : tr('banks.create')),
               ),
             ),
-            const SizedBox(height: 12),
           ],
         ),
       ),

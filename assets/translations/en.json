@@ -2,11 +2,17 @@
     "app_title": "Sandoghcheh",
     "login": {
         "title": "Login",
+        "welcome": "Welcome",
+        "subtitle": "Sign in to manage your fund",
+        "setup_subtitle": "Create an admin account to get started",
         "username": "Username",
         "password": "Password",
         "submit": "Login",
         "setup_and_login": "Create admin & login",
-        "invalid": "Invalid username or password"
+        "invalid": "Invalid username or password",
+        "required": "This field is required",
+        "show_password": "Show password",
+        "hide_password": "Hide password"
     },
     "drawer": {
         "font_size": "Font size",
@@ -70,7 +76,7 @@
         "ok": "OK"
     },
     "home": {
-        "chart_card": "Deposits and withdrawals by bank",
+        "chart_card": "This month's deposits and withdrawals",
         "balances_card": "Account balances by bank",
         "stats_card": "Users and unsettled loans count",
         "year_title": "Year stats {year}",

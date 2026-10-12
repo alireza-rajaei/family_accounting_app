@@ -72,9 +72,8 @@ Future<(DateTime, DateTime)?> _showJalaliRangePicker(
   BuildContext context,
 ) async {
   // Lightweight custom sheet using shamsi_date
-  return showModalBottomSheet<(DateTime, DateTime)>(
+  return showAppModalSheet<(DateTime, DateTime)>(
     context: context,
-    isScrollControlled: true,
     builder: (ctx) {
       return _JalaliRangeSheet();
     },
@@ -115,22 +114,12 @@ class _JalaliRangeSheetState extends State<_JalaliRangeSheet> {
       _daysInJalaliMonth(toYear, toMonth),
       (i) => i + 1,
     );
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        top: 16,
-      ),
+    return AppSheetBody(
+      title: 'انتخاب بازه تاریخ (شمسی)',
+      icon: Icons.calendar_month_rounded,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'انتخاب بازه تاریخ (شمسی)',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 12),
-          // Show 'from' and 'to' on separate rows for clarity
           _ymdPicker(
             'از',
             fromYear,
@@ -160,7 +149,7 @@ class _JalaliRangeSheetState extends State<_JalaliRangeSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('انصراف'),
+                  child: Text(tr('common.cancel')),
                 ),
               ),
               const SizedBox(width: 12),
@@ -183,7 +172,7 @@ class _JalaliRangeSheetState extends State<_JalaliRangeSheet> {
                     }
                     Navigator.pop(context, (fromDt, toDt));
                   },
-                  child: const Text('تایید'),
+                  child: Text(tr('common.ok')),
                 ),
               ),
             ],

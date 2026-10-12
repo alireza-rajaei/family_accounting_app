@@ -10,6 +10,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_ui.dart';
 import '../../app/utils/bank_icons.dart';
 import '../../app/utils/format.dart';
 import '../../app/utils/jalali_utils.dart';
@@ -60,9 +62,8 @@ class LoansPage extends StatelessWidget {
 }
 
 Future<void> _openLoanReportSheet(BuildContext context, LoanEntity loan) async {
-  await showModalBottomSheet(
+  await showAppModalSheet(
     context: context,
-    isScrollControlled: true,
     builder: (sheetContext) => MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.read<LoansCubit>()),
@@ -106,19 +107,22 @@ class _LoanReportSheet extends StatelessWidget {
       maxChildSize: 0.95,
       builder: (ctx, controller) {
         return Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const AppSheetHandle(),
+              AppSheetTitle(
                 tr('loans.report_title'),
-                style: Theme.of(context).textTheme.titleMedium,
+                icon: Icons.request_quote_rounded,
               ),
-              const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: _LoanAvatar(),
-                title: Text('${user.firstName} ${user.lastName}'),
+                title: Text(
+                  '${user.firstName} ${user.lastName}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 subtitle: Text(
                   '${tr('loans.principal')}: ${formatThousands(loan.principalAmount)} · ${tr('loans.installments')}: ${loan.installments}',
                 ),
@@ -451,11 +455,11 @@ class _LoansViewState extends State<_LoansView> {
 
             final usersState = context.watch<UsersCubit>().state;
 
-            if (filteredItems.isEmpty)
+            if (filteredItems.isEmpty) {
               return Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(12.0),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                     child: _UserFilterField(
                       value: _filterUserId,
                       onChanged: (v) => setState(() => _filterUserId = v),
@@ -463,15 +467,19 @@ class _LoansViewState extends State<_LoansView> {
                     ),
                   ),
                   Expanded(
-                    child: Center(child: Text(tr('transactions.not_found'))),
+                    child: AppEmptyState(
+                      message: tr('transactions.not_found'),
+                      icon: Icons.request_quote_outlined,
+                    ),
                   ),
                 ],
               );
+            }
 
             return Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: _UserFilterField(
                     value: _filterUserId,
                     onChanged: (v) => setState(() => _filterUserId = v),
@@ -480,9 +488,9 @@ class _LoansViewState extends State<_LoansView> {
                 ),
                 Expanded(
                   child: ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 80),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                     itemCount: filteredItems.length,
-                    separatorBuilder: (_, __) => const Divider(height: 0),
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final isFa = context.locale.languageCode == 'fa';
                       final it = filteredItems[index];
@@ -495,60 +503,133 @@ class _LoansViewState extends State<_LoansView> {
                       final dateStr = isFa
                           ? JalaliUtils.formatJalali(it.loan.createdAt)
                           : JalaliUtils.formatGregorian(it.loan.createdAt);
-                      return ListTile(
-                        leading: _LoanAvatar(),
-                        title: Text(
-                          '$userName · ${formatThousands(it.loan.principalAmount)}',
-                        ),
-                        subtitle: Text(
-                          '$dateStr · ${tr('loans.remaining')}: ${formatThousands(it.remaining)} ${tr('banks.rial')}',
-                        ),
-                        trailing: _LoanActionsMenu(
-                          settled: it.settled,
-                          onPayInstallment: () async {
-                            final user = usersState.users.firstWhere(
-                              (u) => u.id == it.loan.userId,
-                              orElse: () => usersState.users.first,
+                      final progress = it.loan.principalAmount <= 0
+                          ? 0.0
+                          : (it.paidAmount / it.loan.principalAmount).clamp(
+                              0.0,
+                              1.0,
                             );
-                            await showTransactionSheet(
-                              context,
-                              initialUserId: user.id,
-                              initialType: tr('transactions.loan_installment'),
-                              initialLoanId: it.loan.id,
-                            );
-                          },
-                          onEdit: () => _openLoanSheet(context, loan: it.loan),
-                          onDelete: () async {
-                            final ok = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: Text(tr('loans.delete')),
-                                content: Text(tr('loans.confirm_delete')),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: Text(tr('common.cancel')),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: Text(tr('loans.delete')),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (ok == true) {
-                              await context.read<LoansCubit>().deleteLoan(
-                                it.loan.id,
-                              );
-                            }
-                          },
-                          onReport: () =>
-                              _openLoanReportSheet(context, it.loan),
-                        ),
-                        // Click on loan disabled per request
+                      return AppSurface(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                        radius: 18,
                         onLongPress: it.settled
                             ? null
                             : () => _openLoanSheet(context, loan: it.loan),
+                        child: Row(
+                          children: [
+                            AppIconBadge(
+                              icon: it.settled
+                                  ? Icons.task_alt_rounded
+                                  : Icons.request_quote_rounded,
+                              color: it.settled
+                                  ? AppColors.success
+                                  : AppColors.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userName,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${formatThousands(it.loan.principalAmount)} ${tr('banks.rial')} · $dateStr',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.55),
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(99),
+                                    child: LinearProgressIndicator(
+                                      value: progress,
+                                      minHeight: 6,
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.08),
+                                      color: it.settled
+                                          ? AppColors.success
+                                          : AppColors.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${tr('loans.remaining')}: ${formatThousands(it.remaining)} ${tr('banks.rial')}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium
+                                        ?.copyWith(
+                                          color: it.settled
+                                              ? AppColors.success
+                                              : AppColors.warning,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _LoanActionsMenu(
+                              settled: it.settled,
+                              onPayInstallment: () async {
+                                final user = usersState.users.firstWhere(
+                                  (u) => u.id == it.loan.userId,
+                                  orElse: () => usersState.users.first,
+                                );
+                                await showTransactionSheet(
+                                  context,
+                                  initialUserId: user.id,
+                                  initialType: tr(
+                                    'transactions.loan_installment',
+                                  ),
+                                  initialLoanId: it.loan.id,
+                                );
+                              },
+                              onEdit: () =>
+                                  _openLoanSheet(context, loan: it.loan),
+                              onDelete: () async {
+                                final ok = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: Text(tr('loans.delete')),
+                                    content: Text(tr('loans.confirm_delete')),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, false),
+                                        child: Text(tr('common.cancel')),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, true),
+                                        child: Text(tr('loans.delete')),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (ok == true) {
+                                  await context.read<LoansCubit>().deleteLoan(
+                                    it.loan.id,
+                                  );
+                                }
+                              },
+                              onReport: () =>
+                                  _openLoanReportSheet(context, it.loan),
+                            ),
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -558,9 +639,10 @@ class _LoansViewState extends State<_LoansView> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openLoanSheet(context),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(tr('loans.add')),
       ),
     );
   }
@@ -569,17 +651,7 @@ class _LoansViewState extends State<_LoansView> {
 class _LoanAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: scheme.primary.withValues(alpha: 0.12),
-      ),
-      alignment: Alignment.center,
-      child: Icon(Icons.request_quote_rounded, color: scheme.primary, size: 22),
-    );
+    return const AppIconBadge(icon: Icons.request_quote_rounded);
   }
 }
 
@@ -600,7 +672,7 @@ class _LoanActionsMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     if (settled) {
       return const IconButton(
-        icon: Icon(Icons.check_circle, color: Colors.green),
+        icon: Icon(Icons.check_circle_rounded, color: AppColors.success),
         onPressed: null,
       );
     }
@@ -756,9 +828,8 @@ class _BankDropdown extends StatelessWidget {
 }
 
 Future<void> _openLoanSheet(BuildContext context, {LoanEntity? loan}) async {
-  await showModalBottomSheet(
+  await showAppModalSheet(
     context: context,
-    isScrollControlled: true,
     builder: (sheetContext) => MultiBlocProvider(
       providers: [
         BlocProvider.value(value: context.read<LoansCubit>()),
@@ -806,21 +877,14 @@ class _LoanSheetState extends State<_LoanSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.loan != null;
-    final padding =
-        MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
-    return Padding(
-      padding: padding,
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                isEdit ? tr('loans.edit') : tr('loans.add'),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
+    return AppSheetBody(
+      title: isEdit ? tr('loans.edit') : tr('loans.add'),
+      icon: Icons.request_quote_rounded,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
               _SearchableUserField(
                 value: userId,
                 onChanged: (v) => setState(() => userId = v),
@@ -923,11 +987,9 @@ class _LoanSheetState extends State<_LoanSheet> {
                   child: Text(isEdit ? tr('loans.save') : tr('loans.create')),
                 ),
               ),
-              const SizedBox(height: 12),
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -1010,58 +1072,74 @@ class _UserFilterField extends StatelessWidget {
 Future<int?> _showLoanUserPicker(BuildContext context, UsersState state) async {
   final controller = TextEditingController();
   List<int> filtered = state.users.map((e) => e.id).toList();
-  return showModalBottomSheet<int>(
+  return showAppModalSheet<int>(
     context: context,
-    isScrollControlled: true,
     builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: StatefulBuilder(
-          builder: (context, setStateSB) {
-            void apply(String q) {
-              setStateSB(() {
-                final pat = q.trim();
-                filtered = state.users
-                    .where((u) => '${u.firstName} ${u.lastName}'.contains(pat))
-                    .map((e) => e.id)
-                    .toList();
-              });
-            }
+      return StatefulBuilder(
+        builder: (context, setStateSB) {
+          void apply(String q) {
+            setStateSB(() {
+              final pat = q.trim();
+              filtered = state.users
+                  .where((u) => '${u.firstName} ${u.lastName}'.contains(pat))
+                  .map((e) => e.id)
+                  .toList();
+            });
+          }
 
-            return Column(
+          return AppSheetBody(
+            title: tr('transactions.search_user'),
+            icon: Icons.person_search_rounded,
+            scrollable: false,
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: controller,
                   decoration: InputDecoration(
                     hintText: tr('transactions.search_user'),
+                    prefixIcon: const Icon(Icons.search_rounded),
                   ),
                   onChanged: apply,
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 320,
-                  child: ListView.builder(
+                  child: ListView.separated(
                     itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 4),
                     itemBuilder: (context, index) {
                       final id = filtered[index];
                       final u = state.users.firstWhere((e) => e.id == id);
-                      return ListTile(
-                        title: Text('${u.firstName} ${u.lastName}'),
+                      return AppSurface(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        radius: 14,
                         onTap: () => Navigator.pop(context, id),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.12,
+                            ),
+                            foregroundColor: AppColors.primary,
+                            child: Text(
+                              '${u.firstName.isNotEmpty ? u.firstName[0] : ''}${u.lastName.isNotEmpty ? u.lastName[0] : ''}',
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          title: Text('${u.firstName} ${u.lastName}'),
+                        ),
                       );
                     },
                   ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       );
     },
   );

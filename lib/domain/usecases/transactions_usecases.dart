@@ -86,3 +86,12 @@ class WatchBankFlowSumsUseCase {
   Stream<List<(String bankKey, int deposit, int withdraw)>> call() =>
       repo.watchBankFlowSums();
 }
+
+class WatchDailyFlowSumsUseCase {
+  final ITransactionsRepository repo;
+  WatchDailyFlowSumsUseCase(this.repo);
+  Stream<List<(DateTime day, int deposit, int withdraw)>> call({
+    required DateTime from,
+    required DateTime to,
+  }) => repo.watchDailyFlowSums(from: from, to: to);
+}

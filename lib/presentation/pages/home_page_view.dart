@@ -2,319 +2,491 @@ part of 'home_page.dart';
 
 class _HomeView extends StatelessWidget {
   const _HomeView();
+
   @override
   Widget build(BuildContext context) {
-    final repo = locator<WatchBankFlowSumsUseCase>();
     final loansRepo = locator<WatchLoansUseCase>();
-    BankIcons;
+
     return Scaffold(
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: [
-          StreamBuilder<List<(String bankKey, int deposit, int withdraw)>>(
-            stream: repo(),
-            builder: (context, snapshot) {
-              final data = snapshot.data ?? [];
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        tr('home.chart_card'),
-                        style: Theme.of(context).textTheme.titleMedium,
+          _FundOverviewCard(loansRepo: loansRepo),
+          const SizedBox(height: 16),
+          _BankBalancesSection(),
+          const SizedBox(height: 16),
+          _FlowChartCard(repo: locator<WatchDailyFlowSumsUseCase>()),
+          const SizedBox(height: 16),
+          _ActivityStatsCard(
+            loansRepo: loansRepo,
+            transactionsRepo: locator<WatchTransactionsUseCase>(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+}
+
+class _HomeSurface extends StatelessWidget {
+  const _HomeSurface({required this.child, this.padding});
+
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSurface(padding: padding, child: child);
+  }
+}
+
+class _BankBalancesSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return _HomeSurface(
+      child: BlocBuilder<BanksCubit, BanksState>(
+        builder: (context, state) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader(title: tr('home.balances_card')),
+              const SizedBox(height: 14),
+              if (state.banks.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Text(
+                      tr('transactions.not_found'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.55,
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 240,
-                        child: BarChart(
-                          BarChartData(
-                            borderData: FlBorderData(show: false),
-                            gridData: FlGridData(
-                              show: true,
-                              drawVerticalLine: false,
-                              getDrawingHorizontalLine: (value) => const FlLine(
-                                color: Color(0x22000000),
-                                strokeWidth: 1,
-                                dashArray: [4, 4],
-                              ),
+                    ),
+                  ),
+                )
+              else
+                for (int i = 0; i < state.banks.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 8),
+                  _BankBalanceRow(item: state.banks[i]),
+                ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _BankBalanceRow extends StatelessWidget {
+  const _BankBalanceRow({required this.item});
+
+  final BankWithBalanceEntity item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isFa = context.locale.languageCode == 'fa';
+    final bankKey = item.bank.bankKey;
+    final bankName = isFa
+        ? (BankIcons.persianNames[bankKey] ?? bankKey)
+        : (BankIcons.englishNames[bankKey] ?? bankKey);
+    final isNegative = item.balance < 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            ),
+            alignment: Alignment.center,
+            child: BankIcons.logo(bankKey, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  bankName,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.bank.accountName,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '${formatThousands(item.balance)} ${tr('banks.rial')}',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: isNegative ? AppColors.danger : theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlowChartCard extends StatelessWidget {
+  const _FlowChartCard({required this.repo});
+
+  final WatchDailyFlowSumsUseCase repo;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final gridColor = theme.colorScheme.onSurface.withValues(alpha: 0.08);
+    final isFa = context.locale.languageCode == 'fa';
+
+    final jNow = DateTime.now().toJalali();
+    final monthStart = Jalali(jNow.year, jNow.month, 1).toDateTime();
+    final monthEnd = (jNow.month == 12
+            ? Jalali(jNow.year + 1, 1, 1)
+            : Jalali(jNow.year, jNow.month + 1, 1))
+        .toDateTime();
+    final daysInMonth = monthEnd.difference(monthStart).inDays;
+
+    return _HomeSurface(
+      child: StreamBuilder<List<(DateTime day, int deposit, int withdraw)>>(
+        stream: repo(from: monthStart, to: monthEnd),
+        builder: (context, snapshot) {
+          final byDay = <String, (int, int)>{};
+          for (final row in snapshot.data ?? const []) {
+            final key =
+                '${row.$1.year}-${row.$1.month.toString().padLeft(2, '0')}-${row.$1.day.toString().padLeft(2, '0')}';
+            byDay[key] = (row.$2, row.$3);
+          }
+
+          final depositSpots = <FlSpot>[];
+          final withdrawSpots = <FlSpot>[];
+          var hasAny = false;
+          for (int i = 0; i < daysInMonth; i++) {
+            final day = monthStart.add(Duration(days: i));
+            final key =
+                '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+            final values = byDay[key] ?? (0, 0);
+            if (values.$1 > 0 || values.$2 > 0) hasAny = true;
+            depositSpots.add(FlSpot(i.toDouble(), values.$1.toDouble()));
+            withdrawSpots.add(FlSpot(i.toDouble(), values.$2.toDouble()));
+          }
+
+          String dayLabel(int index) {
+            final day = monthStart.add(Duration(days: index));
+            return isFa
+                ? day.toJalali().day.toString()
+                : day.day.toString();
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionHeader(title: tr('home.chart_card')),
+              const SizedBox(height: 8),
+              const Row(
+                children: [
+                  _Legend(
+                    color: AppColors.success,
+                    label: 'transactions.deposit',
+                  ),
+                  SizedBox(width: 12),
+                  _Legend(
+                    color: AppColors.danger,
+                    label: 'transactions.withdraw',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 240,
+                child: !hasAny
+                    ? Center(
+                        child: Text(
+                          tr('transactions.not_found'),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.55,
                             ),
-                            barGroups: [
-                              for (int i = 0; i < data.length; i++)
-                                BarChartGroupData(
-                                  x: i,
-                                  barsSpace: 10,
-                                  barRods: [
-                                    BarChartRodData(
-                                      toY: data[i].$2.toDouble(),
-                                      color: const Color(0xFF10B981),
-                                      borderRadius: BorderRadius.circular(6),
-                                      width: 12,
-                                    ),
-                                    BarChartRodData(
-                                      toY: data[i].$3.toDouble(),
-                                      color: const Color(0xFFEF4444),
-                                      borderRadius: BorderRadius.circular(6),
-                                      width: 12,
-                                    ),
-                                  ],
-                                ),
-                            ],
-                            titlesData: FlTitlesData(
-                              leftTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    final idx = value.toInt();
-                                    if (idx < 0 || idx >= data.length)
-                                      return const SizedBox();
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        (context.locale.languageCode == 'fa')
-                                            ? (BankIcons.persianNames[data[idx]
-                                                      .$1] ??
-                                                  data[idx].$1)
-                                            : (BankIcons.englishNames[data[idx]
-                                                      .$1] ??
-                                                  data[idx].$1),
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
+                          ),
+                        ),
+                      )
+                    : LineChart(
+                        LineChartData(
+                          minX: 0,
+                          maxX: (daysInMonth - 1).toDouble(),
+                          minY: 0,
+                          borderData: FlBorderData(show: false),
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            getDrawingHorizontalLine: (value) => FlLine(
+                              color: gridColor,
+                              strokeWidth: 1,
+                              dashArray: const [4, 4],
                             ),
-                            barTouchData: BarTouchData(
-                              enabled: true,
-                              touchTooltipData: BarTouchTooltipData(
-                                getTooltipColor: (group) =>
-                                    const Color(0xCC111827),
-                                tooltipRoundedRadius: 8,
-                                tooltipPadding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                tooltipMargin: 12,
-                                getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                  final isDeposit = rodIndex == 0;
-                                  final label = isDeposit
-                                      ? tr('transactions.deposit')
-                                      : tr('transactions.withdraw');
-                                  return BarTooltipItem(
-                                    '$label\n${_formatCurrency(rod.toY.toInt())}',
-                                    const TextStyle(color: Colors.white),
+                          ),
+                          titlesData: FlTitlesData(
+                            leftTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 28,
+                                interval: _bottomInterval(daysInMonth),
+                                getTitlesWidget: (value, meta) {
+                                  final idx = value.round();
+                                  if (idx < 0 || idx >= daysInMonth) {
+                                    return const SizedBox();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      dayLabel(idx),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(alpha: 0.65),
+                                          ),
+                                    ),
                                   );
                                 },
                               ),
                             ),
                           ),
-                          swapAnimationDuration: const Duration(
-                            milliseconds: 600,
+                          lineTouchData: LineTouchData(
+                            handleBuiltInTouches: true,
+                            touchTooltipData: LineTouchTooltipData(
+                              getTooltipColor: (touchedSpot) =>
+                                  const Color(0xE0111827),
+                              tooltipRoundedRadius: 10,
+                              getTooltipItems: (touchedSpots) {
+                                return touchedSpots.map((spot) {
+                                  final isDeposit =
+                                      spot.barIndex == 0;
+                                  final label = isDeposit
+                                      ? tr('transactions.deposit')
+                                      : tr('transactions.withdraw');
+                                  final day = dayLabel(spot.x.round());
+                                  return LineTooltipItem(
+                                    '$day\n$label: ${formatThousands(spot.y.toInt())}',
+                                    TextStyle(
+                                      color: spot.bar.color ?? Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.35,
+                                    ),
+                                  );
+                                }).toList();
+                              },
+                            ),
                           ),
-                          swapAnimationCurve: Curves.easeOutCubic,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: const [
-                          _Legend(
-                            color: Color(0xFF10B981),
-                            label: 'transactions.deposit',
-                          ),
-                          SizedBox(width: 16),
-                          _Legend(
-                            color: Color(0xFFEF4444),
-                            label: 'transactions.withdraw',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: BlocBuilder<BanksCubit, BanksState>(
-                builder: (context, state) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        tr('home.balances_card'),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      for (final b in state.banks)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: BankIcons.logo(b.bank.bankKey, size: 24),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: depositSpots,
+                              isCurved: true,
+                              curveSmoothness: 0.28,
+                              color: AppColors.success,
+                              barWidth: 3,
+                              isStrokeCapRound: true,
+                              dotData: FlDotData(
+                                show: true,
+                                checkToShowDot: (spot, barData) => spot.y > 0,
+                                getDotPainter: (spot, percent, bar, index) =>
+                                    FlDotCirclePainter(
+                                      radius: 3.5,
+                                      color: AppColors.success,
+                                      strokeWidth: 1.5,
+                                      strokeColor: theme.colorScheme.surface,
+                                    ),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[b.bank.bankKey] ?? b.bank.bankKey) : (BankIcons.englishNames[b.bank.bankKey] ?? b.bank.bankKey))} · ${b.bank.accountName}',
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: AppColors.success.withValues(
+                                  alpha: 0.12,
                                 ),
                               ),
-                              Text(
-                                '${_formatCurrency(b.balance)} ${tr('banks.rial')}',
+                            ),
+                            LineChartBarData(
+                              spots: withdrawSpots,
+                              isCurved: true,
+                              curveSmoothness: 0.28,
+                              color: AppColors.danger,
+                              barWidth: 3,
+                              isStrokeCapRound: true,
+                              dotData: FlDotData(
+                                show: true,
+                                checkToShowDot: (spot, barData) => spot.y > 0,
+                                getDotPainter: (spot, percent, bar, index) =>
+                                    FlDotCirclePainter(
+                                      radius: 3.5,
+                                      color: AppColors.danger,
+                                      strokeWidth: 1.5,
+                                      strokeColor: theme.colorScheme.surface,
+                                    ),
                               ),
-                            ],
-                          ),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: AppColors.danger.withValues(alpha: 0.10),
+                              ),
+                            ),
+                          ],
                         ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: BlocBuilder<UsersCubit, UsersState>(
-                      builder: (context, state) => _StatTile(
-                        label: tr('home.stats_users'),
-                        value: state.users.length.toString(),
-                        icon: Icons.people_alt_outlined,
+                        duration: const Duration(milliseconds: 650),
+                        curve: Curves.easeOutCubic,
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: BlocBuilder<TransactionsCubit, TransactionsState>(
-                      builder: (context, state) => _StatTile(
-                        label: tr('home.stats_transactions'),
-                        value: state.items.length.toString(),
-                        icon: Icons.compare_arrows_outlined,
-                      ),
-                    ),
-                  ),
-                ],
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: _YearStats(
-                repo: locator<WatchTransactionsUseCase>(),
-                loansRepo: loansRepo,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _FundOverviewCard(loansRepo: loansRepo),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 
-  String _formatCurrency(int v) {
-    final s = v.abs().toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      final idx = s.length - i - 1;
-      buf.write(s[idx]);
-      if (i % 3 == 2 && idx != 0) buf.write(',');
-    }
-    final str = buf.toString().split('').reversed.join();
-    return (v < 0 ? '-' : '') + str;
+  double _bottomInterval(int daysInMonth) {
+    if (daysInMonth <= 10) return 1;
+    if (daysInMonth <= 20) return 2;
+    return 5;
   }
 }
 
-class _YearStats extends StatelessWidget {
-  const _YearStats({required this.repo, required this.loansRepo});
-  final WatchTransactionsUseCase repo;
+class _ActivityStatsCard extends StatelessWidget {
+  const _ActivityStatsCard({
+    required this.loansRepo,
+    required this.transactionsRepo,
+  });
+
   final WatchLoansUseCase loansRepo;
+  final WatchTransactionsUseCase transactionsRepo;
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final jNow = now.toJalali();
-    final jStart = Jalali(jNow.year, 1, 1);
-    final jEnd = Jalali(
-      jNow.year + 1,
-      1,
-      1,
-    ).toDateTime().subtract(const Duration(days: 1));
-    final from = jStart.toDateTime();
-    final to = jEnd.add(const Duration(days: 1));
+    final from = Jalali(jNow.year, 1, 1).toDateTime();
+    final to = Jalali(jNow.year + 1, 1, 1).toDateTime();
 
-    final trStream = repo(TransactionsFilterEntity(from: from, to: to));
-    final loansStream = loansRepo();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          tr('home.year_title', namedArgs: {'year': '${jNow.year}'}),
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 12),
-        StreamBuilder<List<TransactionAggregate>>(
-          stream: trStream,
-          builder: (context, snapshot) {
-            final trCount = snapshot.data?.length ?? 0;
-            return Row(
-              children: [
-                Expanded(
-                  child: _StatTile(
-                    label: tr('home.year_transactions'),
-                    value: trCount.toString(),
-                    icon: Icons.receipt_long_outlined,
+    return _HomeSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            title: tr('home.year_title', namedArgs: {'year': '${jNow.year}'}),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: BlocBuilder<UsersCubit, UsersState>(
+                  builder: (context, state) => _StatTile(
+                    label: tr('home.stats_users'),
+                    value: state.users.length.toString(),
+                    icon: Icons.people_alt_outlined,
+                    accent: AppColors.primary,
                   ),
                 ),
-                Expanded(
-                  child: StreamBuilder<List<LoanWithStatsEntity>>(
-                    stream: loansStream,
-                    builder: (context, snap) {
-                      final allLoans =
-                          snap.data ?? const <LoanWithStatsEntity>[];
-                      final loansCount = allLoans
-                          .where(
-                            (l) =>
-                                l.loan.createdAt.isAfter(from) &&
-                                l.loan.createdAt.isBefore(to),
-                          )
-                          .length;
-                      return _StatTile(
-                        label: tr('home.year_loans'),
-                        value: loansCount.toString(),
-                        icon: Icons.request_quote_outlined,
-                      );
-                    },
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: BlocBuilder<TransactionsCubit, TransactionsState>(
+                  builder: (context, state) => _StatTile(
+                    label: tr('home.stats_transactions'),
+                    value: state.items.length.toString(),
+                    icon: Icons.compare_arrows_outlined,
+                    accent: AppColors.secondary,
                   ),
                 ),
-              ],
-            );
-          },
-        ),
-      ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          StreamBuilder<List<TransactionAggregate>>(
+            stream: transactionsRepo(
+              TransactionsFilterEntity(from: from, to: to),
+            ),
+            builder: (context, snapshot) {
+              final trCount = snapshot.data?.length ?? 0;
+              return StreamBuilder<List<LoanWithStatsEntity>>(
+                stream: loansRepo(),
+                builder: (context, snap) {
+                  final loansCount = (snap.data ?? const <LoanWithStatsEntity>[])
+                      .where(
+                        (l) =>
+                            !l.loan.createdAt.isBefore(from) &&
+                            l.loan.createdAt.isBefore(to),
+                      )
+                      .length;
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _StatTile(
+                          label: tr('home.year_transactions'),
+                          value: trCount.toString(),
+                          icon: Icons.receipt_long_outlined,
+                          accent: AppColors.success,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatTile(
+                          label: tr('home.year_loans'),
+                          value: loansCount.toString(),
+                          icon: Icons.request_quote_outlined,
+                          accent: AppColors.warning,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

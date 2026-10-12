@@ -5,14 +5,25 @@ class _TransactionsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(tr('transactions.title')),
-        actions: const [_FiltersButton()],
-      ),
       body: SafeArea(
         child: Column(
           children: [
-            // Optionally keep inline filters hidden; only the button opens the sheet
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      tr('transactions.title'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const _FiltersButton(),
+                ],
+              ),
+            ),
             Expanded(
               child: BlocBuilder<TransactionsCubit, TransactionsState>(
                 builder: (context, state) {
@@ -20,7 +31,10 @@ class _TransactionsView extends StatelessWidget {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (state.items.isEmpty) {
-                    return Center(child: Text(tr('transactions.not_found')));
+                    return AppEmptyState(
+                      message: tr('transactions.not_found'),
+                      icon: Icons.compare_arrows_outlined,
+                    );
                   }
                   return FutureBuilder<
                     ({
@@ -35,10 +49,10 @@ class _TransactionsView extends StatelessWidget {
                       }
                       final extra = snap.data!;
                       return ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 80),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
                         itemCount:
                             state.items.length + (state.loadingMore ? 1 : 0),
-                        separatorBuilder: (_, __) => const Divider(height: 0),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           if (index >= state.items.length) {
                             return const Padding(
@@ -46,13 +60,18 @@ class _TransactionsView extends StatelessWidget {
                               child: Center(child: CircularProgressIndicator()),
                             );
                           }
-                          // Ask cubit to prefetch if user scrolls near the end
                           context.read<TransactionsCubit>().loadMoreIfNeeded(
                             index,
                           );
                           final it = state.items[index];
                           final trn = it.transaction;
                           final isIncome = trn.amount >= 0;
+                          final isFa = context.locale.languageCode == 'fa';
+                          final bankName =
+                              (isFa
+                                  ? BankIcons.persianNames[it.bank.bankKey]
+                                  : BankIcons.englishNames[it.bank.bankKey]) ??
+                              it.bank.bankKey;
 
                           String? loanRemainingLine;
                           if (trn.loanId != null ||
@@ -61,60 +80,24 @@ class _TransactionsView extends StatelessWidget {
                                 extra.cumulativeLoanRemainingByTxId[trn.id] ??
                                 0;
                             loanRemainingLine =
-                                '${tr('transactions.loan_remaining')}: ${_formatCurrency(remaining)} ${tr('banks.rial')}';
+                                '${tr('transactions.loan_remaining')}: ${formatThousands(remaining)} ${tr('banks.rial')}';
                           }
                           final uid = trn.userId;
                           final userBal = extra.userRunningAfter[index];
                           final userBalanceLine = uid == null
                               ? null
-                              : '${tr('users.balance')}: ${_formatCurrency(userBal)} ${tr('banks.rial')}';
+                              : '${tr('users.balance')}: ${formatThousands(userBal)} ${tr('banks.rial')}';
 
-                          return ListTile(
-                            leading: BankCircleAvatar(
-                              bankKey: it.bank.bankKey,
-                              name:
-                                  (context.locale.languageCode == 'fa'
-                                      ? BankIcons.persianNames[it.bank.bankKey]
-                                      : BankIcons.englishNames[it
-                                            .bank
-                                            .bankKey]) ??
-                                  it.bank.bankKey,
-                            ),
-                            title: Text(
-                              it.user != null
-                                  ? '${it.user!.firstName} ${it.user!.lastName}'
-                                  : ((context.locale.languageCode == 'fa'
-                                            ? BankIcons.persianNames[it
-                                                  .bank
-                                                  .bankKey]
-                                            : BankIcons.englishNames[it
-                                                  .bank
-                                                  .bankKey]) ??
-                                        it.bank.bankKey),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${it.bank.accountName} · ${(context.locale.languageCode == 'fa' ? JalaliUtils.formatJalali(trn.createdAt) : JalaliUtils.formatGregorian(trn.createdAt))}',
-                                ),
-                                if ((trn.type).isNotEmpty)
-                                  Text(
-                                    '${tr('transactions.type')}: ${_localizedType(context, trn.type)}',
-                                  ),
-                                if (loanRemainingLine != null)
-                                  Text(loanRemainingLine),
-                                if (loanRemainingLine == null &&
-                                    userBalanceLine != null)
-                                  Text(userBalanceLine),
-                              ],
-                            ),
-                            trailing: Text(
-                              '${_formatCurrency(trn.amount.abs() * (isIncome ? 1 : -1))} ${tr('banks.rial')}',
-                              style: TextStyle(
-                                color: isIncome ? Colors.green : Colors.red,
-                              ),
-                            ),
+                          final title = it.user != null
+                              ? '${it.user!.firstName} ${it.user!.lastName}'
+                              : bankName;
+                          final dateStr = isFa
+                              ? JalaliUtils.formatJalali(trn.createdAt)
+                              : JalaliUtils.formatGregorian(trn.createdAt);
+
+                          return AppSurface(
+                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                            radius: 18,
                             onTap: () async {
                               await _openTransactionSheet(context, data: it);
                               if (context.mounted) {
@@ -126,10 +109,7 @@ class _TransactionsView extends StatelessWidget {
                                 context: context,
                                 builder: (ctx) => AlertDialog(
                                   title: Text(tr('transactions.delete')),
-                                  content: const Text(
-                                    // Consider adding a translation key if needed
-                                    'آیا از حذف این تراکنش مطمئن هستید؟',
-                                  ),
+                                  content: Text(tr('loans.confirm_delete')),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
@@ -149,6 +129,106 @@ class _TransactionsView extends StatelessWidget {
                                 );
                               }
                             },
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                BankCircleAvatar(
+                                  bankKey: it.bank.bankKey,
+                                  name: bankName,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              title,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                          ),
+                                          AppAmountText(
+                                            text:
+                                                '${isIncome ? '' : '-'}${formatThousands(trn.amount.abs())}',
+                                            positive: isIncome,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${it.bank.accountName} · $dateStr',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withValues(alpha: 0.55),
+                                            ),
+                                      ),
+                                      if ((trn.type).isNotEmpty) ...[
+                                        const SizedBox(height: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: (isIncome
+                                                    ? AppColors.success
+                                                    : AppColors.danger)
+                                                .withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _localizedType(context, trn.type),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelSmall
+                                                ?.copyWith(
+                                                  color: isIncome
+                                                      ? AppColors.success
+                                                      : AppColors.danger,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                      if (loanRemainingLine != null) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          loanRemainingLine,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
+                                        ),
+                                      ],
+                                      if (loanRemainingLine == null &&
+                                          userBalanceLine != null) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          userBalanceLine,
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         },
                       );
@@ -160,28 +240,17 @@ class _TransactionsView extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await _openTransactionSheet(context);
           if (context.mounted) {
             context.read<TransactionsCubit>().watch();
           }
         },
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(tr('transactions.create')),
       ),
     );
-  }
-
-  String _formatCurrency(int v) {
-    final s = v.abs().toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      final idx = s.length - i - 1;
-      buf.write(s[idx]);
-      if (i % 3 == 2 && idx != 0) buf.write(',');
-    }
-    final str = buf.toString().split('').reversed.join();
-    return (v < 0 ? '-' : '') + str;
   }
 
   String _localizedType(BuildContext context, String storedType) {
@@ -304,17 +373,13 @@ class _FiltersButton extends StatelessWidget {
           child: Stack(
             alignment: Alignment.topRight,
             children: [
-              IconButton(
-                icon: const Icon(Icons.filter_list),
+              IconButton.filledTonal(
+                icon: const Icon(Icons.tune_rounded),
                 tooltip: tr('transactions.filters'),
                 onPressed: () {
                   final parentContext = context;
-                  showModalBottomSheet(
+                  showAppModalSheet(
                     context: context,
-                    isScrollControlled: true,
-                    useRootNavigator: false,
-                    useSafeArea: true,
-                    // Use default bottom sheet styling like other sheets
                     builder: (ctx) => MultiBlocProvider(
                       providers: [
                         BlocProvider.value(
@@ -334,8 +399,8 @@ class _FiltersButton extends StatelessWidget {
               ),
               if (count > 0)
                 Positioned(
-                  right: 6,
-                  top: 6,
+                  right: 2,
+                  top: 2,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,

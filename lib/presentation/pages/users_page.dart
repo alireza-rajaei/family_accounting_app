@@ -1,25 +1,28 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:flutter/foundation.dart';
+import 'dart:io';
 
-import '../../di/locator.dart';
-import '../../domain/entities/user.dart';
-import '../cubits/users_cubit.dart';
-import '../../app/utils/format.dart';
-import '../../app/utils/bank_icons.dart';
-import '../../app/utils/jalali_utils.dart';
-import '../../app/utils/pdf_report_utils.dart';
-import '../../domain/usecases/transactions_usecases.dart';
-import '../../domain/usecases/users_usecases.dart';
-import '../../domain/entities/transaction.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+
+import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_ui.dart';
+import '../../app/utils/bank_icons.dart';
+import '../../app/utils/format.dart';
+import '../../app/utils/jalali_utils.dart';
+import '../../app/utils/pdf_report_utils.dart';
+import '../../di/locator.dart';
+import '../../domain/entities/transaction.dart';
+import '../../domain/entities/user.dart';
+import '../../domain/usecases/transactions_usecases.dart';
+import '../../domain/usecases/users_usecases.dart';
+import '../cubits/users_cubit.dart';
 // removed: not needed here after using openTransactionSheet
 import 'transactions_page.dart' show showTransactionSheet;
 
@@ -37,12 +40,7 @@ class UsersPage extends StatelessWidget {
 }
 
 extension on _UserReportSheetState {
-  Future<
-    ({
-      List<int> userRunning,
-      Map<int, int> loanRemainingByTxId,
-    })
-  >
+  Future<({List<int> userRunning, Map<int, int> loanRemainingByTxId})>
   _computeRunningData(List<TransactionAggregate> items) async {
     // Build running balance for the user (descending list from repo)
     // Rule: balance = sum(deposits) - sum(withdrawals). Other types are ignored.
@@ -82,10 +80,7 @@ extension on _UserReportSheetState {
       loanRemainingByTxId[trn.id] = remaining;
     }
 
-    return (
-      userRunning: running,
-      loanRemainingByTxId: loanRemainingByTxId,
-    );
+    return (userRunning: running, loanRemainingByTxId: loanRemainingByTxId);
   }
 }
 
@@ -143,7 +138,10 @@ class _UsersViewState extends State<_UsersView> {
                     else if (users.isEmpty)
                       SliverFillRemaining(
                         hasScrollBody: false,
-                        child: Center(child: Text(tr('users.not_found'))),
+                        child: AppEmptyState(
+                          message: tr('users.not_found'),
+                          icon: Icons.people_alt_outlined,
+                        ),
                       ),
                     if (!state.loading && users.isNotEmpty)
                       ..._buildGroupedUserSlivers(users),
@@ -154,9 +152,10 @@ class _UsersViewState extends State<_UsersView> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openUserSheet(context),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.person_add_alt_1_rounded),
+        label: Text(tr('users.add')),
       ),
     );
   }
@@ -167,22 +166,13 @@ class _UsersViewState extends State<_UsersView> {
     final List<UserEntity> buffer = [];
 
     void flushBuffer() {
-      if (currentHeader == null || buffer.isEmpty) return;
-      final String safeHeader = currentHeader;
+      final header = currentHeader;
+      if (header == null || buffer.isEmpty) return;
       slivers.add(
         SliverToBoxAdapter(
-          child: Container(
-            color: Theme.of(context).colorScheme.surface,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            alignment: Alignment.centerLeft,
-            height: 36,
-            child: Text(
-              safeHeader,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+            child: AppSectionLabel(header),
           ),
         ),
       );
@@ -235,9 +225,7 @@ class _UsersViewState extends State<_UsersView> {
 
     for (final u in users) {
       final hdr = _initialOf(u);
-      if (currentHeader == null) {
-        currentHeader = hdr;
-      }
+      currentHeader ??= hdr;
       if (hdr != currentHeader) {
         flushBuffer();
         currentHeader = hdr;
@@ -246,11 +234,7 @@ class _UsersViewState extends State<_UsersView> {
     }
     flushBuffer();
 
-    slivers.add(
-      const SliverToBoxAdapter(
-        child: SizedBox(height: 80),
-      ),
-    );
+    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 80)));
 
     return slivers;
   }
@@ -273,9 +257,8 @@ class _UsersViewState extends State<_UsersView> {
 
   Future<void> _openUserSheet(BuildContext context, {UserEntity? user}) async {
     final usersCubit = context.read<UsersCubit>();
-    await showModalBottomSheet(
+    await showAppModalSheet(
       context: context,
-      isScrollControlled: true,
       builder: (context) => BlocProvider.value(
         value: usersCubit,
         child: _UserSheet(user: user),
@@ -287,9 +270,8 @@ class _UsersViewState extends State<_UsersView> {
     BuildContext context,
     UserEntity user,
   ) async {
-    await showModalBottomSheet(
+    await showAppModalSheet(
       context: context,
-      isScrollControlled: true,
       builder: (sheetCtx) => _UserReportSheet(user: user),
     );
   }
@@ -343,205 +325,190 @@ class _UserReportSheetState extends State<_UserReportSheet> {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (ctx, controller) {
-        return SafeArea(
-          top: false,
-          child: Material(
-            color: Theme.of(context).colorScheme.surface,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AppSheetHandle(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: AppSheetTitle(
+                tr('users_report.title_pdf'),
+                icon: Icons.receipt_long_rounded,
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text(
-                    tr('users_report.title_pdf'),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.person)),
-                  title: Text(
-                    '${widget.user.firstName} ${widget.user.lastName}',
-                  ),
-                  subtitle: Text(
-                    [
-                      if ((widget.user.fatherName ?? '').isNotEmpty)
-                        widget.user.fatherName!,
-                      if ((widget.user.mobileNumber ?? '').isNotEmpty)
-                        widget.user.mobileNumber!,
-                    ].join(' · '),
-                  ),
-                  trailing: FilledButton.icon(
-                    onPressed: _exportUserPdf,
-                    icon: const Icon(Icons.picture_as_pdf),
-                    label: Text(tr('common.export_pdf')),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String?>(
-                          value: _typeFilter,
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            labelText: 'نوع تراکنش',
-                          ),
-                          items:
-                              <String?>[
-                                null,
-                                tr('transactions.deposit'),
-                                tr('transactions.withdraw'),
-                                tr('transactions.loan_principal'),
-                                tr('transactions.loan_installment'),
-                                tr('transactions.bank_transfer'),
-                              ].map((v) {
-                                return DropdownMenuItem<String?>(
-                                  value: v,
-                                  child: Text(v ?? 'همه'),
-                                );
-                              }).toList(),
-                          onChanged: (v) {
-                            setState(() {
-                              _typeFilter = v;
-                              _future = _fetchTx(
-                                TransactionsFilterEntity(
-                                  userId: widget.user.id,
-                                  type: _typeFilter,
-                                ),
-                                limit: 20,
-                                offset: 0,
-                              );
-                            });
-                          },
-                        ),
-                      ),
+            ListTile(
+              leading: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary,
+                      AppColors.secondary.withValues(alpha: 0.9),
                     ],
                   ),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                  child: Text(
-                    tr('users_report.last20'),
-                    style: Theme.of(context).textTheme.titleSmall,
+                alignment: Alignment.center,
+                child: const Icon(Icons.person_rounded, color: Colors.white),
+              ),
+              title: Text(
+                '${widget.user.firstName} ${widget.user.lastName}',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              subtitle: Text(
+                [
+                  if ((widget.user.fatherName ?? '').isNotEmpty)
+                    widget.user.fatherName!,
+                  if ((widget.user.mobileNumber ?? '').isNotEmpty)
+                    widget.user.mobileNumber!,
+                ].join(' · '),
+              ),
+              trailing: FilledButton.icon(
+                onPressed: _exportUserPdf,
+                icon: const Icon(Icons.picture_as_pdf),
+                label: Text(tr('common.export_pdf')),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String?>(
+                      initialValue: _typeFilter,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'نوع تراکنش',
+                      ),
+                      items:
+                          <String?>[
+                            null,
+                            tr('transactions.deposit'),
+                            tr('transactions.withdraw'),
+                            tr('transactions.loan_principal'),
+                            tr('transactions.loan_installment'),
+                            tr('transactions.bank_transfer'),
+                          ].map((v) {
+                            return DropdownMenuItem<String?>(
+                              value: v,
+                              child: Text(v ?? 'همه'),
+                            );
+                          }).toList(),
+                      onChanged: (v) {
+                        setState(() {
+                          _typeFilter = v;
+                          _future = _fetchTx(
+                            TransactionsFilterEntity(
+                              userId: widget.user.id,
+                              type: _typeFilter,
+                            ),
+                            limit: 20,
+                            offset: 0,
+                          );
+                        });
+                      },
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: FutureBuilder<List<TransactionAggregate>>(
-                    future: _future,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Text(
+                tr('users_report.last20'),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            Expanded(
+              child: FutureBuilder<List<TransactionAggregate>>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final items = snapshot.data ?? [];
+                  if (items.isEmpty) {
+                    return Center(child: Text(tr('transactions.not_found')));
+                  }
+                  return FutureBuilder<
+                    ({List<int> userRunning, Map<int, int> loanRemainingByTxId})
+                  >(
+                    future: _computeRunningData(items),
+                    builder: (context, snap2) {
+                      if (!snap2.hasData) {
                         return const Center(child: CircularProgressIndicator());
                       }
-                      final items = snapshot.data ?? [];
-                      if (items.isEmpty) {
-                        return Center(
-                          child: Text(tr('transactions.not_found')),
-                        );
-                      }
-                      return FutureBuilder<
-                        ({
-                          List<int> userRunning,
-                          Map<int, int> loanRemainingByTxId,
-                        })
-                      >(
-                        future: _computeRunningData(items),
-                        builder: (context, snap2) {
-                          if (!snap2.hasData) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
+                      final computed = snap2.data!;
+                      return ListView.builder(
+                        controller: controller,
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final it = items[index];
+                          final trn = it.transaction;
+                          final isIncome = trn.amount >= 0;
+
+                          String? loanRemainingLine;
+                          String? walletRemainingLine;
+                          if (isLoanRelatedType(trn.type)) {
+                            final remaining =
+                                computed.loanRemainingByTxId[trn.id] ?? 0;
+                            loanRemainingLine =
+                                '${tr('transactions.loan_remaining')}: ${formatThousands(remaining)} ${tr('banks.rial')}';
+                          } else {
+                            final bal = computed.userRunning[index];
+                            walletRemainingLine =
+                                '${tr('users.balance')}: ${formatThousands(bal)} ${tr('banks.rial')}';
                           }
-                          final computed = snap2.data!;
-                          return ListView.builder(
-                            controller: controller,
-                            itemCount: items.length,
-                            itemBuilder: (context, index) {
-                              final it = items[index];
-                              final trn = it.transaction;
-                              final isIncome = trn.amount >= 0;
 
-                              String? loanRemainingLine;
-                              String? walletRemainingLine;
-                              if (isLoanRelatedType(trn.type)) {
-                                final remaining =
-                                    computed.loanRemainingByTxId[trn.id] ?? 0;
-                                loanRemainingLine =
-                                    '${tr('transactions.loan_remaining')}: ${formatThousands(remaining)} ${tr('banks.rial')}';
-                              } else {
-                                final bal = computed.userRunning[index];
-                                walletRemainingLine =
-                                    '${tr('users.balance')}: ${formatThousands(bal)} ${tr('banks.rial')}';
-                              }
-
-                              return ListTile(
-                                leading: BankCircleAvatar(
-                                  bankKey: it.bank.bankKey,
-                                  name:
-                                      (context.locale.languageCode == 'fa'
-                                          ? BankIcons.persianNames[it
-                                                .bank
-                                                .bankKey]
-                                          : BankIcons.englishNames[it
-                                                .bank
-                                                .bankKey]) ??
-                                      it.bank.bankKey,
-                                ),
-                                title: Text(
+                          return ListTile(
+                            leading: BankCircleAvatar(
+                              bankKey: it.bank.bankKey,
+                              name:
                                   (context.locale.languageCode == 'fa'
-                                      ? JalaliUtils.formatJalali(trn.createdAt)
-                                      : JalaliUtils.formatGregorian(
-                                          trn.createdAt,
-                                        )),
+                                      ? BankIcons.persianNames[it.bank.bankKey]
+                                      : BankIcons.englishNames[it
+                                            .bank
+                                            .bankKey]) ??
+                                  it.bank.bankKey,
+                            ),
+                            title: Text(
+                              (context.locale.languageCode == 'fa'
+                                  ? JalaliUtils.formatJalali(trn.createdAt)
+                                  : JalaliUtils.formatGregorian(trn.createdAt)),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[it.bank.bankKey] ?? it.bank.bankKey) : (BankIcons.englishNames[it.bank.bankKey] ?? it.bank.bankKey))} · ${it.bank.accountName}',
                                 ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${(context.locale.languageCode == 'fa' ? (BankIcons.persianNames[it.bank.bankKey] ?? it.bank.bankKey) : (BankIcons.englishNames[it.bank.bankKey] ?? it.bank.bankKey))} · ${it.bank.accountName}',
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${tr('transactions.type')}: ${_localizedType(context, trn.type)}',
-                                    ),
-                                    if (loanRemainingLine != null)
-                                      Text(loanRemainingLine),
-                                    if (walletRemainingLine != null)
-                                      Text(walletRemainingLine),
-                                  ],
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${tr('transactions.type')}: ${_localizedType(context, trn.type)}',
                                 ),
-                                trailing: Text(
-                                  '${formatThousands(trn.amount.abs())} ${tr('banks.rial')}',
-                                  style: TextStyle(
-                                    color: isIncome ? Colors.green : Colors.red,
-                                  ),
-                                ),
-                              );
-                            },
+                                if (loanRemainingLine != null)
+                                  Text(loanRemainingLine),
+                                if (walletRemainingLine != null)
+                                  Text(walletRemainingLine),
+                              ],
+                            ),
+                            trailing: Text(
+                              '${formatThousands(trn.amount.abs())} ${tr('banks.rial')}',
+                              style: TextStyle(
+                                color: isIncome ? Colors.green : Colors.red,
+                              ),
+                            ),
                           );
                         },
                       );
                     },
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
             ),
-          ),
+          ],
         );
       },
     );
@@ -571,15 +538,15 @@ class _UserReportSheetState extends State<_UserReportSheet> {
 
     final doc = pw.Document();
     // Resolve headers with safe fallbacks if a key is missing at runtime
-    String _safeTr(String key, String fallback) {
+    String safeTr(String key, String fallback) {
       final val = tr(key);
       return (val == key || val.trim().isEmpty) ? fallback : val;
     }
 
-    final String hDate = _safeTr('transactions.date', 'تاریخ');
-    final String hType = _safeTr('transactions.type', 'نوع');
-    final String hAmount = _safeTr('transactions.amount', 'مبلغ');
-    final String hUserBal = _safeTr('users.balance', 'موجودی');
+    final String hDate = safeTr('transactions.date', 'تاریخ');
+    final String hType = safeTr('transactions.type', 'نوع');
+    final String hAmount = safeTr('transactions.amount', 'مبلغ');
+    final String hUserBal = safeTr('users.balance', 'موجودی');
     // Prefer specific loan remaining; fallback to generic remaining
     final String hLoanRem = () {
       final v = tr('transactions.loan_remaining');
@@ -591,7 +558,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
       }
       return v;
     }();
-    final String hRow = _safeTr('transactions.row', 'ردیف');
+    final String hRow = safeTr('transactions.row', 'ردیف');
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -733,20 +700,14 @@ class _UserSheetState extends State<_UserSheet> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.user != null;
-    final padding =
-        MediaQuery.of(context).viewInsets + const EdgeInsets.all(16);
-    return Padding(
-      padding: padding,
+    return AppSheetBody(
+      title: isEdit ? tr('users.edit') : tr('users.add'),
+      icon: isEdit ? Icons.person_rounded : Icons.person_add_alt_1_rounded,
       child: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              isEdit ? tr('users.edit') : tr('users.add'),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -788,7 +749,7 @@ class _UserSheetState extends State<_UserSheet> {
                 labelText: tr('users.mobile'),
                 suffixIcon: IconButton(
                   tooltip: tr('users_report.pick_from_contacts'),
-                  icon: const Icon(Icons.contacts),
+                  icon: const Icon(Icons.contacts_rounded),
                   onPressed: _pickContactAndFill,
                 ),
               ),
@@ -799,7 +760,7 @@ class _UserSheetState extends State<_UserSheet> {
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
+              child: FilledButton.icon(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     final cubit = context.read<UsersCubit>();
@@ -822,10 +783,10 @@ class _UserSheetState extends State<_UserSheet> {
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
-                child: Text(isEdit ? tr('users.save') : tr('users.create')),
+                icon: Icon(isEdit ? Icons.save_rounded : Icons.add_rounded),
+                label: Text(isEdit ? tr('users.save') : tr('users.create')),
               ),
             ),
-            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -858,26 +819,56 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Material(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      elevation: overlapsContent ? 1 : 0,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: TextField(
-            controller: searchController,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.search),
-              hintText: hintText,
-              suffixIcon: searchController.text.isEmpty
-                  ? null
-                  : IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: onClear,
-                    ),
+      color: theme.scaffoldBackgroundColor,
+      elevation: overlapsContent ? 0.5 : 0,
+      shadowColor: Colors.black26,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: SizedBox(
+          height: 52,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: (isDark ? AppColors.darkOutline : AppColors.lightOutline)
+                    .withValues(alpha: 0.9),
+              ),
             ),
-            onChanged: onChanged,
+            child: TextField(
+              controller: searchController,
+              onChanged: onChanged,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: hintText,
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: theme.colorScheme.primary,
+                ),
+                suffixIcon: searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: onClear,
+                      ),
+                isDense: true,
+                filled: true,
+                fillColor: Colors.transparent,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -914,44 +905,98 @@ class _UserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
+    final theme = Theme.of(context);
+    final meta = [
+      user.fatherName,
+      user.mobileNumber,
+    ].where((e) => (e ?? '').isNotEmpty).join(' · ');
+
+    return AppSurface(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+      radius: 18,
+      onTap: onTap,
+      child: Row(
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: CircleAvatar(child: Text(_initials())),
-            title: Text('${user.firstName} ${user.lastName}'),
-            subtitle: Column(
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.primary,
+                  AppColors.secondary.withValues(alpha: 0.9),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              _initials(),
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  [
-                    user.fatherName,
-                    user.mobileNumber,
-                  ].where((e) => (e ?? '').isNotEmpty).join(' · '),
+                  '${user.firstName} ${user.lastName}',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 2),
-                _UserBalanceText(userId: user.id),
+                if (meta.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    meta,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.55,
+                      ),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 4),
+                DefaultTextStyle(
+                  style:
+                      theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ) ??
+                      const TextStyle(),
+                  child: _UserBalanceText(userId: user.id),
+                ),
               ],
             ),
-            trailing: PopupMenuButton<String>(
-              padding: EdgeInsets.zero,
-              onSelected: onSelectedAction,
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'add_tx',
-                  child: Text(tr('users.add_transaction')),
-                ),
-                PopupMenuItem(value: 'edit', child: Text(tr('users.edit'))),
-                PopupMenuItem(value: 'delete', child: Text(tr('users.delete'))),
-                PopupMenuItem(
-                  value: 'user_report',
-                  child: Text(tr('users_report.menu_user_report')),
-                ),
-              ],
+          ),
+          PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
             ),
-            onTap: onTap,
+            onSelected: onSelectedAction,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'add_tx',
+                child: Text(tr('users.add_transaction')),
+              ),
+              PopupMenuItem(value: 'edit', child: Text(tr('users.edit'))),
+              PopupMenuItem(value: 'delete', child: Text(tr('users.delete'))),
+              PopupMenuItem(
+                value: 'user_report',
+                child: Text(tr('users_report.menu_user_report')),
+              ),
+            ],
           ),
         ],
       ),
@@ -1019,10 +1064,9 @@ extension on _UserSheetState {
         if (!mounted) return;
         FocusScope.of(context).unfocus();
         await Future<void>.delayed(const Duration(milliseconds: 16));
-        selected = await showModalBottomSheet<String>(
+        selected = await showAppModalSheet<String>(
           context: context,
           useRootNavigator: true,
-          isScrollControlled: true,
           builder: (sheetCtx) {
             return DraggableScrollableSheet(
               expand: false,
@@ -1030,55 +1074,49 @@ extension on _UserSheetState {
               minChildSize: 0.25,
               maxChildSize: 0.9,
               builder: (ctx, scrollController) {
-                return SafeArea(
-                  top: false,
-                  child: Material(
-                    color: Theme.of(context).colorScheme.surface,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 8),
-                        Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            tr('users_report.choose_number'),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        Expanded(
-                          child: ListView.separated(
-                            controller: scrollController,
-                            itemCount: numbers.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final n = numbers[index];
-                              return ListTile(
-                                title: Text(n),
-                                onTap: () => Navigator.of(sheetCtx).pop(n),
-                              );
-                            },
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton(
-                            onPressed: () => Navigator.of(sheetCtx).pop(),
-                            child: Text(tr('common.cancel')),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
+                return Column(
+                  children: [
+                    const AppSheetHandle(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: AppSheetTitle(
+                        tr('users_report.choose_number'),
+                        icon: Icons.phone_rounded,
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: numbers.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 6),
+                        itemBuilder: (context, index) {
+                          final n = numbers[index];
+                          return AppSurface(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            radius: 14,
+                            onTap: () => Navigator.of(sheetCtx).pop(n),
+                            child: ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(Icons.call_rounded),
+                              title: Text(n),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () => Navigator.of(sheetCtx).pop(),
+                        child: Text(tr('common.cancel')),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 );
               },
             );
@@ -1139,10 +1177,9 @@ extension on _UserSheetState {
       if (!mounted) return null;
       FocusScope.of(context).unfocus();
       await Future<void>.delayed(const Duration(milliseconds: 16));
-      return await showModalBottomSheet<Contact>(
+      return await showAppModalSheet<Contact>(
         context: context,
         useRootNavigator: true,
-        isScrollControlled: true,
         builder: (sheetCtx) {
           return DraggableScrollableSheet(
             expand: false,
@@ -1150,62 +1187,67 @@ extension on _UserSheetState {
             minChildSize: 0.4,
             maxChildSize: 0.95,
             builder: (ctx, scrollController) {
-              return SafeArea(
-                top: false,
-                child: Material(
-                  color: Theme.of(context).colorScheme.surface,
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 8),
-                      Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          tr('users_report.pick_from_contacts'),
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.separated(
-                          controller: scrollController,
-                          itemCount: contactsWithPhone.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final c = contactsWithPhone[index];
-                            final display = (c.displayName).trim();
-                            final numPreview = c.phones.isNotEmpty
-                                ? c.phones.first.number
-                                : '';
-                            return ListTile(
-                              title: Text(
-                                display.isEmpty
-                                    ? tr('common.unknown_user')
-                                    : display,
-                              ),
-                              subtitle: Text(numPreview),
-                              onTap: () => Navigator.of(sheetCtx).pop(c),
-                            );
-                          },
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton(
-                          onPressed: () => Navigator.of(sheetCtx).pop(),
-                          child: Text(tr('common.cancel')),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
+              return Column(
+                children: [
+                  const AppSheetHandle(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: AppSheetTitle(
+                      tr('users_report.pick_from_contacts'),
+                      icon: Icons.contacts_rounded,
+                    ),
                   ),
-                ),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      itemCount: contactsWithPhone.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (context, index) {
+                        final c = contactsWithPhone[index];
+                        final display = (c.displayName).trim();
+                        final numPreview = c.phones.isNotEmpty
+                            ? c.phones.first.number
+                            : '';
+                        return AppSurface(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          radius: 14,
+                          onTap: () => Navigator.of(sheetCtx).pop(c),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              backgroundColor: AppColors.primary.withValues(
+                                alpha: 0.12,
+                              ),
+                              foregroundColor: AppColors.primary,
+                              child: const Icon(Icons.person_rounded),
+                            ),
+                            title: Text(
+                              display.isEmpty
+                                  ? tr('common.unknown_user')
+                                  : display,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(numPreview),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(sheetCtx).pop(),
+                      child: Text(tr('common.cancel')),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
               );
             },
           );
@@ -1225,16 +1267,16 @@ extension on _UserSheetState {
 
     // Normalize Iranian country code to leading 0
     if (s.startsWith('+98')) {
-      s = '0' + s.substring(3);
+      s = '0${s.substring(3)}';
     } else if (s.startsWith('0098')) {
-      s = '0' + s.substring(4);
+      s = '0${s.substring(4)}';
     } else if (s.startsWith('98')) {
-      s = '0' + s.substring(2);
+      s = '0${s.substring(2)}';
     }
 
     // If starts with 9 (without 0) and looks like mobile, prefix 0
     if (s.startsWith('9') && s.length >= 10) {
-      s = '0' + s;
+      s = '0$s';
     }
 
     // Remove any remaining non-digits

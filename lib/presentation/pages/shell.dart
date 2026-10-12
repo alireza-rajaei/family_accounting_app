@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 
 import '../cubits/settings_cubit.dart';
+import '../../app/theme/app_colors.dart';
 import '../../di/locator.dart';
 import '../../domain/repositories/i_backup_repository.dart';
 
@@ -57,41 +58,123 @@ class _ShellScaffoldState extends State<ShellScaffold>
     }
   }
 
+  String _titleForIndex(int index) {
+    switch (index) {
+      case 1:
+        return tr('tabs.transactions');
+      case 2:
+        return tr('tabs.loans');
+      case 3:
+        return tr('tabs.users');
+      case 4:
+        return tr('tabs.banks');
+      default:
+        return tr('app_title');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
 
+    final theme = Theme.of(context);
     final location = GoRouterState.of(context).uri.toString();
+    final index = _currentIndexByLocation(location);
 
     return Scaffold(
-      appBar: AppBar(title: Text(tr('app_title'))),
+      appBar: AppBar(
+        title: Text(
+          _titleForIndex(index),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        centerTitle: true,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0.5,
+      ),
       drawer: const _AppDrawer(),
       body: PageStorage(bucket: PageStorageBucket(), child: widget.child),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndexByLocation(location),
+      bottomNavigationBar: _AppBottomNav(
+        selectedIndex: index,
         onDestinationSelected: _onItemTapped,
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
-            label: tr('tabs.home'),
+      ),
+    );
+  }
+}
+
+class _AppBottomNav extends StatelessWidget {
+  const _AppBottomNav({
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
+    return Material(
+      color: theme.scaffoldBackgroundColor,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(12, 0, 12, 8 + (bottomInset > 0 ? 0 : 4)),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: (isDark ? AppColors.darkOutline : AppColors.lightOutline)
+                  .withValues(alpha: 0.95),
+            ),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.swap_vert),
-            label: tr('tabs.transactions'),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: NavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: onDestinationSelected,
+              destinations: [
+                NavigationDestination(
+                  icon: const Icon(Icons.home_outlined),
+                  selectedIcon: const Icon(Icons.home_rounded),
+                  label: tr('tabs.home'),
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.compare_arrows_outlined),
+                  selectedIcon: const Icon(Icons.compare_arrows_rounded),
+                  label: tr('tabs.transactions'),
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.request_quote_outlined),
+                  selectedIcon: const Icon(Icons.request_quote_rounded),
+                  label: tr('tabs.loans'),
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.people_alt_outlined),
+                  selectedIcon: const Icon(Icons.people_alt_rounded),
+                  label: tr('tabs.users'),
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.account_balance_outlined),
+                  selectedIcon: const Icon(Icons.account_balance_rounded),
+                  label: tr('tabs.banks'),
+                ),
+              ],
+            ),
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.request_quote_outlined),
-            label: tr('tabs.loans'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.people_alt_outlined),
-            label: tr('tabs.users'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.account_balance_outlined),
-            label: tr('tabs.banks'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -123,63 +206,126 @@ class _AppDrawerState extends State<_AppDrawer> {
     }
   }
 
+  Widget _drawerTile({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    VoidCallback? onTap,
+    Widget? trailing,
+  }) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: theme.colorScheme.primary, size: 20),
+      ),
+      title: Text(
+        title,
+        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      trailing: trailing,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsCubit>().state;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Drawer(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadiusDirectional.horizontal(
+          end: Radius.circular(24),
+        ),
+      ),
       child: SafeArea(
         child: Column(
           children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(0),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: isDark
+                      ? [
+                          AppColors.primary.withValues(alpha: 0.35),
+                          AppColors.secondary.withValues(alpha: 0.18),
+                        ]
+                      : [
+                          AppColors.primary,
+                          AppColors.secondary.withValues(alpha: 0.9),
+                        ],
+                ),
+              ),
+              child: Column(
                 children: [
-                  DrawerHeader(
-                    margin: EdgeInsets.zero,
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const CircleAvatar(
-                          radius: 28,
-                          child: Icon(Icons.person, size: 28),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          settings.username,
-                          style: Theme.of(context).textTheme.titleMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          settings.lastLoginAt != null
-                              ? tr(
-                                  'drawer.last_login',
-                                  namedArgs: {
-                                    'time': _formatLastLogin(
-                                      context,
-                                      settings.lastLoginAt!,
-                                    ),
-                                  },
-                                )
-                              : tr(
-                                  'drawer.last_login',
-                                  namedArgs: {'time': '-'},
-                                ),
-                          style: Theme.of(context).textTheme.bodySmall,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      color: Colors.white,
+                      size: 32,
                     ),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.person_outline),
-                    title: Text(
-                      tr('drawer.change_username'),
-                      style: Theme.of(context).textTheme.bodyMedium,
+                  const SizedBox(height: 12),
+                  Text(
+                    settings.username,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    settings.lastLoginAt != null
+                        ? tr(
+                            'drawer.last_login',
+                            namedArgs: {
+                              'time': _formatLastLogin(
+                                context,
+                                settings.lastLoginAt!,
+                              ),
+                            },
+                          )
+                        : tr(
+                            'drawer.last_login',
+                            namedArgs: {'time': '-'},
+                          ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                children: [
+                  _drawerTile(
+                    context: context,
+                    icon: Icons.person_outline_rounded,
+                    title: tr('drawer.change_username'),
                     onTap: () async {
                       final controller = TextEditingController(
                         text: settings.username,
@@ -192,14 +338,14 @@ class _AppDrawerState extends State<_AppDrawer> {
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text('انصراف'),
+                              child: Text(tr('common.cancel')),
                             ),
                             FilledButton(
                               onPressed: () => Navigator.pop(
                                 context,
                                 controller.text.trim(),
                               ),
-                              child: const Text('ذخیره'),
+                              child: Text(tr('common.ok')),
                             ),
                           ],
                         ),
@@ -210,23 +356,37 @@ class _AppDrawerState extends State<_AppDrawer> {
                     },
                   ),
                   SwitchListTile(
-                    secondary: const Icon(Icons.dark_mode_outlined),
+                    secondary: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.dark_mode_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
+                    ),
                     title: Text(
                       tr('drawer.theme'),
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     value: settings.themeMode == ThemeMode.dark,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     onChanged: (v) => context
                         .read<SettingsCubit>()
                         .setThemeMode(v ? ThemeMode.dark : ThemeMode.light),
                   ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.language),
-                    title: Text(
-                      tr('drawer.language'),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                  _drawerTile(
+                    context: context,
+                    icon: Icons.language_rounded,
+                    title: tr('drawer.language'),
                     onTap: () async {
                       final selected = await showDialog<Locale>(
                         context: context,
@@ -238,12 +398,18 @@ class _AppDrawerState extends State<_AppDrawer> {
                               ListTile(
                                 leading: const Text('🇮🇷'),
                                 title: Text(tr('lang.fa')),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 onTap: () =>
                                     Navigator.pop(context, const Locale('fa')),
                               ),
                               ListTile(
                                 leading: const Text('🇺🇸'),
                                 title: Text(tr('lang.en')),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 onTap: () =>
                                     Navigator.pop(context, const Locale('en')),
                               ),
@@ -262,34 +428,35 @@ class _AppDrawerState extends State<_AppDrawer> {
                       }
                     },
                   ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.backup_outlined),
-                    title: Text(
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                    child: Text(
                       tr('drawer.backup'),
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.45,
+                        ),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    onTap: () {
-                      _doBackup(context);
-                    },
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.restore_outlined),
-                    title: Text(
-                      tr('drawer.restore'),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    onTap: () {
-                      _doRestore(context);
-                    },
+                  _drawerTile(
+                    context: context,
+                    icon: Icons.backup_outlined,
+                    title: tr('drawer.backup'),
+                    onTap: () => _doBackup(context),
                   ),
-                  const Divider(),
-                  ListTile(
-                    leading: const Icon(Icons.info_outline),
-                    title: Text(
-                      tr('drawer.about'),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                  _drawerTile(
+                    context: context,
+                    icon: Icons.restore_outlined,
+                    title: tr('drawer.restore'),
+                    onTap: () => _doRestore(context),
+                  ),
+                  _drawerTile(
+                    context: context,
+                    icon: Icons.info_outline_rounded,
+                    title: tr('drawer.about'),
                     onTap: () {
                       showDialog(
                         context: context,
@@ -307,14 +474,10 @@ class _AppDrawerState extends State<_AppDrawer> {
                                 const SizedBox(height: 16),
                                 Text(
                                   tr('about.lead'),
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .textTheme
-                                            .bodyLarge!
-                                            .color!
-                                            .withValues(alpha: 0.2),
-                                      ),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.45),
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 Row(
@@ -322,9 +485,7 @@ class _AppDrawerState extends State<_AppDrawer> {
                                   children: [
                                     Text(
                                       tr('about.email_label'),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
+                                      style: theme.textTheme.bodySmall,
                                     ),
                                     InkWell(
                                       onTap: () async {
@@ -361,10 +522,10 @@ class _AppDrawerState extends State<_AppDrawer> {
                                           }
                                         }
                                       },
-                                      child: const Text(
+                                      child: Text(
                                         'arajaei8@gmail.com',
                                         style: TextStyle(
-                                          color: Colors.blue,
+                                          color: theme.colorScheme.primary,
                                           decoration: TextDecoration.underline,
                                         ),
                                       ),
@@ -388,11 +549,11 @@ class _AppDrawerState extends State<_AppDrawer> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                child: Text(
-                  tr('drawer.version', args: [_version ?? '-']),
-                  style: Theme.of(context).textTheme.bodySmall,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Text(
+                tr('drawer.version', args: [_version ?? '-']),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                 ),
               ),
             ),

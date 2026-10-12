@@ -34,4 +34,10 @@ abstract class ITransactionsRepository {
   });
 
   Stream<List<(String bankKey, int deposit, int withdraw)>> watchBankFlowSums();
+
+  /// Daily deposit/withdraw totals between [from] (inclusive) and [to] (exclusive).
+  Stream<List<(DateTime day, int deposit, int withdraw)>> watchDailyFlowSums({
+    required DateTime from,
+    required DateTime to,
+  });
 }
