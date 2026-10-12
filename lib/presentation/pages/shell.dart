@@ -206,45 +206,12 @@ class _AppDrawerState extends State<_AppDrawer> {
   }
 
   Future<void> _changeUsername(String current) async {
-    final controller = TextEditingController(text: current);
     final result = await showAppModalSheet<String>(
       context: context,
-      builder: (ctx) => AppSheetBody(
-        title: tr('drawer.change_username'),
-        icon: AppIcons.userEdit,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: controller,
-              autofocus: true,
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: tr('login.username'),
-                hintText: tr('drawer.username_hint'),
-                prefixIcon: const Icon(AppIcons.user),
-              ),
-              onSubmitted: (v) {
-                final trimmed = v.trim();
-                if (trimmed.isNotEmpty) Navigator.pop(ctx, trimmed);
-              },
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () {
-                final trimmed = controller.text.trim();
-                if (trimmed.isNotEmpty) Navigator.pop(ctx, trimmed);
-              },
-              icon: const Icon(AppIcons.save, size: 18),
-              label: Text(tr('common.ok')),
-            ),
-          ],
-        ),
-      ),
+      builder: (ctx) => _ChangeUsernameSheet(initial: current),
     );
-    controller.dispose();
     if (result != null && result.isNotEmpty && mounted) {
-      context.read<SettingsCubit>().setUsername(result);
+      await context.read<SettingsCubit>().setUsername(result);
     }
   }
 
@@ -526,6 +493,62 @@ class _AppDrawerState extends State<_AppDrawer> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ChangeUsernameSheet extends StatefulWidget {
+  const _ChangeUsernameSheet({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_ChangeUsernameSheet> createState() => _ChangeUsernameSheetState();
+}
+
+class _ChangeUsernameSheetState extends State<_ChangeUsernameSheet> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    FocusScope.of(context).unfocus();
+    final trimmed = _controller.text.trim();
+    if (trimmed.isNotEmpty) Navigator.pop(context, trimmed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSheetBody(
+      title: tr('drawer.change_username'),
+      icon: AppIcons.userEdit,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              labelText: tr('login.username'),
+              hintText: tr('drawer.username_hint'),
+              prefixIcon: const Icon(AppIcons.user),
+            ),
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _submit,
+            icon: const Icon(AppIcons.save, size: 18),
+            label: Text(tr('common.ok')),
+          ),
+        ],
       ),
     );
   }

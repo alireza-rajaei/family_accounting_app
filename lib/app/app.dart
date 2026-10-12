@@ -27,6 +27,11 @@ class _FamilyAccountingAppState extends State<FamilyAccountingApp> {
         BlocProvider(create: (_) => AuthCubit(locator())..check()),
       ],
       child: BlocBuilder<SettingsCubit, SettingsState>(
+        // Username / lastLogin only affect drawer UI — rebuilding MaterialApp
+        // while a sheet/drawer is open disposes Directionality mid-frame.
+        buildWhen: (prev, next) =>
+            prev.themeMode != next.themeMode ||
+            prev.fontScale != next.fontScale,
         builder: (context, state) {
           return MaterialApp.router(
             title: tr('app_title'),
