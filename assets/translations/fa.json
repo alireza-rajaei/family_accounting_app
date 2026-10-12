@@ -17,7 +17,12 @@
   "drawer": {
     "font_size": "تنظیمات سایز فونت",
     "change_username": "تغییر نام کاربری",
-    "theme": "تغییر تم (تاریک/روشن)",
+    "theme": "تم",
+    "theme_light": "روشن",
+    "theme_dark": "تاریک",
+    "section_account": "حساب کاربری",
+    "section_appearance": "ظاهر",
+    "section_data": "داده و پشتیبان",
     "backup": "پشتیبان‌گیری",
     "restore": "بازیابی پشتیبان",
     "last_login": "آخرین ورود: {time}",
@@ -27,7 +32,8 @@
     "backup_saved": "فایل پشتیبان ذخیره شد",
     "restore_done": "بازیابی با موفقیت انجام شد",
     "restore_error": "خطا در بازیابی: {error}",
-    "backup_dialog_title": "ذخیره فایل پشتیبان"
+    "backup_dialog_title": "ذخیره فایل پشتیبان",
+    "username_hint": "نام کاربری جدید"
   },
   "tabs": {
     "home": "خانه",

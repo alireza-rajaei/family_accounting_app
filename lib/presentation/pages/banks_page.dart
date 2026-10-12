@@ -8,6 +8,7 @@ import '../../app/utils/format.dart';
 import '../../di/locator.dart';
 import '../../domain/entities/bank.dart';
 import '../cubits/banks_cubit.dart';
+import '../../app/theme/app_icons.dart';
 
 class BanksPage extends StatelessWidget {
   const BanksPage({super.key});
@@ -66,7 +67,7 @@ class _BanksViewState extends State<_BanksView> {
                   if (state.banks.isEmpty) {
                     return AppEmptyState(
                       message: tr('banks.not_found'),
-                      icon: Icons.account_balance_outlined,
+                      icon: AppIcons.banks,
                     );
                   }
                   return ListView.separated(
@@ -125,7 +126,7 @@ class _BanksViewState extends State<_BanksView> {
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
-                                    Icons.more_horiz_rounded,
+                                    AppIcons.more,
                                     color: Colors.white,
                                     size: 20,
                                   ),
@@ -319,7 +320,7 @@ class _BanksViewState extends State<_BanksView> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openBankSheet(context),
-        icon: const Icon(Icons.add_rounded),
+        icon: const Icon(AppIcons.add),
         label: Text(tr('banks.add')),
       ),
     );
@@ -386,7 +387,7 @@ class _BankSheetState extends State<_BankSheet> {
     final isEdit = widget.bank != null;
     return AppSheetBody(
       title: isEdit ? tr('banks.edit') : tr('banks.add'),
-      icon: Icons.account_balance_rounded,
+      icon: AppIcons.banksFilled,
       child: Form(
         key: _formKey,
         child: Column(
@@ -449,7 +450,7 @@ class _BankSheetState extends State<_BankSheet> {
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
-                icon: Icon(isEdit ? Icons.save_rounded : Icons.add_rounded),
+                icon: Icon(isEdit ? AppIcons.save : AppIcons.add),
                 label: Text(isEdit ? tr('banks.save') : tr('banks.create')),
               ),
             ),

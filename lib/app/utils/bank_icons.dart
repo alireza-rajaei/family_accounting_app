@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../app/theme/app_icons.dart';
 
 class BankIcons {
   BankIcons._();
@@ -66,7 +67,7 @@ class BankIcons {
   static Widget logo(String bankKey, {double size = 140, Color? color}) {
     final path = _keyToAsset[bankKey];
     if (path == null) {
-      return Icon(Icons.account_balance, size: size, color: color);
+      return Icon(AppIcons.banks, size: size, color: color);
     }
     if (path.toLowerCase().endsWith('.svg')) {
       return SvgPicture.asset(

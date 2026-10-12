@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/app_colors.dart';
 import '../cubits/auth_cubit.dart';
 import '../cubits/settings_cubit.dart';
+import '../../app/theme/app_icons.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -88,7 +89,7 @@ class _LoginPageState extends State<LoginPage>
           ),
           content: Row(
             children: [
-              const Icon(Icons.error_outline_rounded, color: Colors.white),
+              const Icon(AppIcons.error, color: Colors.white),
               const SizedBox(width: 10),
               Expanded(child: Text(tr('login.invalid'))),
             ],
@@ -196,7 +197,7 @@ class _LoginPageState extends State<LoginPage>
                                           decoration: InputDecoration(
                                             labelText: tr('login.username'),
                                             prefixIcon: const Icon(
-                                              Icons.person_outline_rounded,
+                                              AppIcons.user,
                                             ),
                                           ),
                                           validator: (v) =>
@@ -218,7 +219,7 @@ class _LoginPageState extends State<LoginPage>
                                           decoration: InputDecoration(
                                             labelText: tr('login.password'),
                                             prefixIcon: const Icon(
-                                              Icons.lock_outline_rounded,
+                                              AppIcons.lock,
                                             ),
                                             suffixIcon: IconButton(
                                               tooltip: _obscurePassword
@@ -230,9 +231,8 @@ class _LoginPageState extends State<LoginPage>
                                               ),
                                               icon: Icon(
                                                 _obscurePassword
-                                                    ? Icons.visibility_outlined
-                                                    : Icons
-                                                          .visibility_off_outlined,
+                                                    ? AppIcons.eye
+                                                    : AppIcons.eyeSlash,
                                               ),
                                             ),
                                           ),
@@ -262,9 +262,8 @@ class _LoginPageState extends State<LoginPage>
                                                   children: [
                                                     Icon(
                                                       isSetup
-                                                          ? Icons
-                                                                .person_add_alt_1_rounded
-                                                          : Icons.login_rounded,
+                                                          ? AppIcons.userAdd
+                                                          : AppIcons.login,
                                                       size: 20,
                                                     ),
                                                     const SizedBox(width: 8),

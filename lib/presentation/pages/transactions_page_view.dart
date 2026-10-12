@@ -33,7 +33,7 @@ class _TransactionsView extends StatelessWidget {
                   if (state.items.isEmpty) {
                     return AppEmptyState(
                       message: tr('transactions.not_found'),
-                      icon: Icons.compare_arrows_outlined,
+                      icon: AppIcons.transactions,
                     );
                   }
                   return FutureBuilder<
@@ -247,7 +247,7 @@ class _TransactionsView extends StatelessWidget {
             context.read<TransactionsCubit>().watch();
           }
         },
-        icon: const Icon(Icons.add_rounded),
+        icon: const Icon(AppIcons.add),
         label: Text(tr('transactions.create')),
       ),
     );
@@ -374,7 +374,7 @@ class _FiltersButton extends StatelessWidget {
             alignment: Alignment.topRight,
             children: [
               IconButton.filledTonal(
-                icon: const Icon(Icons.tune_rounded),
+                icon: const Icon(AppIcons.tune),
                 tooltip: tr('transactions.filters'),
                 onPressed: () {
                   final parentContext = context;

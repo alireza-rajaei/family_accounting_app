@@ -1,21 +1,22 @@
 import 'dart:convert';
 import 'dart:io' as io;
-import 'dart:typed_data';
+
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:shamsi_date/shamsi_date.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:intl/intl.dart';
 
-import '../cubits/settings_cubit.dart';
 import '../../app/theme/app_colors.dart';
+import '../../app/theme/app_icons.dart';
+import '../../app/theme/app_ui.dart';
 import '../../di/locator.dart';
 import '../../domain/repositories/i_backup_repository.dart';
+import '../cubits/settings_cubit.dart';
 
 class ShellScaffold extends StatefulWidget {
   final Widget child;
@@ -147,28 +148,28 @@ class _AppBottomNav extends StatelessWidget {
               onDestinationSelected: onDestinationSelected,
               destinations: [
                 NavigationDestination(
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: const Icon(Icons.home_rounded),
+                  icon: const Icon(AppIcons.home),
+                  selectedIcon: const Icon(AppIcons.homeFilled),
                   label: tr('tabs.home'),
                 ),
                 NavigationDestination(
-                  icon: const Icon(Icons.compare_arrows_outlined),
-                  selectedIcon: const Icon(Icons.compare_arrows_rounded),
+                  icon: const Icon(AppIcons.transactions),
+                  selectedIcon: const Icon(AppIcons.transactionsFilled),
                   label: tr('tabs.transactions'),
                 ),
                 NavigationDestination(
-                  icon: const Icon(Icons.request_quote_outlined),
-                  selectedIcon: const Icon(Icons.request_quote_rounded),
+                  icon: const Icon(AppIcons.loans),
+                  selectedIcon: const Icon(AppIcons.loansFilled),
                   label: tr('tabs.loans'),
                 ),
                 NavigationDestination(
-                  icon: const Icon(Icons.people_alt_outlined),
-                  selectedIcon: const Icon(Icons.people_alt_rounded),
+                  icon: const Icon(AppIcons.users),
+                  selectedIcon: const Icon(AppIcons.usersFilled),
                   label: tr('tabs.users'),
                 ),
                 NavigationDestination(
-                  icon: const Icon(Icons.account_balance_outlined),
-                  selectedIcon: const Icon(Icons.account_balance_rounded),
+                  icon: const Icon(AppIcons.banks),
+                  selectedIcon: const Icon(AppIcons.banksFilled),
                   label: tr('tabs.banks'),
                 ),
               ],
@@ -198,40 +199,170 @@ class _AppDrawerState extends State<_AppDrawer> {
   Future<void> _loadVersion() async {
     try {
       final info = await PackageInfo.fromPlatform();
-      if (mounted) {
-        setState(() => _version = '${info.version}');
-      }
+      if (mounted) setState(() => _version = info.version);
     } catch (_) {
       if (mounted) setState(() => _version = null);
     }
   }
 
-  Widget _drawerTile({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    VoidCallback? onTap,
-    Widget? trailing,
-  }) {
-    final theme = Theme.of(context);
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
+  Future<void> _changeUsername(String current) async {
+    final controller = TextEditingController(text: current);
+    final result = await showAppModalSheet<String>(
+      context: context,
+      builder: (ctx) => AppSheetBody(
+        title: tr('drawer.change_username'),
+        icon: AppIcons.userEdit,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: controller,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                labelText: tr('login.username'),
+                hintText: tr('drawer.username_hint'),
+                prefixIcon: const Icon(AppIcons.user),
+              ),
+              onSubmitted: (v) {
+                final trimmed = v.trim();
+                if (trimmed.isNotEmpty) Navigator.pop(ctx, trimmed);
+              },
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () {
+                final trimmed = controller.text.trim();
+                if (trimmed.isNotEmpty) Navigator.pop(ctx, trimmed);
+              },
+              icon: const Icon(AppIcons.save, size: 18),
+              label: Text(tr('common.ok')),
+            ),
+          ],
         ),
-        child: Icon(icon, color: theme.colorScheme.primary, size: 20),
       ),
-      title: Text(
-        title,
-        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+    );
+    controller.dispose();
+    if (result != null && result.isNotEmpty && mounted) {
+      context.read<SettingsCubit>().setUsername(result);
+    }
+  }
+
+  Future<void> _pickLanguage() async {
+    final current = context.locale.languageCode;
+    final selected = await showAppModalSheet<Locale>(
+      context: context,
+      builder: (ctx) => AppSheetBody(
+        title: tr('drawer.language'),
+        icon: AppIcons.language,
+        child: Column(
+          children: [
+            _LangOption(
+              label: tr('lang.fa'),
+              flag: '🇮🇷',
+              selected: current == 'fa',
+              onTap: () => Navigator.pop(ctx, const Locale('fa')),
+            ),
+            const SizedBox(height: 8),
+            _LangOption(
+              label: tr('lang.en'),
+              flag: '🇺🇸',
+              selected: current == 'en',
+              onTap: () => Navigator.pop(ctx, const Locale('en')),
+            ),
+          ],
+        ),
       ),
-      trailing: trailing,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+    );
+    if (selected != null && mounted) {
+      await context.setLocale(selected);
+    }
+  }
+
+  void _showAbout() {
+    final theme = Theme.of(context);
+    showAppModalSheet<void>(
+      context: context,
+      builder: (ctx) => AppSheetBody(
+        title: tr('about.title'),
+        icon: AppIcons.info,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(tr('about.body'), style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 16),
+            Text(
+              tr('about.lead'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () async {
+                final uri = Uri(
+                  scheme: 'mailto',
+                  path: 'arajaei8@gmail.com',
+                  queryParameters: const {
+                    'subject': 'Feedback - Family Accounting App',
+                  },
+                );
+                final launched = await launchUrl(
+                  uri,
+                  mode: LaunchMode.externalApplication,
+                );
+                if (!launched) {
+                  await Clipboard.setData(
+                    const ClipboardData(text: 'arajaei8@gmail.com'),
+                  );
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text(tr('about.email_copy_fallback'))),
+                    );
+                  }
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    AppIconBadge(icon: AppIcons.phone, size: 36),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tr('about.email_label'),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.55,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'arajaei8@gmail.com',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(tr('common.ok')),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -240,324 +371,546 @@ class _AppDrawerState extends State<_AppDrawer> {
     final settings = context.watch<SettingsCubit>().state;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final outline = (isDark ? AppColors.darkOutline : AppColors.lightOutline)
+        .withValues(alpha: 0.95);
+    final langLabel = context.locale.languageCode == 'fa'
+        ? tr('lang.fa')
+        : tr('lang.en');
+    final initial = settings.username.isNotEmpty
+        ? settings.username.characters.first.toUpperCase()
+        : '?';
 
     return Drawer(
+      backgroundColor: theme.scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadiusDirectional.horizontal(
-          end: Radius.circular(24),
+          end: Radius.circular(28),
         ),
       ),
       child: SafeArea(
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                  colors: isDark
-                      ? [
-                          AppColors.primary.withValues(alpha: 0.35),
-                          AppColors.secondary.withValues(alpha: 0.18),
-                        ]
-                      : [
-                          AppColors.primary,
-                          AppColors.secondary.withValues(alpha: 0.9),
-                        ],
-                ),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    settings.username,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    settings.lastLoginAt != null
-                        ? tr(
-                            'drawer.last_login',
-                            namedArgs: {
-                              'time': _formatLastLogin(
-                                context,
-                                settings.lastLoginAt!,
-                              ),
-                            },
-                          )
-                        : tr(
-                            'drawer.last_login',
-                            namedArgs: {'time': '-'},
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+              child: _DrawerHeader(
+                username: settings.username,
+                initial: initial,
+                lastLogin: settings.lastLoginAt != null
+                    ? tr(
+                        'drawer.last_login',
+                        namedArgs: {
+                          'time': _formatLastLogin(
+                            context,
+                            settings.lastLoginAt!,
                           ),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                        },
+                      )
+                    : tr('drawer.last_login', namedArgs: {'time': '-'}),
               ),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
                 children: [
-                  _drawerTile(
-                    context: context,
-                    icon: Icons.person_outline_rounded,
-                    title: tr('drawer.change_username'),
-                    onTap: () async {
-                      final controller = TextEditingController(
-                        text: settings.username,
-                      );
-                      final result = await showDialog<String>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(tr('login.username')),
-                          content: TextField(controller: controller),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text(tr('common.cancel')),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(
-                                context,
-                                controller.text.trim(),
+                  _DrawerSectionLabel(tr('drawer.section_account')),
+                  AppSurface(
+                    padding: EdgeInsets.zero,
+                    radius: 18,
+                    child: _DrawerTile(
+                      icon: AppIcons.userEdit,
+                      title: tr('drawer.change_username'),
+                      subtitle: settings.username,
+                      onTap: () => _changeUsername(settings.username),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _DrawerSectionLabel(tr('drawer.section_appearance')),
+                  AppSurface(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                    radius: 18,
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            AppIconBadge(icon: AppIcons.moon, size: 40),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                tr('drawer.theme'),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                              child: Text(tr('common.ok')),
                             ),
                           ],
                         ),
-                      );
-                      if (result != null && result.isNotEmpty) {
-                        context.read<SettingsCubit>().setUsername(result);
-                      }
-                    },
-                  ),
-                  SwitchListTile(
-                    secondary: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.dark_mode_outlined,
-                        color: theme.colorScheme.primary,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      tr('drawer.theme'),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    value: settings.themeMode == ThemeMode.dark,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    onChanged: (v) => context
-                        .read<SettingsCubit>()
-                        .setThemeMode(v ? ThemeMode.dark : ThemeMode.light),
-                  ),
-                  _drawerTile(
-                    context: context,
-                    icon: Icons.language_rounded,
-                    title: tr('drawer.language'),
-                    onTap: () async {
-                      final selected = await showDialog<Locale>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(tr('drawer.language')),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: const Text('🇮🇷'),
-                                title: Text(tr('lang.fa')),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                onTap: () =>
-                                    Navigator.pop(context, const Locale('fa')),
+                        const SizedBox(height: 12),
+                        _ThemeSegmented(
+                          isDark: settings.themeMode == ThemeMode.dark,
+                          onChanged: (dark) =>
+                              context.read<SettingsCubit>().setThemeMode(
+                                dark ? ThemeMode.dark : ThemeMode.light,
                               ),
-                              ListTile(
-                                leading: const Text('🇺🇸'),
-                                title: Text(tr('lang.en')),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                onTap: () =>
-                                    Navigator.pop(context, const Locale('en')),
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text(tr('common.cancel')),
-                            ),
-                          ],
                         ),
-                      );
-                      if (selected != null) {
-                        await context.setLocale(selected);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                    child: Text(
-                      tr('drawer.backup'),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.45,
+                        const SizedBox(height: 4),
+                        Divider(height: 20, color: outline),
+                        _DrawerTile(
+                          icon: AppIcons.language,
+                          title: tr('drawer.language'),
+                          trailingLabel: langLabel,
+                          dense: true,
+                          onTap: _pickLanguage,
                         ),
-                        fontWeight: FontWeight.w700,
-                      ),
+                      ],
                     ),
                   ),
-                  _drawerTile(
-                    context: context,
-                    icon: Icons.backup_outlined,
-                    title: tr('drawer.backup'),
-                    onTap: () => _doBackup(context),
-                  ),
-                  _drawerTile(
-                    context: context,
-                    icon: Icons.restore_outlined,
-                    title: tr('drawer.restore'),
-                    onTap: () => _doRestore(context),
-                  ),
-                  _drawerTile(
-                    context: context,
-                    icon: Icons.info_outline_rounded,
-                    title: tr('drawer.about'),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(tr('about.title')),
-                          content: SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tr('about.body'),
-                                  textAlign: TextAlign.start,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  tr('about.lead'),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.45),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      tr('about.email_label'),
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                    InkWell(
-                                      onTap: () async {
-                                        final uri = Uri(
-                                          scheme: 'mailto',
-                                          path: 'arajaei8@gmail.com',
-                                          queryParameters: const {
-                                            'subject':
-                                                'Feedback - Family Accounting App',
-                                          },
-                                        );
-                                        final launched = await launchUrl(
-                                          uri,
-                                          mode: LaunchMode.externalApplication,
-                                        );
-                                        if (!launched) {
-                                          await Clipboard.setData(
-                                            const ClipboardData(
-                                              text: 'arajaei8@gmail.com',
-                                            ),
-                                          );
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  tr(
-                                                    'about.email_copy_fallback',
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      },
-                                      child: Text(
-                                        'arajaei8@gmail.com',
-                                        style: TextStyle(
-                                          color: theme.colorScheme.primary,
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text(tr('common.ok')),
-                            ),
-                          ],
+                  const SizedBox(height: 14),
+                  _DrawerSectionLabel(tr('drawer.section_data')),
+                  AppSurface(
+                    padding: EdgeInsets.zero,
+                    radius: 18,
+                    child: Column(
+                      children: [
+                        _DrawerTile(
+                          icon: AppIcons.backup,
+                          title: tr('drawer.backup'),
+                          onTap: () => _doBackup(context),
                         ),
-                      );
-                    },
+                        Divider(height: 1, indent: 68, color: outline),
+                        _DrawerTile(
+                          icon: AppIcons.restore,
+                          title: tr('drawer.restore'),
+                          onTap: () => _doRestore(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  AppSurface(
+                    padding: EdgeInsets.zero,
+                    radius: 18,
+                    child: _DrawerTile(
+                      icon: AppIcons.info,
+                      title: tr('drawer.about'),
+                      onTap: _showAbout,
+                    ),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Text(
-                tr('drawer.version', args: [_version ?? '-']),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-                ),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              child: Column(
+                children: [
+                  Text(
+                    tr('app_title'),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    tr(
+                      'drawer.version',
+                      namedArgs: {'version': _version ?? '-'},
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.45,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerHeader extends StatelessWidget {
+  const _DrawerHeader({
+    required this.username,
+    required this.initial,
+    required this.lastLogin,
+  });
+
+  final String username;
+  final String initial;
+  final String lastLogin;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: isDark
+              ? [
+                  AppColors.primary.withValues(alpha: 0.42),
+                  AppColors.secondary.withValues(alpha: 0.22),
+                ]
+              : [
+                  AppColors.primary,
+                  Color.lerp(AppColors.primary, AppColors.secondary, 0.7)!,
+                ],
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.28),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.22),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.35),
+                width: 1.5,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initial,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tr('app_title'),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  username,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  lastLogin,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.82),
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DrawerSectionLabel extends StatelessWidget {
+  const _DrawerSectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      child: Text(
+        text,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerTile extends StatelessWidget {
+  const _DrawerTile({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.trailingLabel,
+    this.onTap,
+    this.dense = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final String? trailingLabel;
+  final VoidCallback? onTap;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final flipChevron = Directionality.of(context).name != 'rtl';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: dense ? 0 : 12,
+            vertical: dense ? 8 : 12,
+          ),
+          child: Row(
+            children: [
+              AppIconBadge(icon: icon, size: 40),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailingLabel != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    trailingLabel!,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
+              Transform.flip(
+                flipX: flipChevron,
+                child: Icon(
+                  AppIcons.chevron,
+                  size: 16,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeSegmented extends StatelessWidget {
+  const _ThemeSegmented({required this.isDark, required this.onChanged});
+
+  final bool isDark;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final outline =
+        (theme.brightness == Brightness.dark
+                ? AppColors.darkOutline
+                : AppColors.lightOutline)
+            .withValues(alpha: 0.95);
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: outline),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ThemeChip(
+              icon: AppIcons.sun,
+              label: tr('drawer.theme_light'),
+              selected: !isDark,
+              onTap: () => onChanged(false),
+            ),
+          ),
+          Expanded(
+            child: _ThemeChip(
+              icon: AppIcons.moon,
+              label: tr('drawer.theme_dark'),
+              selected: isDark,
+              onTap: () => onChanged(true),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeChip extends StatelessWidget {
+  const _ThemeChip({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: selected ? theme.colorScheme.primary : Colors.transparent,
+      borderRadius: BorderRadius.circular(11),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: selected
+                    ? Colors.white
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.55),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: selected
+                      ? Colors.white
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LangOption extends StatelessWidget {
+  const _LangOption({
+    required this.label,
+    required this.flag,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String flag;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final outline = (isDark ? AppColors.darkOutline : AppColors.lightOutline)
+        .withValues(alpha: 0.95);
+
+    return Material(
+      color: selected
+          ? theme.colorScheme.primary.withValues(alpha: 0.1)
+          : theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: selected ? theme.colorScheme.primary : outline,
+          width: selected ? 1.4 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+              Text(flag, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (selected)
+                Icon(
+                  AppIcons.check,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -578,49 +931,6 @@ String _formatLastLogin(BuildContext context, DateTime dt) {
     return _formatJalaliFull(dt);
   }
   return DateFormat('EEE, MMM d, yyyy').format(dt);
-}
-
-class _FontScaleDialog extends StatefulWidget {
-  final double current;
-  const _FontScaleDialog({required this.current});
-  @override
-  State<_FontScaleDialog> createState() => _FontScaleDialogState();
-}
-
-class _FontScaleDialogState extends State<_FontScaleDialog> {
-  late double value = widget.current;
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('اندازه فونت'),
-      content: SizedBox(
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Slider(
-              min: 0.8,
-              max: 1.4,
-              divisions: 12,
-              value: value,
-              label: 'x${value.toStringAsFixed(2)}',
-              onChanged: (v) => setState(() => value = v),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('انصراف'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, value),
-          child: const Text('تأیید'),
-        ),
-      ],
-    );
-  }
 }
 
 Future<void> _doBackup(BuildContext context) async {

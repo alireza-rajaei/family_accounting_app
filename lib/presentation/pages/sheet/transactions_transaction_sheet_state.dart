@@ -51,7 +51,7 @@ class _TransactionSheetState extends State<TransactionSheet> {
     ];
     return AppSheetBody(
       title: isEdit ? tr('transactions.save') : tr('transactions.create'),
-      icon: isEdit ? Icons.edit_rounded : Icons.add_card_rounded,
+      icon: isEdit ? AppIcons.edit : AppIcons.card,
       child: Form(
         key: _formKey,
         child: Column(

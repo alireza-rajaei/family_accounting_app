@@ -106,7 +106,7 @@ Future<int?> _showBankPicker(
 
           return AppSheetBody(
             title: tr('transactions.search_bank'),
-            icon: Icons.account_balance_outlined,
+            icon: AppIcons.banks,
             scrollable: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -115,7 +115,7 @@ Future<int?> _showBankPicker(
                   controller: controller,
                   decoration: InputDecoration(
                     hintText: tr('transactions.search_bank'),
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    prefixIcon: const Icon(AppIcons.search),
                   ),
                   onChanged: apply,
                 ),
@@ -181,7 +181,7 @@ Future<int?> _showUserPicker(BuildContext context, UsersState state) async {
 
           return AppSheetBody(
             title: tr('transactions.search_user'),
-            icon: Icons.person_search_rounded,
+            icon: AppIcons.userSearch,
             scrollable: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -190,7 +190,7 @@ Future<int?> _showUserPicker(BuildContext context, UsersState state) async {
                   controller: controller,
                   decoration: InputDecoration(
                     hintText: tr('transactions.search_user'),
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    prefixIcon: const Icon(AppIcons.search),
                   ),
                   onChanged: apply,
                 ),

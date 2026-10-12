@@ -425,7 +425,7 @@ class _ActivityStatsCard extends StatelessWidget {
                   builder: (context, state) => _StatTile(
                     label: tr('home.stats_users'),
                     value: state.users.length.toString(),
-                    icon: Icons.people_alt_outlined,
+                    icon: AppIcons.users,
                     accent: AppColors.primary,
                   ),
                 ),
@@ -436,7 +436,7 @@ class _ActivityStatsCard extends StatelessWidget {
                   builder: (context, state) => _StatTile(
                     label: tr('home.stats_transactions'),
                     value: state.items.length.toString(),
-                    icon: Icons.compare_arrows_outlined,
+                    icon: AppIcons.transactions,
                     accent: AppColors.secondary,
                   ),
                 ),
@@ -466,7 +466,7 @@ class _ActivityStatsCard extends StatelessWidget {
                         child: _StatTile(
                           label: tr('home.year_transactions'),
                           value: trCount.toString(),
-                          icon: Icons.receipt_long_outlined,
+                          icon: AppIcons.receipt,
                           accent: AppColors.success,
                         ),
                       ),
@@ -475,7 +475,7 @@ class _ActivityStatsCard extends StatelessWidget {
                         child: _StatTile(
                           label: tr('home.year_loans'),
                           value: loansCount.toString(),
-                          icon: Icons.request_quote_outlined,
+                          icon: AppIcons.loans,
                           accent: AppColors.warning,
                         ),
                       ),

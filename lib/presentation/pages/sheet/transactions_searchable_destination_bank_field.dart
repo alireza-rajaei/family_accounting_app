@@ -69,7 +69,7 @@ class _SearchableDestinationBankFieldState
                 padding: const EdgeInsets.all(8),
                 child: BankIcons.logo(bankKey, size: 20),
               ),
-        suffixIcon: const Icon(Icons.search),
+        suffixIcon: const Icon(AppIcons.search),
       ),
       onTap: () async {
         final state = context.read<BanksCubit>().state;

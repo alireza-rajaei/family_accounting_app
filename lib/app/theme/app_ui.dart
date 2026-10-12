@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_icons.dart';
 
 /// Shared surface used across Home / lists / forms.
 class AppSurface extends StatelessWidget {
@@ -100,13 +101,13 @@ class AppSearchField extends StatelessWidget {
         decoration: InputDecoration(
           hintText: hintText,
           prefixIcon: Icon(
-            Icons.search_rounded,
+            AppIcons.search,
             color: theme.colorScheme.primary,
           ),
           suffixIcon: controller.text.isEmpty
               ? null
               : IconButton(
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const Icon(AppIcons.close),
                   onPressed: () {
                     controller.clear();
                     onClear?.call();
@@ -136,7 +137,7 @@ class AppEmptyState extends StatelessWidget {
   const AppEmptyState({
     super.key,
     required this.message,
-    this.icon = Icons.inbox_outlined,
+    this.icon = AppIcons.empty,
   });
 
   final String message;

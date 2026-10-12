@@ -52,7 +52,7 @@ class _SearchableUserFieldState extends State<_SearchableUserField> {
           validator: (_) => widget.validator?.call(),
           decoration: InputDecoration(
             labelText: tr('loans.user'),
-            suffixIcon: const Icon(Icons.search),
+            suffixIcon: const Icon(AppIcons.search),
           ),
           onTap: () async {
             final picked = await _showUserPicker(context, state);

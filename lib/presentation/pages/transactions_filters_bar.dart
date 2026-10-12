@@ -14,7 +14,7 @@ class _FiltersBar extends StatelessWidget {
             const AppSheetHandle(),
             AppSheetTitle(
               tr('transactions.filters'),
-              icon: Icons.tune_rounded,
+              icon: AppIcons.tune,
             ),
             Wrap(
               spacing: 8,
@@ -33,7 +33,7 @@ class _FiltersBar extends StatelessWidget {
                             suffixIcon: cubit.state.filter.type == null
                                 ? null
                                 : IconButton(
-                                    icon: const Icon(Icons.close),
+                                    icon: const Icon(AppIcons.close),
                                     tooltip: tr('common.clear'),
                                     onPressed: () {
                                       cubit.updateFilter(
@@ -141,9 +141,9 @@ class _FilterBankFieldState extends State<_FilterBankField> {
                   child: BankIcons.logo(bankKey, size: 20),
                 ),
           suffixIcon: filter.bankId == null
-              ? const Icon(Icons.search)
+              ? const Icon(AppIcons.search)
               : IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(AppIcons.close),
                   onPressed: () => cubit.updateFilter(
                     TransactionsFilterEntity(
                       from: filter.from,
@@ -204,9 +204,9 @@ class _FilterUserFieldState extends State<_FilterUserField> {
         decoration: InputDecoration(
           labelText: tr('transactions.search_user'),
           suffixIcon: filter.userId == null
-              ? const Icon(Icons.search)
+              ? const Icon(AppIcons.search)
               : IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(AppIcons.close),
                   onPressed: () => cubit.updateFilter(
                     TransactionsFilterEntity(
                       from: filter.from,

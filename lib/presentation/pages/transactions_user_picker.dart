@@ -24,7 +24,7 @@ class _UserPicker extends StatelessWidget {
               suffixIcon: sel == null
                   ? null
                   : IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(AppIcons.close),
                       tooltip: tr('common.clear'),
                       onPressed: () {
                         final c = context.read<TransactionsCubit>();

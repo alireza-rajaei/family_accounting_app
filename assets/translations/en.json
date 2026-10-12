@@ -17,7 +17,12 @@
     "drawer": {
         "font_size": "Font size",
         "change_username": "Change username",
-        "theme": "Theme (dark/light)",
+        "theme": "Theme",
+        "theme_light": "Light",
+        "theme_dark": "Dark",
+        "section_account": "Account",
+        "section_appearance": "Appearance",
+        "section_data": "Data & backup",
         "backup": "Backup",
         "restore": "Restore",
         "last_login": "Last login: {time}",
@@ -27,7 +32,8 @@
         "backup_saved": "Backup file saved",
         "restore_done": "Restore completed",
         "restore_error": "Restore error: {error}",
-        "backup_dialog_title": "Save backup file"
+        "backup_dialog_title": "Save backup file",
+        "username_hint": "New username"
     },
     "tabs": {
         "home": "Home",

@@ -25,6 +25,7 @@ import '../../domain/usecases/users_usecases.dart';
 import '../cubits/users_cubit.dart';
 // removed: not needed here after using openTransactionSheet
 import 'transactions_page.dart' show showTransactionSheet;
+import '../../app/theme/app_icons.dart';
 
 class UsersPage extends StatelessWidget {
   const UsersPage({super.key});
@@ -140,7 +141,7 @@ class _UsersViewState extends State<_UsersView> {
                         hasScrollBody: false,
                         child: AppEmptyState(
                           message: tr('users.not_found'),
-                          icon: Icons.people_alt_outlined,
+                          icon: AppIcons.users,
                         ),
                       ),
                     if (!state.loading && users.isNotEmpty)
@@ -154,7 +155,7 @@ class _UsersViewState extends State<_UsersView> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openUserSheet(context),
-        icon: const Icon(Icons.person_add_alt_1_rounded),
+        icon: const Icon(AppIcons.userAdd),
         label: Text(tr('users.add')),
       ),
     );
@@ -333,7 +334,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
               child: AppSheetTitle(
                 tr('users_report.title_pdf'),
-                icon: Icons.receipt_long_rounded,
+                icon: AppIcons.receipt,
               ),
             ),
             ListTile(
@@ -350,7 +351,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 alignment: Alignment.center,
-                child: const Icon(Icons.person_rounded, color: Colors.white),
+                child: const Icon(AppIcons.user, color: Colors.white),
               ),
               title: Text(
                 '${widget.user.firstName} ${widget.user.lastName}',
@@ -366,7 +367,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
               ),
               trailing: FilledButton.icon(
                 onPressed: _exportUserPdf,
-                icon: const Icon(Icons.picture_as_pdf),
+                icon: const Icon(AppIcons.pdf),
                 label: Text(tr('common.export_pdf')),
               ),
             ),
@@ -702,7 +703,7 @@ class _UserSheetState extends State<_UserSheet> {
     final isEdit = widget.user != null;
     return AppSheetBody(
       title: isEdit ? tr('users.edit') : tr('users.add'),
-      icon: isEdit ? Icons.person_rounded : Icons.person_add_alt_1_rounded,
+      icon: isEdit ? AppIcons.user : AppIcons.userAdd,
       child: Form(
         key: _formKey,
         child: Column(
@@ -749,7 +750,7 @@ class _UserSheetState extends State<_UserSheet> {
                 labelText: tr('users.mobile'),
                 suffixIcon: IconButton(
                   tooltip: tr('users_report.pick_from_contacts'),
-                  icon: const Icon(Icons.contacts_rounded),
+                  icon: const Icon(AppIcons.contacts),
                   onPressed: _pickContactAndFill,
                 ),
               ),
@@ -783,7 +784,7 @@ class _UserSheetState extends State<_UserSheet> {
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
-                icon: Icon(isEdit ? Icons.save_rounded : Icons.add_rounded),
+                icon: Icon(isEdit ? AppIcons.save : AppIcons.add),
                 label: Text(isEdit ? tr('users.save') : tr('users.create')),
               ),
             ),
@@ -845,13 +846,13 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
               decoration: InputDecoration(
                 hintText: hintText,
                 prefixIcon: Icon(
-                  Icons.search_rounded,
+                  AppIcons.search,
                   color: theme.colorScheme.primary,
                 ),
                 suffixIcon: searchController.text.isEmpty
                     ? null
                     : IconButton(
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(AppIcons.close),
                         onPressed: onClear,
                       ),
                 isDense: true,
@@ -981,7 +982,7 @@ class _UserTile extends StatelessWidget {
           PopupMenuButton<String>(
             padding: EdgeInsets.zero,
             icon: Icon(
-              Icons.more_vert_rounded,
+              AppIcons.more,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
             ),
             onSelected: onSelectedAction,
@@ -1081,7 +1082,7 @@ extension on _UserSheetState {
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: AppSheetTitle(
                         tr('users_report.choose_number'),
-                        icon: Icons.phone_rounded,
+                        icon: AppIcons.phone,
                       ),
                     ),
                     Expanded(
@@ -1101,7 +1102,7 @@ extension on _UserSheetState {
                             onTap: () => Navigator.of(sheetCtx).pop(n),
                             child: ListTile(
                               contentPadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.call_rounded),
+                              leading: const Icon(AppIcons.call),
                               title: Text(n),
                             ),
                           );
@@ -1194,7 +1195,7 @@ extension on _UserSheetState {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: AppSheetTitle(
                       tr('users_report.pick_from_contacts'),
-                      icon: Icons.contacts_rounded,
+                      icon: AppIcons.contacts,
                     ),
                   ),
                   Expanded(
@@ -1223,7 +1224,7 @@ extension on _UserSheetState {
                                 alpha: 0.12,
                               ),
                               foregroundColor: AppColors.primary,
-                              child: const Icon(Icons.person_rounded),
+                              child: const Icon(AppIcons.user),
                             ),
                             title: Text(
                               display.isEmpty

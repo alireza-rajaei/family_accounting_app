@@ -18,6 +18,7 @@ import '../../domain/entities/transaction.dart';
 import '../../domain/entities/loan.dart';
 import '../../domain/usecases/transactions_usecases.dart';
 import '../../domain/usecases/loans_usecases.dart';
+import '../../app/theme/app_icons.dart';
 part 'home_page_view.dart';
 part 'home_page_stat_tile.dart';
 

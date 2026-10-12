@@ -78,7 +78,7 @@ class _FundOverviewCard extends StatelessWidget {
                                   children: [
                                     Expanded(
                                       child: _MetricChip(
-                                        icon: Icons.savings_outlined,
+                                        icon: AppIcons.fundCapital,
                                         label: tr('home.overview_fund_capital'),
                                         amount: fundCapital,
                                         color: const Color(0xFF0D9488),
@@ -87,7 +87,7 @@ class _FundOverviewCard extends StatelessWidget {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: _MetricChip(
-                                        icon: Icons.south_west_rounded,
+                                        icon: AppIcons.deposit,
                                         label: tr(
                                           'home.overview_total_deposits',
                                         ),
@@ -102,7 +102,7 @@ class _FundOverviewCard extends StatelessWidget {
                                   children: [
                                     Expanded(
                                       child: _MetricChip(
-                                        icon: Icons.north_east_rounded,
+                                        icon: AppIcons.withdraw,
                                         label: tr(
                                           'home.overview_total_withdrawals',
                                         ),
@@ -113,7 +113,7 @@ class _FundOverviewCard extends StatelessWidget {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: _MetricChip(
-                                        icon: Icons.pending_actions_outlined,
+                                        icon: AppIcons.pending,
                                         label: tr(
                                           'home.overview_loans_remaining',
                                         ),
@@ -125,14 +125,14 @@ class _FundOverviewCard extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 16),
                                 _OverviewMoneyRow(
-                                  icon: Icons.payments_outlined,
+                                  icon: AppIcons.payments,
                                   label: tr('home.overview_loans_disbursed'),
                                   amount: disbursed,
                                   color: AppColors.danger,
                                 ),
                                 const SizedBox(height: 10),
                                 _OverviewMoneyRow(
-                                  icon: Icons.task_alt_outlined,
+                                  icon: AppIcons.check,
                                   label: tr('home.overview_loans_repaid'),
                                   amount: repaid,
                                   color: AppColors.success,
@@ -149,7 +149,7 @@ class _FundOverviewCard extends StatelessWidget {
                                               ),
                                               value: usersState.users.length
                                                   .toString(),
-                                              icon: Icons.people_alt_outlined,
+                                              icon: AppIcons.users,
                                             ),
                                       ),
                                     ),
@@ -158,14 +158,14 @@ class _FundOverviewCard extends StatelessWidget {
                                         label: tr('home.overview_banks_count'),
                                         value: banksState.banks.length
                                             .toString(),
-                                        icon: Icons.account_balance_outlined,
+                                        icon: AppIcons.banks,
                                       ),
                                     ),
                                     Expanded(
                                       child: _OverviewCountTile(
                                         label: tr('home.overview_active_loans'),
                                         value: activeLoans.toString(),
-                                        icon: Icons.request_quote_outlined,
+                                        icon: AppIcons.loans,
                                       ),
                                     ),
                                   ],
@@ -230,7 +230,7 @@ class _BalanceHero extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
-                  Icons.account_balance_wallet_outlined,
+                  AppIcons.wallet,
                   color: Colors.white,
                   size: 22,
                 ),

@@ -22,7 +22,7 @@ class _DateRangePicker extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            icon: const Icon(Icons.date_range),
+            icon: const Icon(AppIcons.calendar),
             label: Text(label),
             onPressed: () async {
               final range = await _showJalaliRangePicker(context);
@@ -60,7 +60,7 @@ class _DateRangePicker extends StatelessWidget {
                   ),
                 );
               },
-              icon: const Icon(Icons.close),
+              icon: const Icon(AppIcons.close),
             ),
           ),
       ],
@@ -116,7 +116,7 @@ class _JalaliRangeSheetState extends State<_JalaliRangeSheet> {
     );
     return AppSheetBody(
       title: 'انتخاب بازه تاریخ (شمسی)',
-      icon: Icons.calendar_month_rounded,
+      icon: AppIcons.calendar,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -27,6 +27,7 @@ import '../cubits/banks_cubit.dart';
 import '../cubits/loans_cubit.dart';
 import '../cubits/users_cubit.dart';
 import 'transactions_page.dart' show showTransactionSheet;
+import '../../app/theme/app_icons.dart';
 
 class LoansPage extends StatelessWidget {
   const LoansPage({super.key});
@@ -114,7 +115,7 @@ class _LoanReportSheet extends StatelessWidget {
               const AppSheetHandle(),
               AppSheetTitle(
                 tr('loans.report_title'),
-                icon: Icons.request_quote_rounded,
+                icon: AppIcons.loansFilled,
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -133,7 +134,7 @@ class _LoanReportSheet extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: FilledButton.icon(
                   onPressed: () => _exportLoanReportPdf(context, loan),
-                  icon: const Icon(Icons.picture_as_pdf),
+                  icon: const Icon(AppIcons.pdf),
                   label: Text(tr('common.export_pdf')),
                 ),
               ),
@@ -469,7 +470,7 @@ class _LoansViewState extends State<_LoansView> {
                   Expanded(
                     child: AppEmptyState(
                       message: tr('transactions.not_found'),
-                      icon: Icons.request_quote_outlined,
+                      icon: AppIcons.loans,
                     ),
                   ),
                 ],
@@ -519,8 +520,8 @@ class _LoansViewState extends State<_LoansView> {
                           children: [
                             AppIconBadge(
                               icon: it.settled
-                                  ? Icons.task_alt_rounded
-                                  : Icons.request_quote_rounded,
+                                  ? AppIcons.check
+                                  : AppIcons.loansFilled,
                               color: it.settled
                                   ? AppColors.success
                                   : AppColors.primary,
@@ -641,7 +642,7 @@ class _LoansViewState extends State<_LoansView> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openLoanSheet(context),
-        icon: const Icon(Icons.add_rounded),
+        icon: const Icon(AppIcons.add),
         label: Text(tr('loans.add')),
       ),
     );
@@ -651,7 +652,7 @@ class _LoansViewState extends State<_LoansView> {
 class _LoanAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const AppIconBadge(icon: Icons.request_quote_rounded);
+    return const AppIconBadge(icon: AppIcons.loansFilled);
   }
 }
 
@@ -672,12 +673,12 @@ class _LoanActionsMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     if (settled) {
       return const IconButton(
-        icon: Icon(Icons.check_circle_rounded, color: AppColors.success),
+        icon: Icon(AppIcons.check, color: AppColors.success),
         onPressed: null,
       );
     }
     return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert),
+      icon: const Icon(AppIcons.more),
       onSelected: (value) {
         if (value == 'pay') onPayInstallment();
         if (value == 'edit') onEdit();
@@ -879,7 +880,7 @@ class _LoanSheetState extends State<_LoanSheet> {
     final isEdit = widget.loan != null;
     return AppSheetBody(
       title: isEdit ? tr('loans.edit') : tr('loans.add'),
-      icon: Icons.request_quote_rounded,
+      icon: AppIcons.loansFilled,
       child: Form(
         key: _formKey,
         child: Column(
@@ -1019,7 +1020,7 @@ class _SearchableUserField extends StatelessWidget {
           decoration: InputDecoration(
             labelText: tr('loans.user'),
             hintText: label,
-            suffixIcon: const Icon(Icons.search),
+            suffixIcon: const Icon(AppIcons.search),
           ),
           onTap: () async {
             final picked = await _showLoanUserPicker(context, state);
@@ -1056,8 +1057,8 @@ class _UserFilterField extends StatelessWidget {
             labelText: tr('transactions.search_user'),
             hintText: hint,
             suffixIcon: value == null
-                ? const Icon(Icons.search)
-                : IconButton(icon: const Icon(Icons.clear), onPressed: onClear),
+                ? const Icon(AppIcons.search)
+                : IconButton(icon: const Icon(AppIcons.clear), onPressed: onClear),
           ),
           onTap: () async {
             final picked = await _showLoanUserPicker(context, state);
@@ -1089,7 +1090,7 @@ Future<int?> _showLoanUserPicker(BuildContext context, UsersState state) async {
 
           return AppSheetBody(
             title: tr('transactions.search_user'),
-            icon: Icons.person_search_rounded,
+            icon: AppIcons.userSearch,
             scrollable: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1098,7 +1099,7 @@ Future<int?> _showLoanUserPicker(BuildContext context, UsersState state) async {
                   controller: controller,
                   decoration: InputDecoration(
                     hintText: tr('transactions.search_user'),
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    prefixIcon: const Icon(AppIcons.search),
                   ),
                   onChanged: apply,
                 ),
