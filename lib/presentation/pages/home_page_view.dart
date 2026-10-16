@@ -155,7 +155,7 @@ class _BankBalanceRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '${formatThousands(item.balance)} ${tr('banks.rial')}',
+            formatAmount(item.balance),
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
               color: isNegative ? AppColors.danger : theme.colorScheme.onSurface,
@@ -314,7 +314,7 @@ class _FlowChartCard extends StatelessWidget {
                                       : tr('transactions.withdraw');
                                   final day = dayLabel(spot.x.round());
                                   return LineTooltipItem(
-                                    '$day\n$label: ${formatThousands(spot.y.toInt())}',
+                                    '$day\n$label: ${formatAmount(spot.y.toInt())}',
                                     TextStyle(
                                       color: spot.bar.color ?? Colors.white,
                                       fontWeight: FontWeight.w600,

@@ -43,7 +43,7 @@
         "banks": "Banks"
     },
     "users": {
-        "search_hint": "Search first/last name",
+        "search_hint": "Search first/last name/membership",
         "not_found": "No user found",
         "add": "Add user",
         "edit": "Edit user",
@@ -51,12 +51,14 @@
         "last_name": "Last name",
         "father_name": "Father's name",
         "mobile": "Mobile",
+        "membership_number": "Membership number",
         "save": "Save changes",
         "create": "Create user",
         "delete": "Delete",
         "add_transaction": "Add transaction",
         "confirm_delete": "Are you sure to delete {name}?",
-        "balance": "Balance"
+        "balance": "Balance",
+        "installments_remaining": "Installments remaining"
     },
     "banks": {
         "search_hint": "Search bank/account name/number",

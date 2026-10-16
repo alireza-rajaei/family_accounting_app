@@ -6,6 +6,8 @@ class Users extends Table {
   TextColumn get lastName => text().named('last_name')();
   TextColumn get fatherName => text().named('father_name').nullable()();
   TextColumn get mobileNumber => text().named('mobile_number').nullable()();
+  TextColumn get membershipNumber =>
+      text().named('membership_number').nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 }

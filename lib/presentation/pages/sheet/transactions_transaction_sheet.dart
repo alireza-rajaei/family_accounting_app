@@ -65,7 +65,7 @@ class _UnsettledLoanField extends StatelessWidget {
                         final title =
                             '${user.firstName} ${user.lastName} · ${dateFa}';
                         final subtitle =
-                            '${tr('loans.remaining')}: ${e.remaining}';
+                            '${tr('loans.remaining')}: ${formatAmount(e.remaining)}';
                         return DropdownMenuItem(
                           value: e.loan.id,
                           child: Column(
@@ -93,7 +93,7 @@ class _UnsettledLoanField extends StatelessWidget {
                           e.loan.createdAt,
                         );
                         final text =
-                            '${user.firstName} ${user.lastName} · ${dateFa} · ${tr('loans.remaining')}: ${e.remaining}';
+                            '${user.firstName} ${user.lastName} · ${dateFa} · ${tr('loans.remaining')}: ${formatAmount(e.remaining)}';
                         return Align(
                           alignment: Alignment.centerLeft,
                           child: Text(

@@ -4,6 +4,7 @@ class UserEntity {
   final String lastName;
   final String? fatherName;
   final String? mobileNumber;
+  final String? membershipNumber;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -13,6 +14,7 @@ class UserEntity {
     required this.lastName,
     this.fatherName,
     this.mobileNumber,
+    this.membershipNumber,
     required this.createdAt,
     this.updatedAt,
   });

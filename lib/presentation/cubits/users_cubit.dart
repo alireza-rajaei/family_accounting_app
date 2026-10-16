@@ -35,12 +35,14 @@ class UsersCubit extends Cubit<UsersState> {
   final UpdateUserUseCase _updateUser;
   final DeleteUserCascadeUseCase _deleteUserCascade;
   final GetUserBalanceUseCase _getUserBalance;
+  final GetUserLoansRemainingUseCase _getUserLoansRemaining;
   UsersCubit(
     this._watchUsers,
     this._addUser,
     this._updateUser,
     this._deleteUserCascade,
     this._getUserBalance,
+    this._getUserLoansRemaining,
   ) : super(const UsersState());
 
   void watch([String q = '']) {
@@ -56,12 +58,14 @@ class UsersCubit extends Cubit<UsersState> {
     required String lastName,
     String? fatherName,
     String? mobile,
+    String? membershipNumber,
   }) async {
     await _addUser(
       firstName: firstName,
       lastName: lastName,
       fatherName: fatherName,
       mobileNumber: mobile,
+      membershipNumber: membershipNumber,
     );
   }
 
@@ -71,6 +75,7 @@ class UsersCubit extends Cubit<UsersState> {
     required String lastName,
     String? fatherName,
     String? mobile,
+    String? membershipNumber,
   }) async {
     await _updateUser(
       id: id,
@@ -78,6 +83,7 @@ class UsersCubit extends Cubit<UsersState> {
       lastName: lastName,
       fatherName: fatherName,
       mobileNumber: mobile,
+      membershipNumber: membershipNumber,
     );
   }
 
@@ -86,6 +92,9 @@ class UsersCubit extends Cubit<UsersState> {
   }
 
   Future<int> getUserBalance(int userId) => _getUserBalance(userId);
+
+  Future<int> getUserLoansRemaining(int userId) =>
+      _getUserLoansRemaining(userId);
 
   @override
   Future<void> close() {

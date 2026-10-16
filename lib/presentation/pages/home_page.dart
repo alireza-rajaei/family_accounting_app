@@ -34,7 +34,7 @@ class HomePage extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) =>
-              UsersCubit(locator(), locator(), locator(), locator(), locator())
+              UsersCubit(locator(), locator(), locator(), locator(), locator(), locator())
                 ..watch(),
         ),
         BlocProvider(

@@ -11,6 +11,7 @@ extension UserToEntity on User {
     lastName: lastName,
     fatherName: fatherName,
     mobileNumber: mobileNumber,
+    membershipNumber: membershipNumber,
     createdAt: createdAt,
     updatedAt: updatedAt,
   );

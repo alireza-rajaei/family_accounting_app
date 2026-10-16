@@ -95,7 +95,7 @@
     "email_copy_fallback": "برنامه ایمیل یافت نشد. آدرس کپی شد."
   },
   "users": {
-    "search_hint": "جستجوی نام/نام خانوادگی",
+    "search_hint": "جستجوی نام/نام خانوادگی/شماره عضویت",
     "not_found": "کاربری یافت نشد",
     "add": "افزودن کاربر",
     "edit": "ویرایش کاربر",
@@ -103,12 +103,14 @@
     "last_name": "نام خانوادگی",
     "father_name": "نام پدر",
     "mobile": "شماره موبایل",
+    "membership_number": "شماره عضویت",
     "save": "ذخیره تغییرات",
     "create": "ایجاد کاربر",
     "delete": "حذف",
     "add_transaction": "افزودن تراکنش",
     "confirm_delete": "آیا از حذف {name} مطمئن هستید؟",
-    "balance": "موجودی"
+    "balance": "موجودی",
+    "installments_remaining": "باقی‌مانده اقساط"
   },
   "banks": {
     "search_hint": "جستجوی بانک/نام حساب/شماره حساب",

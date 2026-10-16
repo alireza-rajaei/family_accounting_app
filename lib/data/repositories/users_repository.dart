@@ -15,7 +15,8 @@ class UsersRepository {
         (u) =>
             u.firstName.like(like) |
             u.lastName.like(like) |
-            u.mobileNumber.like(like),
+            u.mobileNumber.like(like) |
+            u.membershipNumber.like(like),
       );
     }
     sel.orderBy([
@@ -30,6 +31,7 @@ class UsersRepository {
     required String lastName,
     String? fatherName,
     String? mobileNumber,
+    String? membershipNumber,
   }) async {
     return db
         .into(db.users)
@@ -39,6 +41,7 @@ class UsersRepository {
             lastName: lastName,
             fatherName: d.Value(fatherName),
             mobileNumber: d.Value(mobileNumber),
+            membershipNumber: d.Value(membershipNumber),
           ),
         );
   }
@@ -49,6 +52,7 @@ class UsersRepository {
     required String lastName,
     String? fatherName,
     String? mobileNumber,
+    String? membershipNumber,
   }) async {
     await (db.update(db.users)..where((t) => t.id.equals(id))).write(
       UsersCompanion(
@@ -56,6 +60,7 @@ class UsersRepository {
         lastName: d.Value(lastName),
         fatherName: d.Value(fatherName),
         mobileNumber: d.Value(mobileNumber),
+        membershipNumber: d.Value(membershipNumber),
         updatedAt: d.Value(DateTime.now()),
       ),
     );
@@ -135,5 +140,26 @@ WHERE t.user_id = ?
         )
         .getSingle();
     return row.read<int>('balance');
+  }
+
+  Future<int> getUserLoansRemaining(int userId) async {
+    const sql = '''
+SELECT COALESCE(SUM(loan_remaining), 0) AS total_remaining
+FROM (
+  SELECT l.principal_amount - COALESCE(SUM(lp.amount), 0) AS loan_remaining
+  FROM loans l
+  LEFT JOIN loan_payments lp ON lp.loan_id = l.id
+  WHERE l.user_id = ?
+  GROUP BY l.id
+)
+''';
+    final row = await db
+        .customSelect(
+          sql,
+          variables: [d.Variable.withInt(userId)],
+          readsFrom: {db.loans, db.loanPayments},
+        )
+        .getSingle();
+    return row.read<int>('total_remaining');
   }
 }

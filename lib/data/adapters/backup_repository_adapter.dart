@@ -1,6 +1,8 @@
+import 'dart:convert';
+
+import '../../app/utils/membership_number.dart';
 import '../../domain/repositories/i_backup_repository.dart';
 import '../local/db/app_database.dart';
-import 'dart:convert';
 
 class BackupRepositoryAdapter implements IBackupRepository {
   final AppDatabase db;
@@ -56,11 +58,12 @@ class BackupRepositoryAdapter implements IBackupRepository {
 
       // Insert order must respect FKs: loans before transactions (loan_id),
       // then loan_payments (loan_id + transaction_id).
-      await insertMany(
-        users,
-        (m) async =>
-            await db.into(db.users).insert(User.fromJson(m).toCompanion(true)),
-      );
+      await insertMany(users, (m) async {
+        final normalized = _normalizeUserBackupJson(m);
+        await db
+            .into(db.users)
+            .insert(User.fromJson(normalized).toCompanion(true));
+      });
       await insertMany(
         banks,
         (m) async =>
@@ -85,4 +88,18 @@ class BackupRepositoryAdapter implements IBackupRepository {
       );
     });
   }
+}
+
+Map<String, dynamic> _normalizeUserBackupJson(Map<String, dynamic> m) {
+  final extracted = MembershipNumberParser.extractFromNames(
+    firstName: m['firstName'] as String? ?? '',
+    lastName: m['lastName'] as String? ?? '',
+    existingMembership: m['membershipNumber'] as String?,
+  );
+  return {
+    ...m,
+    'firstName': extracted.firstName,
+    'lastName': extracted.lastName,
+    'membershipNumber': extracted.membershipNumber,
+  };
 }

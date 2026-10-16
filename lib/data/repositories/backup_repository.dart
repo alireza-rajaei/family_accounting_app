@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../app/utils/membership_number.dart';
 import '../local/db/app_database.dart';
 
 class BackupRepository {
@@ -50,7 +51,22 @@ class BackupRepository {
 
       // Insert order must respect FKs: loans before transactions (loan_id),
       // then loan_payments (loan_id + transaction_id).
-      await insertMany(users, (m) async => await db.into(db.users).insert(User.fromJson(m).toCompanion(true)));
+      await insertMany(users, (m) async {
+        final extracted = MembershipNumberParser.extractFromNames(
+          firstName: m['firstName'] as String? ?? '',
+          lastName: m['lastName'] as String? ?? '',
+          existingMembership: m['membershipNumber'] as String?,
+        );
+        final normalized = {
+          ...m,
+          'firstName': extracted.firstName,
+          'lastName': extracted.lastName,
+          'membershipNumber': extracted.membershipNumber,
+        };
+        await db
+            .into(db.users)
+            .insert(User.fromJson(normalized).toCompanion(true));
+      });
       await insertMany(banks, (m) async => await db.into(db.banks).insert(Bank.fromJson(m).toCompanion(true)));
       await insertMany(loans, (m) async => await db.into(db.loans).insert(Loan.fromJson(m).toCompanion(true)));
       await insertMany(transactions, (m) async => await db.into(db.transactions).insert(Transaction.fromJson(m).toCompanion(true)));

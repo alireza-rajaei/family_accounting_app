@@ -488,6 +488,17 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _membershipNumberMeta = const VerificationMeta(
+    'membershipNumber',
+  );
+  @override
+  late final GeneratedColumn<String> membershipNumber = GeneratedColumn<String>(
+    'membership_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -518,6 +529,7 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
     lastName,
     fatherName,
     mobileNumber,
+    membershipNumber,
     createdAt,
     updatedAt,
   ];
@@ -567,6 +579,15 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         ),
       );
     }
+    if (data.containsKey('membership_number')) {
+      context.handle(
+        _membershipNumberMeta,
+        membershipNumber.isAcceptableOrUnknown(
+          data['membership_number']!,
+          _membershipNumberMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -608,6 +629,10 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
         DriftSqlType.string,
         data['${effectivePrefix}mobile_number'],
       ),
+      membershipNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}membership_number'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -631,6 +656,7 @@ class User extends DataClass implements Insertable<User> {
   final String lastName;
   final String? fatherName;
   final String? mobileNumber;
+  final String? membershipNumber;
   final DateTime createdAt;
   final DateTime? updatedAt;
   const User({
@@ -639,6 +665,7 @@ class User extends DataClass implements Insertable<User> {
     required this.lastName,
     this.fatherName,
     this.mobileNumber,
+    this.membershipNumber,
     required this.createdAt,
     this.updatedAt,
   });
@@ -653,6 +680,9 @@ class User extends DataClass implements Insertable<User> {
     }
     if (!nullToAbsent || mobileNumber != null) {
       map['mobile_number'] = Variable<String>(mobileNumber);
+    }
+    if (!nullToAbsent || membershipNumber != null) {
+      map['membership_number'] = Variable<String>(membershipNumber);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
@@ -672,6 +702,9 @@ class User extends DataClass implements Insertable<User> {
       mobileNumber: mobileNumber == null && nullToAbsent
           ? const Value.absent()
           : Value(mobileNumber),
+      membershipNumber: membershipNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(membershipNumber),
       createdAt: Value(createdAt),
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
@@ -690,6 +723,7 @@ class User extends DataClass implements Insertable<User> {
       lastName: serializer.fromJson<String>(json['lastName']),
       fatherName: serializer.fromJson<String?>(json['fatherName']),
       mobileNumber: serializer.fromJson<String?>(json['mobileNumber']),
+      membershipNumber: serializer.fromJson<String?>(json['membershipNumber']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -703,6 +737,7 @@ class User extends DataClass implements Insertable<User> {
       'lastName': serializer.toJson<String>(lastName),
       'fatherName': serializer.toJson<String?>(fatherName),
       'mobileNumber': serializer.toJson<String?>(mobileNumber),
+      'membershipNumber': serializer.toJson<String?>(membershipNumber),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -714,6 +749,7 @@ class User extends DataClass implements Insertable<User> {
     String? lastName,
     Value<String?> fatherName = const Value.absent(),
     Value<String?> mobileNumber = const Value.absent(),
+    Value<String?> membershipNumber = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => User(
@@ -722,6 +758,9 @@ class User extends DataClass implements Insertable<User> {
     lastName: lastName ?? this.lastName,
     fatherName: fatherName.present ? fatherName.value : this.fatherName,
     mobileNumber: mobileNumber.present ? mobileNumber.value : this.mobileNumber,
+    membershipNumber: membershipNumber.present
+        ? membershipNumber.value
+        : this.membershipNumber,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -736,6 +775,9 @@ class User extends DataClass implements Insertable<User> {
       mobileNumber: data.mobileNumber.present
           ? data.mobileNumber.value
           : this.mobileNumber,
+      membershipNumber: data.membershipNumber.present
+          ? data.membershipNumber.value
+          : this.membershipNumber,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -749,6 +791,7 @@ class User extends DataClass implements Insertable<User> {
           ..write('lastName: $lastName, ')
           ..write('fatherName: $fatherName, ')
           ..write('mobileNumber: $mobileNumber, ')
+          ..write('membershipNumber: $membershipNumber, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -762,6 +805,7 @@ class User extends DataClass implements Insertable<User> {
     lastName,
     fatherName,
     mobileNumber,
+    membershipNumber,
     createdAt,
     updatedAt,
   );
@@ -774,6 +818,7 @@ class User extends DataClass implements Insertable<User> {
           other.lastName == this.lastName &&
           other.fatherName == this.fatherName &&
           other.mobileNumber == this.mobileNumber &&
+          other.membershipNumber == this.membershipNumber &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -784,6 +829,7 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String> lastName;
   final Value<String?> fatherName;
   final Value<String?> mobileNumber;
+  final Value<String?> membershipNumber;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
   const UsersCompanion({
@@ -792,6 +838,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.lastName = const Value.absent(),
     this.fatherName = const Value.absent(),
     this.mobileNumber = const Value.absent(),
+    this.membershipNumber = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -801,6 +848,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     required String lastName,
     this.fatherName = const Value.absent(),
     this.mobileNumber = const Value.absent(),
+    this.membershipNumber = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : firstName = Value(firstName),
@@ -811,6 +859,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? lastName,
     Expression<String>? fatherName,
     Expression<String>? mobileNumber,
+    Expression<String>? membershipNumber,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -820,6 +869,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (lastName != null) 'last_name': lastName,
       if (fatherName != null) 'father_name': fatherName,
       if (mobileNumber != null) 'mobile_number': mobileNumber,
+      if (membershipNumber != null) 'membership_number': membershipNumber,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -831,6 +881,7 @@ class UsersCompanion extends UpdateCompanion<User> {
     Value<String>? lastName,
     Value<String?>? fatherName,
     Value<String?>? mobileNumber,
+    Value<String?>? membershipNumber,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
   }) {
@@ -840,6 +891,7 @@ class UsersCompanion extends UpdateCompanion<User> {
       lastName: lastName ?? this.lastName,
       fatherName: fatherName ?? this.fatherName,
       mobileNumber: mobileNumber ?? this.mobileNumber,
+      membershipNumber: membershipNumber ?? this.membershipNumber,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -863,6 +915,9 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (mobileNumber.present) {
       map['mobile_number'] = Variable<String>(mobileNumber.value);
     }
+    if (membershipNumber.present) {
+      map['membership_number'] = Variable<String>(membershipNumber.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -880,6 +935,7 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('lastName: $lastName, ')
           ..write('fatherName: $fatherName, ')
           ..write('mobileNumber: $mobileNumber, ')
+          ..write('membershipNumber: $membershipNumber, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2949,6 +3005,7 @@ typedef $$UsersTableCreateCompanionBuilder =
       required String lastName,
       Value<String?> fatherName,
       Value<String?> mobileNumber,
+      Value<String?> membershipNumber,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -2959,6 +3016,7 @@ typedef $$UsersTableUpdateCompanionBuilder =
       Value<String> lastName,
       Value<String?> fatherName,
       Value<String?> mobileNumber,
+      Value<String?> membershipNumber,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
     });
@@ -3035,6 +3093,11 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<String> get mobileNumber => $composableBuilder(
     column: $table.mobileNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get membershipNumber => $composableBuilder(
+    column: $table.membershipNumber,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3133,6 +3196,11 @@ class $$UsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get membershipNumber => $composableBuilder(
+    column: $table.membershipNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -3169,6 +3237,11 @@ class $$UsersTableAnnotationComposer
 
   GeneratedColumn<String> get mobileNumber => $composableBuilder(
     column: $table.mobileNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get membershipNumber => $composableBuilder(
+    column: $table.membershipNumber,
     builder: (column) => column,
   );
 
@@ -3262,6 +3335,7 @@ class $$UsersTableTableManager
                 Value<String> lastName = const Value.absent(),
                 Value<String?> fatherName = const Value.absent(),
                 Value<String?> mobileNumber = const Value.absent(),
+                Value<String?> membershipNumber = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => UsersCompanion(
@@ -3270,6 +3344,7 @@ class $$UsersTableTableManager
                 lastName: lastName,
                 fatherName: fatherName,
                 mobileNumber: mobileNumber,
+                membershipNumber: membershipNumber,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -3280,6 +3355,7 @@ class $$UsersTableTableManager
                 required String lastName,
                 Value<String?> fatherName = const Value.absent(),
                 Value<String?> mobileNumber = const Value.absent(),
+                Value<String?> membershipNumber = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => UsersCompanion.insert(
@@ -3288,6 +3364,7 @@ class $$UsersTableTableManager
                 lastName: lastName,
                 fatherName: fatherName,
                 mobileNumber: mobileNumber,
+                membershipNumber: membershipNumber,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),

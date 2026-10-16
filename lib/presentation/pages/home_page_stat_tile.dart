@@ -249,19 +249,12 @@ class _BalanceHero extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            formatThousands(amount),
+            formatAmount(amount),
             style: theme.textTheme.headlineMedium?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
               height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            tr('banks.rial'),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -309,7 +302,7 @@ class _MetricChip extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            formatThousands(amount),
+            formatAmount(amount),
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
               color: color,
@@ -353,7 +346,7 @@ class _OverviewMoneyRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
         Text(
-          '${formatThousands(amount)} ${tr('banks.rial')}',
+          formatAmount(amount),
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
             color: color,

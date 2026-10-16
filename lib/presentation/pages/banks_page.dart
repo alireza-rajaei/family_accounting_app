@@ -294,7 +294,7 @@ class _BanksViewState extends State<_BanksView> {
                                   Align(
                                     alignment: AlignmentDirectional.bottomEnd,
                                     child: Text(
-                                      '${formatThousands(item.balance)} ${tr('banks.rial')}',
+                                      formatAmount(item.balance),
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleMedium

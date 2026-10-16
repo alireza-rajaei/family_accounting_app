@@ -2,16 +2,19 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "flutter",
-			"command": "flutter",
-			"args": [
-				"build",
-				"apk"
-			],
-			"group": "build",
-			"problemMatcher": [],
 			"label": "flutter: flutter build apk",
-			"detail": ""
+			"type": "shell",
+			"command": "flutter build apk --release && VERSION_LINE=$(grep '^version:' pubspec.yaml) && VERSION_NAME=$(echo \"$VERSION_LINE\" | sed -E 's/^version:[[:space:]]*([^+[:space:]]+).*/\\1/') && VERSION_CODE=$(echo \"$VERSION_LINE\" | sed -E 's/.*\\+([0-9]+).*/\\1/') && SRC='build/app/outputs/flutter-apk/app-release.apk' && DEST=\"$HOME/Desktop/Sandoghcheh-${VERSION_NAME}-${VERSION_CODE}.apk\" && cp \"$SRC\" \"$DEST\" && echo \"Release APK → $DEST\" && APKSIGNER=$(ls -d \"$HOME/Library/Android/sdk/build-tools/\"*/apksigner 2>/dev/null | sort -V | tail -1) && \"$APKSIGNER\" verify --print-certs \"$DEST\"",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"detail": "Release APK with keystore.jks → Desktop/Sandoghcheh-<versionName>-<buildNumber>.apk"
 		}
 	]
 }

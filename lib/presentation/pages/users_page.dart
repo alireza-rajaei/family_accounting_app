@@ -33,7 +33,7 @@ class UsersPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          UsersCubit(locator(), locator(), locator(), locator(), locator())
+          UsersCubit(locator(), locator(), locator(), locator(), locator(), locator())
             ..watch(),
       child: const _UsersView(),
     );
@@ -290,7 +290,27 @@ class _UserBalanceText extends StatelessWidget {
           return Text('${tr('users.balance')}: ...');
         }
         final balance = snapshot.data ?? 0;
-        return Text('${tr('users.balance')}: ${formatThousands(balance)}');
+        return Text('${tr('users.balance')}: ${formatAmount(balance)}');
+      },
+    );
+  }
+}
+
+class _UserLoansRemainingText extends StatelessWidget {
+  final int userId;
+  const _UserLoansRemainingText({required this.userId});
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<int>(
+      future: context.read<UsersCubit>().getUserLoansRemaining(userId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Text('${tr('users.installments_remaining')}: ...');
+        }
+        final remaining = snapshot.data ?? 0;
+        return Text(
+          '${tr('users.installments_remaining')}: ${formatAmount(remaining)}',
+        );
       },
     );
   }
@@ -456,11 +476,11 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                             final remaining =
                                 computed.loanRemainingByTxId[trn.id] ?? 0;
                             loanRemainingLine =
-                                '${tr('transactions.loan_remaining')}: ${formatThousands(remaining)} ${tr('banks.rial')}';
+                                '${tr('transactions.loan_remaining')}: ${formatAmount(remaining)}';
                           } else {
                             final bal = computed.userRunning[index];
                             walletRemainingLine =
-                                '${tr('users.balance')}: ${formatThousands(bal)} ${tr('banks.rial')}';
+                                '${tr('users.balance')}: ${formatAmount(bal)}';
                           }
 
                           return ListTile(
@@ -496,7 +516,7 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                               ],
                             ),
                             trailing: Text(
-                              '${formatThousands(trn.amount.abs())} ${tr('banks.rial')}',
+                              formatAmount(trn.amount.abs()),
                               style: TextStyle(
                                 color: isIncome ? Colors.green : Colors.red,
                               ),
@@ -628,16 +648,16 @@ class _UserReportSheetState extends State<_UserReportSheet> {
                               JalaliUtils.formatJalali(trn.createdAt),
                             ),
                             pdfCellText(
-                              formatThousands(loanRem),
+                              formatAmount(loanRem),
                               underline: isLoanRelatedType(trn.type),
                             ),
                             pdfCellText(
-                              formatThousands(userBal),
+                              formatAmount(userBal),
                               underline: isWalletType(trn.type),
                             ),
                             pdfCellText(trn.type),
                             pdfCellText(
-                              formatThousands(trn.amount.abs()),
+                              formatAmount(trn.amount.abs()),
                               color: pdfAmountColor(trn.type),
                             ),
                             pdfCellText(idx.toString()),
@@ -679,6 +699,7 @@ class _UserSheetState extends State<_UserSheet> {
   late final TextEditingController lastName;
   late final TextEditingController fatherName;
   late final TextEditingController mobile;
+  late final TextEditingController membershipNumber;
 
   @override
   void initState() {
@@ -687,6 +708,9 @@ class _UserSheetState extends State<_UserSheet> {
     lastName = TextEditingController(text: widget.user?.lastName ?? '');
     fatherName = TextEditingController(text: widget.user?.fatherName ?? '');
     mobile = TextEditingController(text: widget.user?.mobileNumber ?? '');
+    membershipNumber = TextEditingController(
+      text: widget.user?.membershipNumber ?? '',
+    );
   }
 
   @override
@@ -695,6 +719,7 @@ class _UserSheetState extends State<_UserSheet> {
     lastName.dispose();
     fatherName.dispose();
     mobile.dispose();
+    membershipNumber.dispose();
     super.dispose();
   }
 
@@ -758,6 +783,14 @@ class _UserSheetState extends State<_UserSheet> {
                   ? tr('common.required')
                   : null,
             ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: membershipNumber,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: tr('users.membership_number'),
+              ),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -765,6 +798,7 @@ class _UserSheetState extends State<_UserSheet> {
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     final cubit = context.read<UsersCubit>();
+                    final membership = membershipNumber.text.trim();
                     if (isEdit) {
                       await cubit.updateUser(
                         id: widget.user!.id,
@@ -772,6 +806,9 @@ class _UserSheetState extends State<_UserSheet> {
                         lastName: lastName.text.trim(),
                         fatherName: fatherName.text.trim(),
                         mobile: mobile.text.trim(),
+                        membershipNumber: membership.isEmpty
+                            ? null
+                            : membership,
                       );
                     } else {
                       await cubit.addUser(
@@ -779,6 +816,9 @@ class _UserSheetState extends State<_UserSheet> {
                         lastName: lastName.text.trim(),
                         fatherName: fatherName.text.trim(),
                         mobile: mobile.text.trim(),
+                        membershipNumber: membership.isEmpty
+                            ? null
+                            : membership,
                       );
                     }
                     if (context.mounted) Navigator.pop(context);
@@ -895,13 +935,9 @@ class _UserTile extends StatelessWidget {
   });
 
   String _initials() {
-    final first = user.firstName.trim();
-    final last = user.lastName.trim();
-    if (first.isEmpty && last.isEmpty) return '#';
-    final i1 = first.isNotEmpty ? first[0] : '';
-    final i2 = last.isNotEmpty ? last[0] : '';
-    final initials = (i1 + i2).toUpperCase();
-    return initials.isEmpty ? '#' : initials;
+    final membership = user.membershipNumber?.trim();
+    if (membership != null && membership.isNotEmpty) return membership;
+    return '#';
   }
 
   @override
@@ -967,14 +1003,29 @@ class _UserTile extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 4),
-                DefaultTextStyle(
-                  style:
-                      theme.textTheme.labelMedium?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ) ??
-                      const TextStyle(),
-                  child: _UserBalanceText(userId: user.id),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DefaultTextStyle(
+                      style:
+                          theme.textTheme.labelMedium?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ) ??
+                          const TextStyle(),
+                      child: _UserBalanceText(userId: user.id),
+                    ),
+                    const SizedBox(height: 6),
+                    DefaultTextStyle(
+                      style:
+                          theme.textTheme.labelMedium?.copyWith(
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.w700,
+                          ) ??
+                          const TextStyle(),
+                      child: _UserLoansRemainingText(userId: user.id),
+                    ),
+                  ],
                 ),
               ],
             ),

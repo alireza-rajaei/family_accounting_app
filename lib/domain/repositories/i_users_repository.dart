@@ -7,6 +7,7 @@ abstract class IUsersRepository {
     required String lastName,
     String? fatherName,
     String? mobileNumber,
+    String? membershipNumber,
   });
   Future<void> updateUser({
     required int id,
@@ -14,7 +15,9 @@ abstract class IUsersRepository {
     required String lastName,
     String? fatherName,
     String? mobileNumber,
+    String? membershipNumber,
   });
   Future<void> deleteUserCascade(int userId);
   Future<int> getUserBalance(int userId);
+  Future<int> getUserLoansRemaining(int userId);
 }

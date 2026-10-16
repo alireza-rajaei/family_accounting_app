@@ -15,11 +15,13 @@ class AddUserUseCase {
     required String lastName,
     String? fatherName,
     String? mobileNumber,
+    String? membershipNumber,
   }) => repo.addUser(
     firstName: firstName,
     lastName: lastName,
     fatherName: fatherName,
     mobileNumber: mobileNumber,
+    membershipNumber: membershipNumber,
   );
 }
 
@@ -32,12 +34,14 @@ class UpdateUserUseCase {
     required String lastName,
     String? fatherName,
     String? mobileNumber,
+    String? membershipNumber,
   }) => repo.updateUser(
     id: id,
     firstName: firstName,
     lastName: lastName,
     fatherName: fatherName,
     mobileNumber: mobileNumber,
+    membershipNumber: membershipNumber,
   );
 }
 
@@ -51,4 +55,10 @@ class GetUserBalanceUseCase {
   final IUsersRepository repo;
   GetUserBalanceUseCase(this.repo);
   Future<int> call(int userId) => repo.getUserBalance(userId);
+}
+
+class GetUserLoansRemainingUseCase {
+  final IUsersRepository repo;
+  GetUserLoansRemainingUseCase(this.repo);
+  Future<int> call(int userId) => repo.getUserLoansRemaining(userId);
 }

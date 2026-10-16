@@ -49,7 +49,7 @@ class LoansPage extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) =>
-              UsersCubit(locator(), locator(), locator(), locator(), locator())
+              UsersCubit(locator(), locator(), locator(), locator(), locator(), locator())
                 ..watch(),
         ),
         BlocProvider(
@@ -125,7 +125,7 @@ class _LoanReportSheet extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
                 subtitle: Text(
-                  '${tr('loans.principal')}: ${formatThousands(loan.principalAmount)} · ${tr('loans.installments')}: ${loan.installments}',
+                  '${tr('loans.principal')}: ${formatAmount(loan.principalAmount)} · ${tr('loans.installments')}: ${loan.installments}',
                 ),
                 trailing: Text(dateStr),
               ),
@@ -150,7 +150,7 @@ class _LoanReportSheet extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Text(
-                      '${tr('loans.remaining')}: ${formatThousands(remaining)} ${tr('banks.rial')}',
+                      '${tr('loans.remaining')}: ${formatAmount(remaining)}',
                     ),
                   );
                 },
@@ -194,7 +194,7 @@ class _LoanReportSheet extends StatelessWidget {
                             subtitle: Text(
                               '${(isFa ? JalaliUtils.formatJalali(trn.createdAt) : JalaliUtils.formatGregorian(trn.createdAt))} · ${trn.type}',
                             ),
-                            trailing: Text(formatThousands(trn.amount.abs())),
+                            trailing: Text(formatAmount(trn.amount.abs())),
                           );
                         },
                       );
@@ -251,7 +251,7 @@ class _LoanReportSheet extends StatelessWidget {
                                     '${(isFa ? JalaliUtils.formatJalali(trn.createdAt) : JalaliUtils.formatGregorian(trn.createdAt))} · ${trn.type}',
                                   ),
                                   trailing: Text(
-                                    formatThousands(trn.amount.abs()),
+                                    formatAmount(trn.amount.abs()),
                                   ),
                                 );
                               },
@@ -332,7 +332,7 @@ Future<void> _exportLoanReportPdf(BuildContext context, LoanEntity loan) async {
               pw.SizedBox(height: 8),
               pw.Text('${user.firstName} ${user.lastName}'),
               pw.Text(
-                '${tr('loans.principal')}: ${formatThousands(loan.principalAmount)}  ·  ${tr('loans.installments')}: ${loan.installments}',
+                '${tr('loans.principal')}: ${formatAmount(loan.principalAmount)}  ·  ${tr('loans.installments')}: ${loan.installments}',
               ),
               pw.Text('${tr('transactions.date')}: $dateFa'),
               pw.SizedBox(height: 12),
@@ -388,12 +388,12 @@ Future<void> _exportLoanReportPdf(BuildContext context, LoanEntity loan) async {
                           pdfCellText(userName),
                           pdfCellText(JalaliUtils.formatJalali(trn.createdAt)),
                           pdfCellText(
-                            formatThousands(loanRem),
+                            formatAmount(loanRem),
                             underline: isLoanRelatedType(trn.type),
                           ),
                           pdfCellText(trn.type),
                           pdfCellText(
-                            formatThousands(lp.amount.abs()),
+                            formatAmount(lp.amount.abs()),
                             color: pdfAmountColor(trn.type),
                           ),
                           pdfCellText(idx.toString()),
@@ -540,7 +540,7 @@ class _LoansViewState extends State<_LoansView> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '${formatThousands(it.loan.principalAmount)} ${tr('banks.rial')} · $dateStr',
+                                    '${formatAmount(it.loan.principalAmount)} · $dateStr',
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodySmall
@@ -568,7 +568,7 @@ class _LoansViewState extends State<_LoansView> {
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    '${tr('loans.remaining')}: ${formatThousands(it.remaining)} ${tr('banks.rial')}',
+                                    '${tr('loans.remaining')}: ${formatAmount(it.remaining)}',
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelMedium

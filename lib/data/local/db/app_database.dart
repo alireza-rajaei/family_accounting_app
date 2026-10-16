@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart'
     show NativeDatabase; // for AppDatabase.test()
 
+import '../../../app/utils/membership_number.dart';
 import 'tables.dart';
 import 'connection/connection.dart';
 
@@ -17,7 +18,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -152,6 +153,30 @@ SELECT id, loan_id, transaction_id, amount, paid_at FROM loan_payments;
         await customStatement(
           'ALTER TABLE loan_payments_new RENAME TO loan_payments;',
         );
+      }
+      if (from < 5) {
+        await m.addColumn(users, users.membershipNumber);
+        final existingUsers = await select(users).get();
+        for (final u in existingUsers) {
+          final extracted = MembershipNumberParser.extractFromNames(
+            firstName: u.firstName,
+            lastName: u.lastName,
+            existingMembership: u.membershipNumber,
+          );
+          if (extracted.membershipNumber == null) continue;
+          if (extracted.firstName == u.firstName &&
+              extracted.lastName == u.lastName &&
+              extracted.membershipNumber == u.membershipNumber) {
+            continue;
+          }
+          await (update(users)..where((t) => t.id.equals(u.id))).write(
+            UsersCompanion(
+              firstName: Value(extracted.firstName),
+              lastName: Value(extracted.lastName),
+              membershipNumber: Value(extracted.membershipNumber),
+            ),
+          );
+        }
       }
     },
   );

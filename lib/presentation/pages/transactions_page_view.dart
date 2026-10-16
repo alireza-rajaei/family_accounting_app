@@ -80,13 +80,13 @@ class _TransactionsView extends StatelessWidget {
                                 extra.cumulativeLoanRemainingByTxId[trn.id] ??
                                 0;
                             loanRemainingLine =
-                                '${tr('transactions.loan_remaining')}: ${formatThousands(remaining)} ${tr('banks.rial')}';
+                                '${tr('transactions.loan_remaining')}: ${formatAmount(remaining)}';
                           }
                           final uid = trn.userId;
                           final userBal = extra.userRunningAfter[index];
                           final userBalanceLine = uid == null
                               ? null
-                              : '${tr('users.balance')}: ${formatThousands(userBal)} ${tr('banks.rial')}';
+                              : '${tr('users.balance')}: ${formatAmount(userBal)}';
 
                           final title = it.user != null
                               ? '${it.user!.firstName} ${it.user!.lastName}'
@@ -132,9 +132,9 @@ class _TransactionsView extends StatelessWidget {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                BankCircleAvatar(
-                                  bankKey: it.bank.bankKey,
-                                  name: bankName,
+                                _TransactionTypeAvatar(
+                                  type: trn.type,
+                                  amount: trn.amount,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -157,7 +157,7 @@ class _TransactionsView extends StatelessWidget {
                                           ),
                                           AppAmountText(
                                             text:
-                                                '${isIncome ? '' : '-'}${formatThousands(trn.amount.abs())}',
+                                                '${isIncome ? '' : '-'}${formatAmount(trn.amount.abs())}',
                                             positive: isIncome,
                                           ),
                                         ],
@@ -438,6 +438,54 @@ class _FiltersSheet extends StatelessWidget {
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: Builder(builder: (inner) => _FiltersBar()),
+      ),
+    );
+  }
+}
+
+class _TransactionTypeAvatar extends StatelessWidget {
+  final String type;
+  final int amount;
+
+  const _TransactionTypeAvatar({required this.type, required this.amount});
+
+  bool get _isTransfer =>
+      type == 'جابجایی بین بانکی' || type == tr('transactions.bank_transfer');
+
+  Color get _color {
+    if (_isTransfer) return AppColors.warning;
+    if (isDepositType(type) || isLoanInstallmentType(type)) {
+      return AppColors.success;
+    }
+    if (isWithdrawType(type) || isLoanPrincipalType(type)) {
+      return AppColors.danger;
+    }
+    return amount >= 0 ? AppColors.success : AppColors.danger;
+  }
+
+  bool get _isPositive {
+    if (_isTransfer) return amount >= 0;
+    if (isDepositType(type) || isLoanInstallmentType(type)) return true;
+    if (isWithdrawType(type) || isLoanPrincipalType(type)) return false;
+    return amount >= 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _color;
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Icon(
+        _isPositive ? Icons.add : Icons.remove,
+        color: color,
+        size: 22,
       ),
     );
   }
